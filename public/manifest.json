@@ -1,0 +1,24 @@
+{
+  "name": "Opteno - Dijital Sınav Yönetim Sistemi",
+  "short_name": "Opteno",
+  "description": "Telefon kamerası ile optik form okuma, dinamik optik üretme ve sınav sonuç analiz sistemi",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#4f46e5",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
