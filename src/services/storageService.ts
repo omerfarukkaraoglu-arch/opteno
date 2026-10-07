@@ -1,6 +1,8 @@
 import { Institution, SchoolClass, Student, Exam, ScanResult, User, SiteSettings } from '../types';
 import { initialInstitutions, initialClasses, initialStudents, initialExams, initialScanResults, initialUsers, initialSiteSettings } from './mockData';
 
+const FIREBASE_DB_URL = 'https://opteno-aba91-default-rtdb.europe-west1.firebasedatabase.app/opteno';
+
 const KEYS = {
   USERS: 'opticok_users',
   CURRENT_USER: 'opticok_current_user',
@@ -54,6 +56,7 @@ export const resetAllStorage = () => {
 let isSyncing = false;
 let syncStarted = false;
 
+// Push entire application state to Firebase Cloud Database
 export const pushToServer = async () => {
   try {
     const results = getItem<ScanResult[]>(KEYS.RESULTS, initialScanResults);
@@ -61,45 +64,59 @@ export const pushToServer = async () => {
     const students = getItem<Student[]>(KEYS.STUDENTS, initialStudents);
     const classes = getItem<SchoolClass[]>(KEYS.CLASSES, initialClasses);
     const institutions = getItem<Institution[]>(KEYS.INSTITUTIONS, initialInstitutions);
+    const users = getItem<User[]>(KEYS.USERS, initialUsers);
+    const siteSettings = getItem<SiteSettings>(KEYS.SITE_SETTINGS, initialSiteSettings);
 
-    await fetch('/api/storage', {
-      method: 'POST',
+    await fetch(`${FIREBASE_DB_URL}.json`, {
+      method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         results,
         exams,
         students,
         classes,
-        institutions
+        institutions,
+        users,
+        siteSettings
       })
     });
-  } catch {
-    // offline or server unavailable
+  } catch (err) {
+    console.error('Firebase push failed:', err);
   }
 };
 
+// Two-way synchronization with Firebase Cloud Database
 export const syncWithServer = async () => {
   if (isSyncing) return;
   isSyncing = true;
   try {
-    const res = await fetch('/api/storage');
+    const res = await fetch(`${FIREBASE_DB_URL}.json`);
     if (!res.ok) {
       isSyncing = false;
       return;
     }
     const serverData = await res.json();
 
+    if (!serverData) {
+      // Cloud database empty: push our current baseline
+      await pushToServer();
+      isSyncing = false;
+      return;
+    }
+
     const localExams = getItem<Exam[]>(KEYS.EXAMS, initialExams);
     const localResults = getItem<ScanResult[]>(KEYS.RESULTS, initialScanResults);
     const localStudents = getItem<Student[]>(KEYS.STUDENTS, initialStudents);
     const localClasses = getItem<SchoolClass[]>(KEYS.CLASSES, initialClasses);
     const localInstitutions = getItem<Institution[]>(KEYS.INSTITUTIONS, initialInstitutions);
+    const localUsers = getItem<User[]>(KEYS.USERS, initialUsers);
 
     const serverExams: Exam[] = serverData.exams || [];
     const serverResults: ScanResult[] = serverData.results || [];
     const serverStudents: Student[] = serverData.students || [];
     const serverClasses: SchoolClass[] = serverData.classes || [];
     const serverInstitutions: Institution[] = serverData.institutions || [];
+    const serverUsers: User[] = serverData.users || [];
 
     let hasNewDataForLocal = false;
     let hasLocalDataForServer = false;
@@ -164,29 +181,42 @@ export const syncWithServer = async () => {
     if (allInstMap.size > serverInstitutions.length) hasLocalDataForServer = true;
     const mergedInstitutions = Array.from(allInstMap.values());
 
+    // 6. Merge Users
+    const allUserMap = new Map<string, User>();
+    localUsers.forEach(u => allUserMap.set(u.id, u));
+    serverUsers.forEach(u => {
+      if (!allUserMap.has(u.id)) {
+        allUserMap.set(u.id, u);
+        hasNewDataForLocal = true;
+      }
+    });
+    if (allUserMap.size > serverUsers.length) hasLocalDataForServer = true;
+    const mergedUsers = Array.from(allUserMap.values());
+    if (!mergedUsers.some(u => u.username?.toLowerCase() === 'admin')) {
+      mergedUsers.unshift(initialUsers[0]);
+      hasNewDataForLocal = true;
+      hasLocalDataForServer = true;
+    }
+
+    // 7. Site Settings
+    if (serverData.siteSettings) {
+      setItem(KEYS.SITE_SETTINGS, serverData.siteSettings);
+    }
+
     if (hasNewDataForLocal) {
       setItem(KEYS.RESULTS, mergedResults);
       setItem(KEYS.EXAMS, mergedExams);
       setItem(KEYS.STUDENTS, mergedStudents);
       setItem(KEYS.CLASSES, mergedClasses);
       setItem(KEYS.INSTITUTIONS, mergedInstitutions);
+      setItem(KEYS.USERS, mergedUsers);
       window.dispatchEvent(new CustomEvent('opticok-data-updated'));
     }
 
     if (hasLocalDataForServer) {
-      await fetch('/api/storage', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          results: mergedResults,
-          exams: mergedExams,
-          students: mergedStudents,
-          classes: mergedClasses,
-          institutions: mergedInstitutions
-        })
-      });
+      await pushToServer();
     }
-  } catch {
+  } catch (err) {
     // Offline or server not responding, keep working locally
   } finally {
     isSyncing = false;
@@ -203,7 +233,6 @@ export const initStorage = () => {
 
   if (!localStorage.getItem('opticok_v3_clean')) {
     resetAllStorage();
-    return;
   }
   if (!localStorage.getItem(KEYS.INSTITUTIONS)) {
     setItem(KEYS.INSTITUTIONS, initialInstitutions);
@@ -239,18 +268,29 @@ export const initStorage = () => {
       setItem(KEYS.USERS, updatedUsers);
     }
   }
-  // NOTE: KEYS.CURRENT_USER is intentionally NOT populated automatically!
-  // Every user must authenticate via the login screen.
+
   if (!localStorage.getItem(KEYS.SITE_SETTINGS)) {
     setItem(KEYS.SITE_SETTINGS, initialSiteSettings);
   }
 
-  // Start two-way real-time sync with server
+  // Start two-way real-time sync with Firebase Cloud Database
   if (!syncStarted && typeof window !== 'undefined') {
     syncStarted = true;
     syncWithServer();
-    setInterval(syncWithServer, 2500);
+    setInterval(syncWithServer, 3000);
     window.addEventListener('focus', syncWithServer);
+    window.addEventListener('online', syncWithServer);
+
+    // Optional SSE listener for instantaneous cloud updates
+    try {
+      if (typeof EventSource !== 'undefined') {
+        const sse = new EventSource(`${FIREBASE_DB_URL}.json`);
+        sse.addEventListener('put', () => syncWithServer());
+        sse.addEventListener('patch', () => syncWithServer());
+      }
+    } catch {
+      // EventSource fallback handled by interval
+    }
   }
 };
 
@@ -267,11 +307,15 @@ export const storageService = {
         siteSubtitle: 'Dijital Sınav Yönetim Sistemi'
       };
       setItem(KEYS.SITE_SETTINGS, updated);
+      pushToServer();
       return updated;
     }
     return s;
   },
-  saveSiteSettings: (settings: SiteSettings) => setItem(KEYS.SITE_SETTINGS, settings),
+  saveSiteSettings: (settings: SiteSettings) => {
+    setItem(KEYS.SITE_SETTINGS, settings);
+    pushToServer();
+  },
 
   // Current User & Users Management
   getSessionUser: (): User | null => getItem<User | null>(KEYS.CURRENT_USER, null),
@@ -292,37 +336,51 @@ export const storageService = {
   },
   addUser: (newUser: User) => {
     const list = storageService.getAllUsers();
-    list.unshift(newUser);
-    setItem(KEYS.USERS, list);
+    // Prevent duplicate user IDs
+    const filtered = list.filter(u => u.id !== newUser.id);
+    filtered.unshift(newUser);
+    setItem(KEYS.USERS, filtered);
+    pushToServer();
+    window.dispatchEvent(new CustomEvent('opticok-data-updated'));
   },
   updateUser: (updatedUser: User) => {
     const list = storageService.getAllUsers().map(u => u.id === updatedUser.id ? updatedUser : u);
     setItem(KEYS.USERS, list);
-    // If current user updated, update current session as well
     const current = storageService.getSessionUser();
     if (current && current.id === updatedUser.id) {
       setItem(KEYS.CURRENT_USER, updatedUser);
     }
+    pushToServer();
+    window.dispatchEvent(new CustomEvent('opticok-data-updated'));
   },
   deleteUser: (userId: string) => {
     const list = storageService.getAllUsers().filter(u => u.id !== userId);
     setItem(KEYS.USERS, list);
+    pushToServer();
+    window.dispatchEvent(new CustomEvent('opticok-data-updated'));
   },
 
   // Institutions
   getInstitutions: (): Institution[] => getItem<Institution[]>(KEYS.INSTITUTIONS, initialInstitutions),
   addInstitution: (institution: Institution) => {
     const list = storageService.getInstitutions();
-    list.unshift(institution);
-    setItem(KEYS.INSTITUTIONS, list);
+    const filtered = list.filter(i => i.id !== institution.id);
+    filtered.unshift(institution);
+    setItem(KEYS.INSTITUTIONS, filtered);
+    pushToServer();
+    window.dispatchEvent(new CustomEvent('opticok-data-updated'));
   },
   updateInstitution: (updated: Institution) => {
     const list = storageService.getInstitutions().map(i => i.id === updated.id ? updated : i);
     setItem(KEYS.INSTITUTIONS, list);
+    pushToServer();
+    window.dispatchEvent(new CustomEvent('opticok-data-updated'));
   },
   deleteInstitution: (institutionId: string) => {
     const list = storageService.getInstitutions().filter(i => i.id !== institutionId);
     setItem(KEYS.INSTITUTIONS, list);
+    pushToServer();
+    window.dispatchEvent(new CustomEvent('opticok-data-updated'));
   },
 
   // Classes
@@ -332,12 +390,17 @@ export const storageService = {
   },
   addClass: (newClass: SchoolClass) => {
     const list = getItem<SchoolClass[]>(KEYS.CLASSES, initialClasses);
-    list.unshift(newClass);
-    setItem(KEYS.CLASSES, list);
+    const filtered = list.filter(c => c.id !== newClass.id);
+    filtered.unshift(newClass);
+    setItem(KEYS.CLASSES, filtered);
+    pushToServer();
+    window.dispatchEvent(new CustomEvent('opticok-data-updated'));
   },
   deleteClass: (classId: string) => {
     const list = getItem<SchoolClass[]>(KEYS.CLASSES, initialClasses).filter(c => c.id !== classId);
     setItem(KEYS.CLASSES, list);
+    pushToServer();
+    window.dispatchEvent(new CustomEvent('opticok-data-updated'));
   },
 
   // Students
@@ -349,12 +412,26 @@ export const storageService = {
   },
   addStudent: (student: Student) => {
     const list = getItem<Student[]>(KEYS.STUDENTS, initialStudents);
-    list.unshift(student);
-    setItem(KEYS.STUDENTS, list);
+    const filtered = list.filter(s => s.id !== student.id);
+    filtered.unshift(student);
+    setItem(KEYS.STUDENTS, filtered);
+    pushToServer();
+    window.dispatchEvent(new CustomEvent('opticok-data-updated'));
+  },
+  addStudentsBatch: (students: Student[]) => {
+    const list = getItem<Student[]>(KEYS.STUDENTS, initialStudents);
+    const newIds = new Set(students.map(s => s.id));
+    const kept = list.filter(s => !newIds.has(s.id));
+    const combined = [...students, ...kept];
+    setItem(KEYS.STUDENTS, combined);
+    pushToServer();
+    window.dispatchEvent(new CustomEvent('opticok-data-updated'));
   },
   deleteStudent: (studentId: string) => {
     const list = getItem<Student[]>(KEYS.STUDENTS, initialStudents).filter(s => s.id !== studentId);
     setItem(KEYS.STUDENTS, list);
+    pushToServer();
+    window.dispatchEvent(new CustomEvent('opticok-data-updated'));
   },
 
   // Exams
@@ -368,19 +445,27 @@ export const storageService = {
   },
   addExam: (exam: Exam) => {
     const list = getItem<Exam[]>(KEYS.EXAMS, initialExams);
-    if (!list.some(e => e.id === exam.id)) {
-      list.unshift(exam);
-      setItem(KEYS.EXAMS, list);
-      pushToServer();
-    }
+    const filtered = list.filter(e => e.id !== exam.id);
+    filtered.unshift(exam);
+    setItem(KEYS.EXAMS, filtered);
+    pushToServer();
+    window.dispatchEvent(new CustomEvent('opticok-data-updated'));
+  },
+  updateExam: (exam: Exam) => {
+    const list = getItem<Exam[]>(KEYS.EXAMS, initialExams).map(e => e.id === exam.id ? exam : e);
+    setItem(KEYS.EXAMS, list);
+    pushToServer();
+    window.dispatchEvent(new CustomEvent('opticok-data-updated'));
   },
   deleteExam: (examId: string) => {
     const list = getItem<Exam[]>(KEYS.EXAMS, initialExams).filter(e => e.id !== examId);
     setItem(KEYS.EXAMS, list);
     pushToServer();
+    window.dispatchEvent(new CustomEvent('opticok-data-updated'));
   },
 
   // Scan Results
+  getAllScanResults: (): ScanResult[] => getItem<ScanResult[]>(KEYS.RESULTS, initialScanResults),
   getResults: (examId?: string): ScanResult[] => {
     const list = getItem<ScanResult[]>(KEYS.RESULTS, initialScanResults);
     return examId ? list.filter(r => r.examId === examId) : list;
@@ -403,6 +488,13 @@ export const storageService = {
     }
 
     pushToServer();
+    window.dispatchEvent(new CustomEvent('opticok-data-updated'));
+  },
+  deleteScanResult: (resultId: string) => {
+    const list = getItem<ScanResult[]>(KEYS.RESULTS, initialScanResults).filter(r => r.id !== resultId);
+    setItem(KEYS.RESULTS, list);
+    pushToServer();
+    window.dispatchEvent(new CustomEvent('opticok-data-updated'));
   },
 
   // Full System Backup & Restore
@@ -481,4 +573,3 @@ export const storageService = {
 
   resetAllStorage
 };
-

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Lock, User as UserIcon, Eye, EyeOff, ArrowRight, AlertCircle, KeyRound, Sun, Moon, Shield } from 'lucide-react';
-import { storageService } from '../../services/storageService';
+import { storageService, syncWithServer } from '../../services/storageService';
 import { User } from '../../types';
 import { Theme } from '../../services/themeService';
 
@@ -11,14 +11,13 @@ interface LoginFormProps {
 }
 
 export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess, theme, onToggleTheme }) => {
-  const allUsers = storageService.getAllUsers();
-
   const [usernameInput, setUsernameInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
 
@@ -27,6 +26,15 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess, theme, onT
     if (!trimmedUser || !trimmedPassword) {
       setErrorMessage('Lütfen kullanıcı adı ve şifrenizi eksiksiz giriniz.');
       return;
+    }
+
+    setIsLoading(true);
+
+    // Sync latest credentials from Firebase Cloud Database so multi-device works instantly
+    try {
+      await syncWithServer();
+    } catch {
+      // Offline fallback
     }
 
     // Direct guaranteed authentication for default SuperAdmin
@@ -45,6 +53,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess, theme, onT
         status: 'ACTIVE',
         createdAt: '2026-01-01'
       };
+      setIsLoading(false);
       storageService.setCurrentUser(adminUser);
       onLoginSuccess(adminUser);
       return;
@@ -52,21 +61,24 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess, theme, onT
 
     const freshUsers = storageService.getAllUsers();
     const targetUser = freshUsers.find(
-      u => (u.username?.toLowerCase() === trimmedUser.toLowerCase() ||
-            u.email?.toLowerCase() === trimmedUser.toLowerCase())
+      u => (u.username?.trim().toLowerCase() === trimmedUser.toLowerCase() ||
+            u.email?.trim().toLowerCase() === trimmedUser.toLowerCase())
     );
 
     if (!targetUser || !targetUser.password || targetUser.password.trim() !== trimmedPassword) {
+      setIsLoading(false);
       setErrorMessage('Kullanıcı adı veya şifre hatalı. Lütfen kontrol ediniz.');
       return;
     }
 
     if (targetUser.status === 'INACTIVE') {
+      setIsLoading(false);
       setErrorMessage('Bu kullanıcı hesabı pasife alınmıştır. Sistem yöneticisi ile iletişime geçiniz.');
       return;
     }
 
     // Login successful
+    setIsLoading(false);
     storageService.setCurrentUser(targetUser);
     onLoginSuccess(targetUser);
   };
@@ -165,9 +177,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess, theme, onT
 
             <button
               type="submit"
-              className="btn btn-primary w-full py-3 text-sm font-bold flex items-center justify-center gap-2 group shadow-lg shadow-indigo-600/30 cursor-pointer"
+              disabled={isLoading}
+              className="btn btn-primary w-full py-3 text-sm font-bold flex items-center justify-center gap-2 group shadow-lg shadow-indigo-600/30 cursor-pointer disabled:opacity-50"
             >
-              <span>Giriş Yap</span>
+              <span>{isLoading ? 'Doğrulanıyor...' : 'Giriş Yap'}</span>
               <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
             </button>
           </form>
