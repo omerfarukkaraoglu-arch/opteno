@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Building2, Users, FileText, CheckCircle, Plus, Search, MapPin, Phone, Mail, ChevronRight, Settings, UserPlus, Shield, Trash2, Eye, Calendar, Sparkles, Download, Upload, FileSpreadsheet, CheckCircle2 } from 'lucide-react';
 import { storageService } from '../../services/storageService';
 import { studentExcelService } from '../../services/studentExcelService';
@@ -197,51 +198,56 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
     <div className="space-y-6">
       {/* Sub Navigation Bar for SuperAdmin */}
       <div className="glass-panel p-2 rounded-xl flex items-center justify-between gap-2 overflow-x-auto">
-        <div className="flex items-center gap-1 min-w-max">
-          <button
+        <div className="flex items-center gap-1.5 min-w-max p-1 bg-slate-900/60 rounded-2xl border border-slate-800">
+          <motion.button
+            whileTap={{ scale: 0.96 }}
             onClick={() => setActiveSubTab('INSTITUTIONS')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
-              activeSubTab === 'INSTITUTIONS' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+              activeSubTab === 'INSTITUTIONS' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-slate-400 hover:text-white'
             }`}
           >
             <Building2 className="h-4 w-4" /> Kurumlar Paneli
-          </button>
+          </motion.button>
 
-          <button
+          <motion.button
+            whileTap={{ scale: 0.96 }}
             onClick={() => setActiveSubTab('PERSONNEL')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
-              activeSubTab === 'PERSONNEL' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+              activeSubTab === 'PERSONNEL' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-slate-400 hover:text-white'
             }`}
           >
             <Shield className="h-4 w-4 text-amber-400" /> Kurum Personelleri & Girişler
-          </button>
+          </motion.button>
 
-          <button
+          <motion.button
+            whileTap={{ scale: 0.96 }}
             onClick={() => setActiveSubTab('STUDENTS')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
-              activeSubTab === 'STUDENTS' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+              activeSubTab === 'STUDENTS' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-slate-400 hover:text-white'
             }`}
           >
             <Users className="h-4 w-4 text-emerald-400" /> Tüm Öğrenciler
-          </button>
+          </motion.button>
 
-          <button
+          <motion.button
+            whileTap={{ scale: 0.96 }}
             onClick={() => setActiveSubTab('EXAMS')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
-              activeSubTab === 'EXAMS' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+              activeSubTab === 'EXAMS' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-slate-400 hover:text-white'
             }`}
           >
             <FileText className="h-4 w-4 text-fuchsia-400" /> Sınav Açma & Yönetimi
-          </button>
+          </motion.button>
 
-          <button
+          <motion.button
+            whileTap={{ scale: 0.96 }}
             onClick={() => setActiveSubTab('SITE_SETTINGS')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
-              activeSubTab === 'SITE_SETTINGS' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+              activeSubTab === 'SITE_SETTINGS' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-slate-400 hover:text-white'
             }`}
           >
             <Settings className="h-4 w-4 text-cyan-400" /> Site Düzenlemeleri
-          </button>
+          </motion.button>
         </div>
       </div>
 
@@ -654,69 +660,309 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
       )}
 
       {/* Add New Institution Modal */}
-      {showAddInstModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
-          <div className="glass-panel max-w-md w-full p-6 rounded-2xl border-slate-700 space-y-4">
-            <h3 className="font-display text-lg font-bold text-white">Yeni Kurum & Yönetici Hesabı Tanımla</h3>
-            
-            <form onSubmit={handleAddInstitution} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Kurum / Okul Adı *</label>
-                <input
-                  type="text"
-                  required
-                  value={instName}
-                  onChange={(e) => setInstName(e.target.value)}
-                  className="input-field text-xs"
-                  placeholder="ör. Özel Çözüm Koleji"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
+      <AnimatePresence>
+        {showAddInstModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowAddInstModal(false)}
+              className="fixed inset-0 bg-slate-950/80 backdrop-blur-md"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.94, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ type: 'spring', damping: 26, stiffness: 340 }}
+              className="glass-panel relative z-10 max-w-md w-full p-6 sm:p-7 rounded-3xl border-slate-700/80 space-y-4 shadow-2xl bg-slate-900/90 max-h-[90vh] overflow-y-auto"
+            >
+              <h3 className="font-display text-lg font-bold text-white">Yeni Kurum & Yönetici Hesabı Tanımla</h3>
+              
+              <form onSubmit={handleAddInstitution} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Şehir</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Kurum / Okul Adı *</label>
                   <input
                     type="text"
-                    value={instCity}
-                    onChange={(e) => setInstCity(e.target.value)}
-                    className="input-field text-xs"
-                    placeholder="İstanbul"
+                    required
+                    value={instName}
+                    onChange={(e) => setInstName(e.target.value)}
+                    className="input-field text-xs rounded-xl"
+                    placeholder="ör. Özel Çözüm Koleji"
                   />
                 </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">Şehir</label>
+                    <input
+                      type="text"
+                      value={instCity}
+                      onChange={(e) => setInstCity(e.target.value)}
+                      className="input-field text-xs rounded-xl"
+                      placeholder="İstanbul"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">Telefon</label>
+                    <input
+                      type="text"
+                      value={instPhone}
+                      onChange={(e) => setInstPhone(e.target.value)}
+                      className="input-field text-xs rounded-xl"
+                      placeholder="0212 555 0000"
+                    />
+                  </div>
+                </div>
+
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Telefon</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Kurum E-posta</label>
+                  <input
+                    type="email"
+                    value={instEmail}
+                    onChange={(e) => setInstEmail(e.target.value)}
+                    className="input-field text-xs rounded-xl"
+                    placeholder="info@kurum.com"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Kurum Logosu (İsteğe Bağlı)</label>
+                  <div className="flex items-center gap-3">
+                    {instLogo && (
+                      <div className="w-12 h-12 rounded-xl bg-white p-1 border border-slate-700 flex items-center justify-center shrink-0 overflow-hidden shadow">
+                        <img src={instLogo} alt="Logo" className="max-w-full max-h-full object-contain" />
+                      </div>
+                    )}
+                    <label className="btn btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5 cursor-pointer rounded-xl">
+                      <Upload className="h-3.5 w-3.5 text-indigo-400" />
+                      <span>{instLogo ? 'Logoyu Değiştir' : 'Logo Yükle'}</span>
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onload = (evt) => setInstLogo(evt.target?.result as string);
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                        className="hidden"
+                      />
+                    </label>
+                    {instLogo && (
+                      <button
+                        type="button"
+                        onClick={() => setInstLogo(undefined)}
+                        className="text-xs text-rose-400 hover:underline"
+                      >
+                        Kaldır
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Default Admin Info */}
+                <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-indigo-500/30 space-y-2">
+                  <h4 className="text-xs font-bold text-amber-300 flex items-center gap-1">
+                    <UserPlus className="h-3.5 w-3.5" /> Kurum Admin Hesabı
+                  </h4>
+                  <div>
+                    <input
+                      type="text"
+                      placeholder="Yönetici Ad Soyad (ör. Ahmet Müdür)"
+                      value={adminName}
+                      onChange={(e) => setAdminName(e.target.value)}
+                      className="input-field text-xs rounded-xl"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="text"
+                      placeholder="Kullanıcı Adı"
+                      value={adminUsername}
+                      onChange={(e) => setAdminUsername(e.target.value)}
+                      className="input-field text-xs font-mono rounded-xl"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Şifre"
+                      value={adminPassword}
+                      onChange={(e) => setAdminPassword(e.target.value)}
+                      className="input-field text-xs font-mono text-emerald-300 rounded-xl"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    type="button"
+                    onClick={() => setShowAddInstModal(false)}
+                    className="btn btn-secondary text-xs rounded-xl"
+                  >
+                    İptal
+                  </motion.button>
+                  <motion.button 
+                    whileTap={{ scale: 0.95 }}
+                    type="submit" 
+                    className="btn btn-primary text-xs rounded-xl"
+                  >
+                    Kurumu & Hesabı Kaydet
+                  </motion.button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Add New Exam Modal */}
+      <AnimatePresence>
+        {showAddExamModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowAddExamModal(false)}
+              className="fixed inset-0 bg-slate-950/80 backdrop-blur-md"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.94, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ type: 'spring', damping: 26, stiffness: 340 }}
+              className="glass-panel relative z-10 max-w-md w-full p-6 sm:p-7 rounded-3xl border-slate-700/80 space-y-4 shadow-2xl bg-slate-900/90"
+            >
+              <h3 className="font-display text-lg font-bold text-white">SuperAdmin Yetkisiyle Sınav Tanımla</h3>
+
+              <form onSubmit={handleAddExam} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Hedef Kurum</label>
+                  <select
+                    value={examInstId}
+                    onChange={(e) => setExamInstId(e.target.value)}
+                    className="input-field text-xs bg-slate-900 rounded-xl"
+                  >
+                    {institutions.map(i => (
+                      <option key={i.id} value={i.id}>{i.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Sınav Adı *</label>
                   <input
                     type="text"
-                    value={instPhone}
-                    onChange={(e) => setInstPhone(e.target.value)}
-                    className="input-field text-xs"
-                    placeholder="0212 555 0000"
+                    required
+                    value={examTitle}
+                    onChange={(e) => setExamTitle(e.target.value)}
+                    className="input-field text-xs rounded-xl"
+                    placeholder="ör. 12. Sınıf TYT Deneme - 02"
                   />
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Kurum E-posta</label>
-                <input
-                  type="email"
-                  value={instEmail}
-                  onChange={(e) => setInstEmail(e.target.value)}
-                  className="input-field text-xs"
-                  placeholder="info@kurum.com"
-                />
-              </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">Sınav Kodu</label>
+                    <input
+                      type="text"
+                      value={examCode}
+                      onChange={(e) => setExamCode(e.target.value)}
+                      className="input-field text-xs font-mono rounded-xl"
+                      placeholder="TYT-2026-02"
+                    />
+                  </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Kurum Logosu (İsteğe Bağlı)</label>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">Tarih</label>
+                    <input
+                      type="date"
+                      value={examDate}
+                      onChange={(e) => setExamDate(e.target.value)}
+                      className="input-field text-xs bg-slate-900 rounded-xl"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    type="button"
+                    onClick={() => setShowAddExamModal(false)}
+                    className="btn btn-secondary text-xs rounded-xl"
+                  >
+                    İptal
+                  </motion.button>
+                  <motion.button 
+                    whileTap={{ scale: 0.95 }}
+                    type="submit" 
+                    className="btn btn-primary text-xs rounded-xl"
+                  >
+                    Sınavı Oluştur
+                  </motion.button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Institution Details Modal */}
+      <AnimatePresence>
+        {selectedInstDetails && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedInstDetails(null)}
+              className="fixed inset-0 bg-slate-950/80 backdrop-blur-md"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.94, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ type: 'spring', damping: 26, stiffness: 340 }}
+              className="glass-panel relative z-10 max-w-2xl w-full p-6 sm:p-7 rounded-3xl border-slate-700/80 space-y-4 shadow-2xl bg-slate-900/90 max-h-[90vh] overflow-y-auto"
+            >
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                 <div className="flex items-center gap-3">
-                  {instLogo && (
-                    <div className="w-12 h-12 rounded-lg bg-white p-1 border border-slate-700 flex items-center justify-center shrink-0 overflow-hidden shadow">
-                      <img src={instLogo} alt="Logo" className="max-w-full max-h-full object-contain" />
+                  {selectedInstDetails.logoUrl ? (
+                    <div className="w-12 h-12 rounded-2xl bg-white p-1 border border-slate-700 flex items-center justify-center shrink-0 overflow-hidden shadow">
+                      <img src={selectedInstDetails.logoUrl} alt={selectedInstDetails.name} className="max-w-full max-h-full object-contain" />
+                    </div>
+                  ) : (
+                    <div className="w-12 h-12 rounded-2xl bg-slate-800 p-2 border border-slate-700 flex items-center justify-center shrink-0 text-slate-400">
+                      <Building2 className="h-6 w-6" />
                     </div>
                   )}
-                  <label className="btn btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5 cursor-pointer">
-                    <Upload className="h-3.5 w-3.5 text-indigo-400" />
-                    <span>{instLogo ? 'Logoyu Değiştir' : 'Logo Yükle'}</span>
+                  <div>
+                    <h3 className="font-display text-lg font-bold text-white">{selectedInstDetails.name}</h3>
+                    <p className="text-xs text-slate-400">{selectedInstDetails.city} | Kod: {selectedInstDetails.code}</p>
+                  </div>
+                </div>
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setSelectedInstDetails(null)}
+                  className="btn btn-secondary text-xs rounded-xl"
+                >
+                  Kapat
+                </motion.button>
+              </div>
+
+              {/* Institution Logo Management in Details Modal */}
+              <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h4 className="text-xs font-bold text-slate-200">Kurum Resmi Logosu</h4>
+                  <p className="text-[11px] text-slate-400">Sınav derece listeleri ve öğrenci karnesi PDF çıktılarında kullanılır.</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="btn btn-primary text-xs py-1.5 px-3 flex items-center gap-1.5 cursor-pointer rounded-xl">
+                    <Upload className="h-3.5 w-3.5" />
+                    <span>{selectedInstDetails.logoUrl ? 'Logoyu Güncelle' : 'Logo Yükle'}</span>
                     <input
                       type="file"
                       accept="image/png,image/jpeg,image/webp,image/svg+xml"
@@ -724,252 +970,71 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                         const file = e.target.files?.[0];
                         if (file) {
                           const reader = new FileReader();
-                          reader.onload = (evt) => setInstLogo(evt.target?.result as string);
+                          reader.onload = (evt) => {
+                            const updatedLogo = evt.target?.result as string;
+                            const updated = { ...selectedInstDetails, logoUrl: updatedLogo };
+                            storageService.updateInstitution(updated);
+                            setSelectedInstDetails(updated);
+                            reloadData();
+                          };
                           reader.readAsDataURL(file);
                         }
                       }}
                       className="hidden"
                     />
                   </label>
-                  {instLogo && (
-                    <button
-                      type="button"
-                      onClick={() => setInstLogo(undefined)}
-                      className="text-xs text-rose-400 hover:underline"
+                  {selectedInstDetails.logoUrl && (
+                    <motion.button
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => {
+                        const updated = { ...selectedInstDetails, logoUrl: undefined };
+                        storageService.updateInstitution(updated);
+                        setSelectedInstDetails(updated);
+                        reloadData();
+                      }}
+                      className="btn btn-secondary text-xs py-1.5 px-2.5 text-rose-400 hover:text-rose-300 border-rose-500/30 flex items-center gap-1 rounded-xl"
+                      title="Logoyu Kaldır"
                     >
-                      Kaldır
-                    </button>
+                      <Trash2 className="h-3.5 w-3.5" /> Kaldır
+                    </motion.button>
                   )}
                 </div>
               </div>
 
-              {/* Default Admin Info */}
-              <div className="p-3 rounded-xl bg-slate-900 border border-indigo-500/30 space-y-2">
-                <h4 className="text-xs font-bold text-amber-300 flex items-center gap-1">
-                  <UserPlus className="h-3.5 w-3.5" /> Kurum Admin Hesabı
-                </h4>
-                <div>
-                  <input
-                    type="text"
-                    placeholder="Yönetici Ad Soyad (ör. Ahmet Müdür)"
-                    value={adminName}
-                    onChange={(e) => setAdminName(e.target.value)}
-                    className="input-field text-xs"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <input
-                    type="text"
-                    placeholder="Kullanıcı Adı"
-                    value={adminUsername}
-                    onChange={(e) => setAdminUsername(e.target.value)}
-                    className="input-field text-xs font-mono"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Şifre"
-                    value={adminPassword}
-                    onChange={(e) => setAdminPassword(e.target.value)}
-                    className="input-field text-xs font-mono text-emerald-300"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowAddInstModal(false)}
-                  className="btn btn-secondary text-xs"
-                >
-                  İptal
-                </button>
-                <button type="submit" className="btn btn-primary text-xs">
-                  Kurumu & Hesabı Kaydet
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Add New Exam Modal */}
-      {showAddExamModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
-          <div className="glass-panel max-w-md w-full p-6 rounded-2xl border-slate-700 space-y-4">
-            <h3 className="font-display text-lg font-bold text-white">SuperAdmin Yetkisiyle Sınav Tanımla</h3>
-
-            <form onSubmit={handleAddExam} className="space-y-4">
+              {/* Institution Personnel */}
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Hedef Kurum</label>
-                <select
-                  value={examInstId}
-                  onChange={(e) => setExamInstId(e.target.value)}
-                  className="input-field text-xs bg-slate-900"
-                >
-                  {institutions.map(i => (
-                    <option key={i.id} value={i.id}>{i.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Sınav Adı *</label>
-                <input
-                  type="text"
-                  required
-                  value={examTitle}
-                  onChange={(e) => setExamTitle(e.target.value)}
-                  className="input-field text-xs"
-                  placeholder="ör. 12. Sınıf TYT Deneme - 02"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Sınav Kodu</label>
-                  <input
-                    type="text"
-                    value={examCode}
-                    onChange={(e) => setExamCode(e.target.value)}
-                    className="input-field text-xs font-mono"
-                    placeholder="TYT-2026-02"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Tarih</label>
-                  <input
-                    type="date"
-                    value={examDate}
-                    onChange={(e) => setExamDate(e.target.value)}
-                    className="input-field text-xs bg-slate-900"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowAddExamModal(false)}
-                  className="btn btn-secondary text-xs"
-                >
-                  İptal
-                </button>
-                <button type="submit" className="btn btn-primary text-xs">
-                  Sınavı Oluştur
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Institution Details Modal */}
-      {selectedInstDetails && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
-          <div className="glass-panel max-w-2xl w-full p-6 rounded-2xl border-slate-700 space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-3">
-                {selectedInstDetails.logoUrl ? (
-                  <div className="w-12 h-12 rounded-lg bg-white p-1 border border-slate-700 flex items-center justify-center shrink-0 overflow-hidden shadow">
-                    <img src={selectedInstDetails.logoUrl} alt={selectedInstDetails.name} className="max-w-full max-h-full object-contain" />
-                  </div>
-                ) : (
-                  <div className="w-12 h-12 rounded-lg bg-slate-800 p-2 border border-slate-700 flex items-center justify-center shrink-0 text-slate-400">
-                    <Building2 className="h-6 w-6" />
-                  </div>
-                )}
-                <div>
-                  <h3 className="font-display text-lg font-bold text-white">{selectedInstDetails.name}</h3>
-                  <p className="text-xs text-slate-400">{selectedInstDetails.city} | Kod: {selectedInstDetails.code}</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setSelectedInstDetails(null)}
-                className="btn btn-secondary text-xs"
-              >
-                Kapat
-              </button>
-            </div>
-
-            {/* Institution Logo Management in Details Modal */}
-            <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h4 className="text-xs font-bold text-slate-200">Kurum Resmi Logosu</h4>
-                <p className="text-[11px] text-slate-400">Sınav derece listeleri ve öğrenci karnesi PDF çıktılarında kullanılır.</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <label className="btn btn-primary text-xs py-1.5 px-3 flex items-center gap-1.5 cursor-pointer">
-                  <Upload className="h-3.5 w-3.5" />
-                  <span>{selectedInstDetails.logoUrl ? 'Logoyu Güncelle' : 'Logo Yükle'}</span>
-                  <input
-                    type="file"
-                    accept="image/png,image/jpeg,image/webp,image/svg+xml"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        const reader = new FileReader();
-                        reader.onload = (evt) => {
-                          const updatedLogo = evt.target?.result as string;
-                          const updated = { ...selectedInstDetails, logoUrl: updatedLogo };
-                          storageService.updateInstitution(updated);
-                          setSelectedInstDetails(updated);
-                          reloadData();
-                        };
-                        reader.readAsDataURL(file);
-                      }
-                    }}
-                    className="hidden"
-                  />
-                </label>
-                {selectedInstDetails.logoUrl && (
-                  <button
-                    onClick={() => {
-                      const updated = { ...selectedInstDetails, logoUrl: undefined };
-                      storageService.updateInstitution(updated);
-                      setSelectedInstDetails(updated);
-                      reloadData();
-                    }}
-                    className="btn btn-secondary text-xs py-1.5 px-2.5 text-rose-400 hover:text-rose-300 border-rose-500/30 flex items-center gap-1"
-                    title="Logoyu Kaldır"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" /> Kaldır
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Institution Personnel */}
-            <div>
-              <h4 className="text-xs font-bold text-indigo-400 mb-2">Kurum Yöneticileri ve Personeller</h4>
-              <div className="space-y-2">
-                {storageService.getUsersByInstitution(selectedInstDetails.id).map(p => (
-                  <div key={p.id} className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-between text-xs">
-                    <div>
-                      <span className="font-bold text-white">{p.name}</span> ({p.role === 'INSTITUTION_ADMIN' ? 'Kurum Yöneticisi' : 'Öğretmen'})
-                      <div className="text-[11px] text-slate-400 font-mono mt-0.5">
-                        Kullanıcı Adı: <strong className="text-indigo-300">{p.username || p.email}</strong> | Şifre: <strong className="text-emerald-400">{p.password || '******'}</strong>
+                <h4 className="text-xs font-bold text-indigo-400 mb-2">Kurum Yöneticileri ve Personeller</h4>
+                <div className="space-y-2">
+                  {storageService.getUsersByInstitution(selectedInstDetails.id).map(p => (
+                    <div key={p.id} className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 flex items-center justify-between text-xs">
+                      <div>
+                        <span className="font-bold text-white">{p.name}</span> ({p.role === 'INSTITUTION_ADMIN' ? 'Kurum Yöneticisi' : 'Öğretmen'})
+                        <div className="text-[11px] text-slate-400 font-mono mt-0.5">
+                          Kullanıcı Adı: <strong className="text-indigo-300">{p.username || p.email}</strong> | Şifre: <strong className="text-emerald-400">{p.password || '******'}</strong>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
 
-            {/* Delete Institution Footer Action */}
-            <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
-              <span className="text-[11px] text-slate-500">Bu işlem kurumu ve bağlı tüm kayıtları buluttan kalıcı olarak siler.</span>
-              <button
-                type="button"
-                onClick={() => handleDeleteInstitution(selectedInstDetails)}
-                className="btn btn-secondary text-xs py-2 px-3 text-red-400 hover:bg-red-500/20 border-red-500/30 flex items-center gap-1.5 cursor-pointer"
-              >
-                <Trash2 className="h-4 w-4" /> Kurumu Tamamen Sil
-              </button>
-            </div>
+              {/* Delete Institution Footer Action */}
+              <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
+                <span className="text-[11px] text-slate-500">Bu işlem kurumu ve bağlı tüm kayıtları buluttan kalıcı olarak siler.</span>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.96 }}
+                  type="button"
+                  onClick={() => handleDeleteInstitution(selectedInstDetails)}
+                  className="btn btn-secondary text-xs py-2 px-3 text-red-400 hover:bg-red-500/20 border-red-500/30 flex items-center gap-1.5 cursor-pointer rounded-xl"
+                >
+                  <Trash2 className="h-4 w-4" /> Kurumu Tamamen Sil
+                </motion.button>
+              </div>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
     </div>
   );
 };

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Header } from './components/layout/Header';
 import { SuperAdminDash } from './components/dashboards/SuperAdminDash';
 import { InstitutionAdminDash } from './components/dashboards/InstitutionAdminDash';
@@ -103,62 +104,72 @@ function App() {
         onToggleTheme={handleToggleTheme}
       />
 
-      <main className="animate-fade-in max-w-7xl mx-auto px-4 flex-1 w-full">
-        {/* Dashboard Rendering based on Role */}
-        {activeTab === 'dashboard' && currentUser.role === 'SUPER_ADMIN' && <SuperAdminDash currentUser={currentUser} />}
-        {activeTab === 'dashboard' && (currentUser.role === 'INSTITUTION_ADMIN' || currentUser.role === 'TEACHER') && (
-          <div className="mx-auto max-w-6xl py-2"><InstitutionAdminDash setActiveTab={setActiveTab} /></div>
-        )}
+      <main className="max-w-7xl mx-auto px-4 flex-1 w-full">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+          >
+            {/* Dashboard Rendering based on Role */}
+            {activeTab === 'dashboard' && currentUser.role === 'SUPER_ADMIN' && <SuperAdminDash currentUser={currentUser} />}
+            {activeTab === 'dashboard' && (currentUser.role === 'INSTITUTION_ADMIN' || currentUser.role === 'TEACHER') && (
+              <div className="mx-auto max-w-6xl py-2"><InstitutionAdminDash setActiveTab={setActiveTab} /></div>
+            )}
 
-        {/* 1. Sınav Oluşturma Paneli */}
-        {activeTab === 'create-exam' && (
-          <ExamCreateBuilder
-            currentUser={currentUser}
-            onNavigateToOMR={(examId) => handleNavigateToOMR(examId)}
-            onNavigateToExams={() => setActiveTab('exams')}
-          />
-        )}
+            {/* 1. Sınav Oluşturma Paneli */}
+            {activeTab === 'create-exam' && (
+              <ExamCreateBuilder
+                currentUser={currentUser}
+                onNavigateToOMR={(examId) => handleNavigateToOMR(examId)}
+                onNavigateToExams={() => setActiveTab('exams')}
+              />
+            )}
 
-        {/* 2. Optik Üret Paneli */}
-        {(activeTab === 'generate-omr' || activeTab === 'generator') && (
-          <OMRGenerator
-            initialExamId={selectedExamId}
-            onNavigateToExams={() => setActiveTab('exams')}
-            onNavigateToCreateExam={() => setActiveTab('create-exam')}
-          />
-        )}
+            {/* 2. Optik Üret Paneli */}
+            {(activeTab === 'generate-omr' || activeTab === 'generator') && (
+              <OMRGenerator
+                initialExamId={selectedExamId}
+                onNavigateToExams={() => setActiveTab('exams')}
+                onNavigateToCreateExam={() => setActiveTab('create-exam')}
+              />
+            )}
 
-        {/* 3. Sınavlar Listesi Paneli */}
-        {activeTab === 'exams' && (
-          <ExamsList
-            currentUser={currentUser}
-            highlightedExamId={selectedExamId}
-            onNavigateToCreateExam={() => setActiveTab('create-exam')}
-            onNavigateToOMR={(examId) => handleNavigateToOMR(examId)}
-            onNavigateToScan={() => setActiveTab('scan')}
-            onNavigateToResults={(examId) => {
-              setSelectedExamId(examId);
-              setActiveTab('results');
-            }}
-          />
-        )}
-        
-        {/* Management Tab */}
-        {activeTab === 'management' && currentUser.role === 'SUPER_ADMIN' && <SuperAdminDash currentUser={currentUser} />}
-        {activeTab === 'management' && currentUser.role !== 'SUPER_ADMIN' && <InstitutionManagement />}
+            {/* 3. Sınavlar Listesi Paneli */}
+            {activeTab === 'exams' && (
+              <ExamsList
+                currentUser={currentUser}
+                highlightedExamId={selectedExamId}
+                onNavigateToCreateExam={() => setActiveTab('create-exam')}
+                onNavigateToOMR={(examId) => handleNavigateToOMR(examId)}
+                onNavigateToScan={() => setActiveTab('scan')}
+                onNavigateToResults={(examId) => {
+                  setSelectedExamId(examId);
+                  setActiveTab('results');
+                }}
+              />
+            )}
+            
+            {/* Management Tab */}
+            {activeTab === 'management' && currentUser.role === 'SUPER_ADMIN' && <SuperAdminDash currentUser={currentUser} />}
+            {activeTab === 'management' && currentUser.role !== 'SUPER_ADMIN' && <InstitutionManagement />}
 
-        {/* Camera Scan Tab */}
-        {activeTab === 'scan' && (
-          <CameraScanner
-            onScanComplete={(result) => {
-              setSelectedExamId(result.examId);
-              setActiveTab('exams');
-            }}
-          />
-        )}
+            {/* Camera Scan Tab */}
+            {activeTab === 'scan' && (
+              <CameraScanner
+                onScanComplete={(result) => {
+                  setSelectedExamId(result.examId);
+                  setActiveTab('exams');
+                }}
+              />
+            )}
 
-        {/* Results Tab */}
-        {activeTab === 'results' && <ExamResultsList initialExamId={selectedExamId} />}
+            {/* Results Tab */}
+            {activeTab === 'results' && <ExamResultsList initialExamId={selectedExamId} />}
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       {/* Sayfa Alt Bilgi (Footer) */}

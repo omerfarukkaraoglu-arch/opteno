@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   Camera, 
   BarChart3, 
@@ -76,33 +77,38 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <>
-      <header className="glass-panel sticky top-0 z-40 mb-4 sm:mb-6 rounded-none border-x-0 border-t-0 px-3 sm:px-6 py-2.5 sm:py-3 shadow-sm dark:shadow-md transition-colors">
+      <header className="glass-panel sticky top-0 z-40 mb-4 sm:mb-6 rounded-none border-x-0 border-t-0 px-3 sm:px-6 py-2.5 sm:py-3 shadow-sm dark:shadow-md transition-colors backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
           {/* Logo & Title */}
           <div 
             className="flex cursor-pointer items-center gap-2 sm:gap-3"
             onClick={() => setActiveTab('dashboard')}
           >
-            <div className="flex items-center rounded-2xl bg-white px-3 sm:px-4 py-1.5 shadow-sm hover:shadow-md border border-slate-200/90 dark:border-white/20 transition-all hover:scale-[1.02] active:scale-[0.98]">
+            <motion.div 
+              whileHover={{ scale: 1.03, y: -1 }}
+              whileTap={{ scale: 0.97 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+              className="flex items-center rounded-2xl bg-white px-3 sm:px-4 py-1.5 shadow-sm hover:shadow-md border border-slate-200/90 dark:border-white/20 transition-all"
+            >
               <img 
                 src="/opteno-logo.png" 
                 alt="Opteno - Dijital Sınav Yönetim Sistemi" 
                 className="h-8 sm:h-9 md:h-10 w-auto object-contain"
               />
-            </div>
+            </motion.div>
             {siteSettings.maintenanceMode && (
-              <span className="badge badge-warning text-[9px] px-1.5 py-0.5">Bakım</span>
+              <span className="badge badge-warning text-[9px] px-1.5 py-0.5 animate-pulse">Bakım</span>
             )}
           </div>
 
           {/* Desktop & Tablet Navigation Tabs (md:flex) */}
           <nav 
             ref={navRef}
-            className="hidden md:flex relative items-center gap-1 rounded-xl bg-slate-100/90 dark:bg-slate-900/70 p-1 border border-slate-200 dark:border-slate-800/80 shadow-inner transition-colors"
+            className="hidden md:flex relative items-center gap-1 rounded-2xl bg-slate-100/90 dark:bg-slate-900/80 p-1.5 border border-slate-200 dark:border-slate-800/80 shadow-inner transition-colors backdrop-blur-md"
           >
             {/* Kayar Mavi/Yeşil Arka Plan Hapı (Sliding Indicator) */}
             <div
-              className={`absolute top-1 bottom-1 rounded-lg transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] pointer-events-none shadow-md ${
+              className={`absolute top-1.5 bottom-1.5 rounded-xl transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] pointer-events-none shadow-md ${
                 sliderStyle.visible ? 'opacity-100' : 'opacity-0'
               } ${
                 activeTab === 'scan'
@@ -116,88 +122,99 @@ export const Header: React.FC<HeaderProps> = ({
               }}
             />
 
-            <button
+            <motion.button
+              whileTap={{ scale: 0.97 }}
               data-active={activeTab === 'dashboard'}
               onClick={() => setActiveTab('dashboard')}
-              className={`relative z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors duration-200 ${
+              className={`relative z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors duration-200 ${
                 activeTab === 'dashboard' ? 'text-white' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
               }`}
             >
               <BarChart3 className="h-4 w-4" /> Paneller
-            </button>
+            </motion.button>
 
-            <button
+            <motion.button
+              whileTap={{ scale: 0.97 }}
               data-active={activeTab === 'exams' || activeTab === 'results'}
               onClick={() => setActiveTab('exams')}
-              className={`relative z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors duration-200 ${
+              className={`relative z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors duration-200 ${
                 activeTab === 'exams' || activeTab === 'results' ? 'text-white' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
               }`}
             >
               <ListOrdered className="h-4 w-4" /> Sınavlar & Sonuçlar
-            </button>
+            </motion.button>
 
-            <button
+            <motion.button
+              whileTap={{ scale: 0.97 }}
               data-active={activeTab === 'scan'}
               onClick={() => setActiveTab('scan')}
-              className={`relative z-10 flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-colors duration-200 ${
+              className={`relative z-10 flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors duration-200 ${
                 activeTab === 'scan'
                   ? 'text-white'
                   : 'text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300'
               }`}
             >
               <Camera className="h-4 w-4" /> Optik Oku
-            </button>
+            </motion.button>
 
-            <button
+            <motion.button
+              whileTap={{ scale: 0.97 }}
               data-active={activeTab === 'generate-omr' || activeTab === 'generator'}
               onClick={() => setActiveTab('generate-omr')}
-              className={`relative z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors duration-200 ${
+              className={`relative z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors duration-200 ${
                 activeTab === 'generate-omr' || activeTab === 'generator' ? 'text-white' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
               }`}
             >
               <Printer className="h-4 w-4" /> Optik Form Bas
-            </button>
+            </motion.button>
 
-            <button
+            <motion.button
+              whileTap={{ scale: 0.97 }}
               data-active={activeTab === 'create-exam'}
               onClick={() => setActiveTab('create-exam')}
-              className={`relative z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors duration-200 ${
+              className={`relative z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors duration-200 ${
                 activeTab === 'create-exam' ? 'text-white' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
               }`}
             >
               <PlusCircle className="h-4 w-4" /> Yeni Sınav
-            </button>
+            </motion.button>
 
-            <button
+            <motion.button
+              whileTap={{ scale: 0.97 }}
               data-active={activeTab === 'management'}
               onClick={() => setActiveTab('management')}
-              className={`relative z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors duration-200 ${
+              className={`relative z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors duration-200 ${
                 activeTab === 'management' ? 'text-white' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
               }`}
             >
               {currentUser.role === 'SUPER_ADMIN' ? <Building2 className="h-4 w-4" /> : <Users className="h-4 w-4" />}
               {currentUser.role === 'SUPER_ADMIN' ? 'Kurumlar' : 'Yönetim'}
-            </button>
+            </motion.button>
           </nav>
 
           {/* Right Section: Profile & Actions */}
           <div className="flex items-center gap-2 sm:gap-3">
             {deferredPrompt && (
-              <button
+              <motion.button
+                whileHover={{ scale: 1.04 }}
+                whileTap={{ scale: 0.96 }}
                 onClick={installApp}
-                className="btn btn-primary text-xs py-1.5 px-2.5 sm:px-3 hidden sm:inline-flex"
+                className="btn btn-primary text-xs py-1.5 px-2.5 sm:px-3 hidden sm:inline-flex rounded-xl"
               >
                 <Download className="h-3.5 w-3.5" /> Yükle
-              </button>
+              </motion.button>
             )}
 
             {/* Profile badge (clickable on mobile to open drawer) */}
-            <div 
+            <motion.div 
+              whileHover={{ scale: 1.02, y: -1 }}
+              whileTap={{ scale: 0.98 }}
+              transition={{ type: 'spring', stiffness: 350, damping: 22 }}
               onClick={() => setIsMobileMenuOpen(true)}
-              className="flex items-center gap-2 rounded-xl bg-slate-100 dark:bg-slate-900/80 px-2 sm:px-3 py-1.5 border border-slate-200 dark:border-slate-700/60 text-xs cursor-pointer hover:border-indigo-500/50 transition-colors shadow-sm"
+              className="flex items-center gap-2 rounded-2xl bg-slate-100 dark:bg-slate-900/80 px-2 sm:px-3 py-1.5 border border-slate-200 dark:border-slate-700/60 text-xs cursor-pointer hover:border-indigo-500/50 transition-colors shadow-sm"
               title="Kullanıcı Menüsü"
             >
-              <div className="h-7 w-7 rounded-lg bg-indigo-600/20 text-indigo-600 dark:bg-indigo-600/30 dark:text-indigo-400 flex items-center justify-center font-bold">
+              <div className="h-7 w-7 rounded-xl bg-indigo-600/20 text-indigo-600 dark:bg-indigo-600/30 dark:text-indigo-400 flex items-center justify-center font-bold shadow-xs">
                 {currentUser.name.charAt(0)}
               </div>
               <div className="hidden sm:block text-left">
@@ -206,12 +223,15 @@ export const Header: React.FC<HeaderProps> = ({
                   {currentUser.role === 'SUPER_ADMIN' ? 'Sistem Yöneticisi' : currentUser.role === 'INSTITUTION_ADMIN' ? 'Kurum Yöneticisi' : 'Öğretmen'}
                 </div>
               </div>
-            </div>
+            </motion.div>
 
             {/* Theme Switcher Button (Dark / Light) */}
-            <button
+            <motion.button
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.92 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 20 }}
               onClick={onToggleTheme}
-              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700 text-amber-500 dark:text-amber-400 border border-slate-200 dark:border-slate-700 transition-all text-xs font-semibold flex items-center justify-center cursor-pointer shadow-sm"
+              className="p-2 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700 text-amber-500 dark:text-amber-400 border border-slate-200 dark:border-slate-700 transition-colors text-xs font-semibold flex items-center justify-center cursor-pointer shadow-sm"
               title={theme === 'dark' ? 'Aydınlık Moda Geç' : 'Karanlık Moda Geç'}
               aria-label="Tema Değiştir"
             >
@@ -220,17 +240,20 @@ export const Header: React.FC<HeaderProps> = ({
               ) : (
                 <Moon className="h-4 w-4 text-indigo-600" />
               )}
-            </button>
+            </motion.button>
 
             {/* Desktop Logout Button */}
-            <button
+            <motion.button
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.96 }}
+              transition={{ type: 'spring', stiffness: 350, damping: 22 }}
               onClick={onLogout}
-              className="hidden sm:flex p-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-red-500/10 dark:hover:bg-red-500/20 dark:text-red-400 border border-rose-200 dark:border-red-500/30 transition-all text-xs font-semibold items-center gap-1.5 cursor-pointer shadow-sm"
+              className="hidden sm:flex p-2 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-red-500/10 dark:hover:bg-red-500/20 dark:text-red-400 border border-rose-200 dark:border-red-500/30 transition-all text-xs font-semibold items-center gap-1.5 cursor-pointer shadow-sm"
               title="Oturumu Kapat"
             >
               <LogOut className="h-4 w-4" />
               <span className="hidden md:inline">Çıkış</span>
-            </button>
+            </motion.button>
           </div>
         </div>
       </header>
@@ -314,153 +337,174 @@ export const Header: React.FC<HeaderProps> = ({
       {/* ============================================================== */}
       {/* 📄 Mobile Slide-Up Action Sheet (Bottom Drawer)                */}
       {/* ============================================================== */}
-      {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end md:hidden">
-          {/* Karartma Arkalık */}
-          <div 
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
-            onClick={() => setIsMobileMenuOpen(false)}
-          />
+      {/* ============================================================== */}
+      {/* 📄 Mobile Slide-Up Action Sheet (Bottom Drawer)                */}
+      {/* ============================================================== */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <div className="fixed inset-0 z-50 flex flex-col justify-end md:hidden">
+            {/* Karartma Arkalık with smooth fade */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => setIsMobileMenuOpen(false)}
+            />
 
-          {/* Çekmece Gövdesi (Açık ve Koyu Tema Desteği) */}
-          <div className="relative z-10 w-full max-h-[85vh] overflow-y-auto rounded-t-3xl bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700/80 p-5 shadow-2xl animate-in slide-in-from-bottom duration-200 transition-colors">
-            {/* Tutamaç Çubuğu */}
-            <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto mb-4" />
+            {/* Çekmece Gövdesi (Açık ve Koyu Tema Desteği) */}
+            <motion.div 
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 30, stiffness: 350 }}
+              className="relative z-10 w-full max-h-[85vh] overflow-y-auto rounded-t-3xl bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700/80 p-5 shadow-2xl transition-colors"
+            >
+              {/* Tutamaç Çubuğu */}
+              <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto mb-4" />
 
-            {/* Profil Başlığı */}
-            <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
-              <div className="flex items-center gap-3">
-                <div className="h-11 w-11 rounded-2xl bg-gradient-to-tr from-indigo-600 to-fuchsia-600 text-white flex items-center justify-center font-bold text-lg shadow-md shrink-0">
-                  {currentUser.name.charAt(0)}
-                </div>
-                <div>
-                  <div className="font-bold text-slate-900 dark:text-slate-100 text-base">{currentUser.name}</div>
-                  <div className="text-xs text-indigo-600 dark:text-indigo-400 font-medium">
-                    {currentUser.role === 'SUPER_ADMIN' ? 'Sistem Yöneticisi' : currentUser.role === 'INSTITUTION_ADMIN' ? 'Kurum Yöneticisi' : 'Öğretmen'}
+              {/* Profil Başlığı */}
+              <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
+                <div className="flex items-center gap-3">
+                  <div className="h-11 w-11 rounded-2xl bg-gradient-to-tr from-indigo-600 to-fuchsia-600 text-white flex items-center justify-center font-bold text-lg shadow-md shrink-0">
+                    {currentUser.name.charAt(0)}
+                  </div>
+                  <div>
+                    <div className="font-bold text-slate-900 dark:text-slate-100 text-base">{currentUser.name}</div>
+                    <div className="text-xs text-indigo-600 dark:text-indigo-400 font-medium">
+                      {currentUser.role === 'SUPER_ADMIN' ? 'Sistem Yöneticisi' : currentUser.role === 'INSTITUTION_ADMIN' ? 'Kurum Yöneticisi' : 'Öğretmen'}
+                    </div>
                   </div>
                 </div>
+                <motion.button 
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-colors"
+                  aria-label="Kapat"
+                >
+                  <X className="h-5 w-5" />
+                </motion.button>
               </div>
-              <button 
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-colors"
-                aria-label="Kapat"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
 
-            {/* Menü Seçenekleri Listesi */}
-            <div className="space-y-2.5 py-4">
-              {/* 1. Yeni Sınav Hazırla */}
-              <button
-                onClick={() => {
-                  setActiveTab('create-exam');
-                  setIsMobileMenuOpen(false);
-                }}
-                className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/60 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 transition-all active:scale-[0.98] shadow-sm"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 shrink-0">
-                    <PlusCircle className="h-5 w-5" />
-                  </div>
-                  <div className="text-left">
-                    <div className="font-bold text-slate-900 dark:text-white text-sm">Yeni Sınav Oluştur</div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400 font-normal">Soru sayısı ve cevap anahtarı tanımla</div>
-                  </div>
-                </div>
-                <ChevronRight className="h-5 w-5 text-slate-400 dark:text-slate-500 shrink-0" />
-              </button>
-
-              {/* 2. Yönetim */}
-              <button
-                onClick={() => {
-                  setActiveTab('management');
-                  setIsMobileMenuOpen(false);
-                }}
-                className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/60 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 transition-all active:scale-[0.98] shadow-sm"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-xl bg-sky-50 dark:bg-sky-500/20 text-sky-600 dark:text-sky-400 shrink-0">
-                    {currentUser.role === 'SUPER_ADMIN' ? <Building2 className="h-5 w-5" /> : <Users className="h-5 w-5" />}
-                  </div>
-                  <div className="text-left">
-                    <div className="font-bold text-slate-900 dark:text-white text-sm">
-                      {currentUser.role === 'SUPER_ADMIN' ? 'Kurum & Sistem Yönetimi' : 'Sınıf & Öğrenci Yönetimi'}
-                    </div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400 font-normal">Kayıtlı öğrenciler, sınıflar ve veriler</div>
-                  </div>
-                </div>
-                <ChevronRight className="h-5 w-5 text-slate-400 dark:text-slate-500 shrink-0" />
-              </button>
-
-              {/* 3. Tema Değiştir */}
-              <button
-                onClick={() => {
-                  onToggleTheme();
-                }}
-                className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/60 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 transition-all active:scale-[0.98] shadow-sm"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-500/20 text-amber-500 dark:text-amber-400 shrink-0">
-                    {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5 text-indigo-600" />}
-                  </div>
-                  <div className="text-left">
-                    <div className="font-bold text-slate-900 dark:text-white text-sm">Görünüm Teması</div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400 font-normal">
-                      {theme === 'dark' ? 'Karanlık Mod (Aydınlığa geç)' : 'Aydınlık Mod (Karanlığa geç)'}
-                    </div>
-                  </div>
-                </div>
-                <span className="bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30 text-xs font-bold px-2 py-0.5 rounded-lg">
-                  {theme === 'dark' ? 'KOYU' : 'AÇIK'}
-                </span>
-              </button>
-
-              {/* 4. Uygulamayı Yükle (PWA) */}
-              {deferredPrompt && (
-                <button
+              {/* Menü Seçenekleri Listesi */}
+              <div className="space-y-2.5 py-4">
+                {/* 1. Yeni Sınav Hazırla */}
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
                   onClick={() => {
-                    installApp();
+                    setActiveTab('create-exam');
                     setIsMobileMenuOpen(false);
                   }}
-                  className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-indigo-50/80 hover:bg-indigo-100 dark:bg-gradient-to-r dark:from-indigo-900/40 dark:to-fuchsia-900/40 border border-indigo-200 dark:border-indigo-500/30 transition-all active:scale-[0.98] shadow-sm"
+                  className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/60 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 transition-all shadow-sm"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-xl bg-indigo-600 text-white shadow-md shrink-0">
-                      <Download className="h-5 w-5" />
+                    <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 shrink-0">
+                      <PlusCircle className="h-5 w-5" />
                     </div>
                     <div className="text-left">
-                      <div className="font-bold text-slate-900 dark:text-white text-sm">Telefona Uygulama Olarak Yükle</div>
-                      <div className="text-xs text-indigo-600 dark:text-indigo-300 font-normal">Ana ekrana uygulama kısayolu ekle (PWA)</div>
+                      <div className="font-bold text-slate-900 dark:text-white text-sm">Yeni Sınav Oluştur</div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400 font-normal">Soru sayısı ve cevap anahtarı tanımla</div>
                     </div>
                   </div>
-                  <ChevronRight className="h-5 w-5 text-indigo-500 dark:text-indigo-400 shrink-0" />
-                </button>
-              )}
+                  <ChevronRight className="h-5 w-5 text-slate-400 dark:text-slate-500 shrink-0" />
+                </motion.button>
 
-              {/* 5. Çıkış Yap */}
-              <button
-                onClick={() => {
-                  setIsMobileMenuOpen(false);
-                  onLogout();
-                }}
-                className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-rose-50 hover:bg-rose-100/80 dark:bg-red-950/20 dark:hover:bg-red-950/40 border border-rose-200 dark:border-red-500/30 transition-all mt-4 active:scale-[0.98] shadow-sm"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-xl bg-rose-100 dark:bg-red-500/20 text-rose-600 dark:text-red-400 shrink-0">
-                    <LogOut className="h-5 w-5" />
+                {/* 2. Yönetim */}
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => {
+                    setActiveTab('management');
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/60 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 transition-all shadow-sm"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-sky-50 dark:bg-sky-500/20 text-sky-600 dark:text-sky-400 shrink-0">
+                      {currentUser.role === 'SUPER_ADMIN' ? <Building2 className="h-5 w-5" /> : <Users className="h-5 w-5" />}
+                    </div>
+                    <div className="text-left">
+                      <div className="font-bold text-slate-900 dark:text-white text-sm">
+                        {currentUser.role === 'SUPER_ADMIN' ? 'Kurum & Sistem Yönetimi' : 'Sınıf & Öğrenci Yönetimi'}
+                      </div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400 font-normal">Kayıtlı öğrenciler, sınıflar ve veriler</div>
+                    </div>
                   </div>
-                  <div className="text-left">
-                    <div className="font-bold text-rose-700 dark:text-red-300 text-sm">Güvenli Çıkış Yap</div>
-                    <div className="text-xs text-rose-500 dark:text-red-400/80 font-normal">Mevcut oturumu sonlandır</div>
+                  <ChevronRight className="h-5 w-5 text-slate-400 dark:text-slate-500 shrink-0" />
+                </motion.button>
+
+                {/* 3. Tema Değiştir */}
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => {
+                    onToggleTheme();
+                  }}
+                  className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/60 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 transition-all shadow-sm"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-500/20 text-amber-500 dark:text-amber-400 shrink-0">
+                      {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5 text-indigo-600" />}
+                    </div>
+                    <div className="text-left">
+                      <div className="font-bold text-slate-900 dark:text-white text-sm">Görünüm Teması</div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400 font-normal">
+                        {theme === 'dark' ? 'Karanlık Mod (Aydınlığa geç)' : 'Aydınlık Mod (Karanlığa geç)'}
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <ChevronRight className="h-5 w-5 text-rose-400 dark:text-red-500 shrink-0" />
-              </button>
-            </div>
+                  <span className="bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30 text-xs font-bold px-2 py-0.5 rounded-lg">
+                    {theme === 'dark' ? 'KOYU' : 'AÇIK'}
+                  </span>
+                </motion.button>
+
+                {/* 4. Uygulamayı Yükle (PWA) */}
+                {deferredPrompt && (
+                  <motion.button
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => {
+                      installApp();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-indigo-50/80 hover:bg-indigo-100 dark:bg-gradient-to-r dark:from-indigo-900/40 dark:to-fuchsia-900/40 border border-indigo-200 dark:border-indigo-500/30 transition-all shadow-sm"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-xl bg-indigo-600 text-white shadow-md shrink-0">
+                        <Download className="h-5 w-5" />
+                      </div>
+                      <div className="text-left">
+                        <div className="font-bold text-slate-900 dark:text-white text-sm">Telefona Uygulama Olarak Yükle</div>
+                        <div className="text-xs text-indigo-600 dark:text-indigo-300 font-normal">Ana ekrana uygulama kısayolu ekle (PWA)</div>
+                      </div>
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-indigo-500 dark:text-indigo-400 shrink-0" />
+                  </motion.button>
+                )}
+
+                {/* 5. Çıkış Yap */}
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    onLogout();
+                  }}
+                  className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-rose-50 hover:bg-rose-100/80 dark:bg-red-950/20 dark:hover:bg-red-950/40 border border-rose-200 dark:border-red-500/30 transition-all mt-4 shadow-sm"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-rose-100 dark:bg-red-500/20 text-rose-600 dark:text-red-400 shrink-0">
+                      <LogOut className="h-5 w-5" />
+                    </div>
+                    <div className="text-left">
+                      <div className="font-bold text-rose-700 dark:text-red-300 text-sm">Güvenli Çıkış Yap</div>
+                      <div className="text-xs text-rose-500 dark:text-red-400/80 font-normal">Mevcut oturumu sonlandır</div>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-rose-400 dark:text-red-500 shrink-0" />
+                </motion.button>
+              </div>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
     </>
   );
 };
