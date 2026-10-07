@@ -85,7 +85,7 @@ export const pushToServer = async () => {
   }
 };
 
-// Two-way synchronization with Firebase Cloud Database
+// Synchronization with Firebase Cloud Database (Authoritative Single Source of Truth)
 export const syncWithServer = async () => {
   if (isSyncing) return;
   isSyncing = true;
@@ -104,13 +104,6 @@ export const syncWithServer = async () => {
       return;
     }
 
-    const localExams = getItem<Exam[]>(KEYS.EXAMS, initialExams);
-    const localResults = getItem<ScanResult[]>(KEYS.RESULTS, initialScanResults);
-    const localStudents = getItem<Student[]>(KEYS.STUDENTS, initialStudents);
-    const localClasses = getItem<SchoolClass[]>(KEYS.CLASSES, initialClasses);
-    const localInstitutions = getItem<Institution[]>(KEYS.INSTITUTIONS, initialInstitutions);
-    const localUsers = getItem<User[]>(KEYS.USERS, initialUsers);
-
     const serverExams: Exam[] = serverData.exams || [];
     const serverResults: ScanResult[] = serverData.results || [];
     const serverStudents: Student[] = serverData.students || [];
@@ -118,108 +111,58 @@ export const syncWithServer = async () => {
     const serverInstitutions: Institution[] = serverData.institutions || [];
     const serverUsers: User[] = serverData.users || [];
 
-    let hasNewDataForLocal = false;
-    let hasLocalDataForServer = false;
-
-    // 1. Merge Results
-    const allResultMap = new Map<string, ScanResult>();
-    localResults.forEach(r => allResultMap.set(r.id, r));
-    serverResults.forEach(r => {
-      if (!allResultMap.has(r.id)) {
-        allResultMap.set(r.id, r);
-        hasNewDataForLocal = true;
-      }
-    });
-    if (allResultMap.size > serverResults.length) hasLocalDataForServer = true;
-    const mergedResults = Array.from(allResultMap.values());
-
-    // 2. Merge Exams
-    const allExamMap = new Map<string, Exam>();
-    localExams.forEach(e => allExamMap.set(e.id, e));
-    serverExams.forEach(e => {
-      if (!allExamMap.has(e.id)) {
-        allExamMap.set(e.id, e);
-        hasNewDataForLocal = true;
-      }
-    });
-    if (allExamMap.size > serverExams.length) hasLocalDataForServer = true;
-    const mergedExams = Array.from(allExamMap.values());
-
-    // 3. Merge Students
-    const allStudentMap = new Map<string, Student>();
-    localStudents.forEach(s => allStudentMap.set(s.id, s));
-    serverStudents.forEach(s => {
-      if (!allStudentMap.has(s.id)) {
-        allStudentMap.set(s.id, s);
-        hasNewDataForLocal = true;
-      }
-    });
-    if (allStudentMap.size > serverStudents.length) hasLocalDataForServer = true;
-    const mergedStudents = Array.from(allStudentMap.values());
-
-    // 4. Merge Classes
-    const allClassMap = new Map<string, SchoolClass>();
-    localClasses.forEach(c => allClassMap.set(c.id, c));
-    serverClasses.forEach(c => {
-      if (!allClassMap.has(c.id)) {
-        allClassMap.set(c.id, c);
-        hasNewDataForLocal = true;
-      }
-    });
-    if (allClassMap.size > serverClasses.length) hasLocalDataForServer = true;
-    const mergedClasses = Array.from(allClassMap.values());
-
-    // 5. Merge Institutions
-    const allInstMap = new Map<string, Institution>();
-    localInstitutions.forEach(i => allInstMap.set(i.id, i));
-    serverInstitutions.forEach(i => {
-      if (!allInstMap.has(i.id)) {
-        allInstMap.set(i.id, i);
-        hasNewDataForLocal = true;
-      }
-    });
-    if (allInstMap.size > serverInstitutions.length) hasLocalDataForServer = true;
-    const mergedInstitutions = Array.from(allInstMap.values());
-
-    // 6. Merge Users (Server takes precedence for shared accounts)
-    const allUserMap = new Map<string, User>();
-    localUsers.forEach(u => {
-      const key = (u.username || u.id).trim().toLowerCase();
-      allUserMap.set(key, u);
-    });
-    serverUsers.forEach(u => {
-      const key = (u.username || u.id).trim().toLowerCase();
-      const existing = allUserMap.get(key);
-      if (!existing || existing.password !== u.password || existing.id !== u.id) {
-        allUserMap.set(key, u);
-        hasNewDataForLocal = true;
-      }
-    });
-    if (allUserMap.size > serverUsers.length) hasLocalDataForServer = true;
-    const mergedUsers = Array.from(allUserMap.values());
-    if (!mergedUsers.some(u => u.username?.toLowerCase() === 'admin')) {
-      mergedUsers.unshift(initialUsers[0]);
-      hasNewDataForLocal = true;
-      hasLocalDataForServer = true;
+    // Ensure default admin user always exists
+    if (!serverUsers.some(u => u.username?.toLowerCase() === 'admin')) {
+      serverUsers.unshift(initialUsers[0]);
     }
 
-    // 7. Site Settings
+    // Check if anything has changed compared to current localStorage
+    const localExamsRaw = localStorage.getItem(KEYS.EXAMS) || '[]';
+    const localResultsRaw = localStorage.getItem(KEYS.RESULTS) || '[]';
+    const localStudentsRaw = localStorage.getItem(KEYS.STUDENTS) || '[]';
+    const localClassesRaw = localStorage.getItem(KEYS.CLASSES) || '[]';
+    const localInstRaw = localStorage.getItem(KEYS.INSTITUTIONS) || '[]';
+    const localUsersRaw = localStorage.getItem(KEYS.USERS) || '[]';
+
+    const serverExamsStr = JSON.stringify(serverExams);
+    const serverResultsStr = JSON.stringify(serverResults);
+    const serverStudentsStr = JSON.stringify(serverStudents);
+    const serverClassesStr = JSON.stringify(serverClasses);
+    const serverInstStr = JSON.stringify(serverInstitutions);
+    const serverUsersStr = JSON.stringify(serverUsers);
+
+    let hasChanged = false;
+
+    if (localExamsRaw !== serverExamsStr) {
+      setItem(KEYS.EXAMS, serverExams);
+      hasChanged = true;
+    }
+    if (localResultsRaw !== serverResultsStr) {
+      setItem(KEYS.RESULTS, serverResults);
+      hasChanged = true;
+    }
+    if (localStudentsRaw !== serverStudentsStr) {
+      setItem(KEYS.STUDENTS, serverStudents);
+      hasChanged = true;
+    }
+    if (localClassesRaw !== serverClassesStr) {
+      setItem(KEYS.CLASSES, serverClasses);
+      hasChanged = true;
+    }
+    if (localInstRaw !== serverInstStr) {
+      setItem(KEYS.INSTITUTIONS, serverInstitutions);
+      hasChanged = true;
+    }
+    if (localUsersRaw !== serverUsersStr) {
+      setItem(KEYS.USERS, serverUsers);
+      hasChanged = true;
+    }
     if (serverData.siteSettings) {
       setItem(KEYS.SITE_SETTINGS, serverData.siteSettings);
     }
 
-    if (hasNewDataForLocal) {
-      setItem(KEYS.RESULTS, mergedResults);
-      setItem(KEYS.EXAMS, mergedExams);
-      setItem(KEYS.STUDENTS, mergedStudents);
-      setItem(KEYS.CLASSES, mergedClasses);
-      setItem(KEYS.INSTITUTIONS, mergedInstitutions);
-      setItem(KEYS.USERS, mergedUsers);
+    if (hasChanged) {
       window.dispatchEvent(new CustomEvent('opticok-data-updated'));
-    }
-
-    if (hasLocalDataForServer) {
-      await pushToServer();
     }
   } catch (err) {
     // Offline or server not responding, keep working locally
@@ -383,7 +326,7 @@ export const storageService = {
     pushToServer();
     window.dispatchEvent(new CustomEvent('opticok-data-updated'));
   },
-  deleteInstitution: (institutionId: string) => {
+  deleteInstitution: async (institutionId: string) => {
     // 1. Remove institution
     const instList = storageService.getInstitutions().filter(i => i.id !== institutionId);
     setItem(KEYS.INSTITUTIONS, instList);
@@ -406,8 +349,8 @@ export const storageService = {
     const examList = storageService.getExams().filter(e => e.institutionId !== institutionId);
     setItem(KEYS.EXAMS, examList);
 
-    pushToServer();
     window.dispatchEvent(new CustomEvent('opticok-data-updated'));
+    await pushToServer();
   },
 
   // Classes

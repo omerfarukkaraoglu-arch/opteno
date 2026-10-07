@@ -133,12 +133,12 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
   };
 
   // Delete Institution
-  const handleDeleteInstitution = (inst: Institution) => {
+  const handleDeleteInstitution = async (inst: Institution) => {
     const personnelCount = storageService.getUsersByInstitution(inst.id).length;
     const confirmMsg = `"${inst.name}" adlı kurumu ve bu kuruma bağlı tüm personelleri (${personnelCount} kişi), sınıfları ve sınavları sistemden tamamen silmek istediğinize emin misiniz?\n\nBu işlem geri alınamaz!`;
 
     if (window.confirm(confirmMsg)) {
-      storageService.deleteInstitution(inst.id);
+      await storageService.deleteInstitution(inst.id);
       if (selectedInstDetails?.id === inst.id) {
         setSelectedInstDetails(null);
       }
