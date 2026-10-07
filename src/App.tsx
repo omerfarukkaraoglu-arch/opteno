@@ -29,7 +29,7 @@ function App() {
 
     // Initialize mock data and storage on first load
     initStorage();
-    const user = storageService.getCurrentUser();
+    const user = storageService.getSessionUser();
     setCurrentUser(user);
     setIsReady(true);
 
@@ -56,7 +56,7 @@ function App() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('opticok_current_user');
+    storageService.logoutUser();
     setCurrentUser(null);
   };
 

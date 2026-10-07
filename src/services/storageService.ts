@@ -42,7 +42,6 @@ export const resetAllStorage = () => {
   localStorage.removeItem(KEYS.SITE_SETTINGS);
 
   setItem(KEYS.USERS, initialUsers);
-  setItem(KEYS.CURRENT_USER, initialUsers[0]);
   setItem(KEYS.INSTITUTIONS, initialInstitutions);
   setItem(KEYS.CLASSES, initialClasses);
   setItem(KEYS.STUDENTS, initialStudents);
@@ -196,6 +195,12 @@ export const syncWithServer = async () => {
 
 // Initialize default data if empty or purge old mock data
 export const initStorage = () => {
+  // Clear any legacy auto-login session so all users must log in with username & password
+  if (!localStorage.getItem('opteno_auth_strict_v1')) {
+    localStorage.removeItem(KEYS.CURRENT_USER);
+    localStorage.setItem('opteno_auth_strict_v1', 'true');
+  }
+
   if (!localStorage.getItem('opticok_v3_clean')) {
     resetAllStorage();
     return;
@@ -218,9 +223,8 @@ export const initStorage = () => {
   if (!localStorage.getItem(KEYS.USERS)) {
     setItem(KEYS.USERS, initialUsers);
   }
-  if (!localStorage.getItem(KEYS.CURRENT_USER)) {
-    setItem(KEYS.CURRENT_USER, initialUsers[0]);
-  }
+  // NOTE: KEYS.CURRENT_USER is intentionally NOT populated automatically!
+  // Every user must authenticate via the login screen.
   if (!localStorage.getItem(KEYS.SITE_SETTINGS)) {
     setItem(KEYS.SITE_SETTINGS, initialSiteSettings);
   }
@@ -254,8 +258,18 @@ export const storageService = {
   saveSiteSettings: (settings: SiteSettings) => setItem(KEYS.SITE_SETTINGS, settings),
 
   // Current User & Users Management
-  getCurrentUser: (): User => getItem<User>(KEYS.CURRENT_USER, initialUsers[0]),
-  setCurrentUser: (user: User) => setItem(KEYS.CURRENT_USER, user),
+  getSessionUser: (): User | null => getItem<User | null>(KEYS.CURRENT_USER, null),
+  getCurrentUser: (): User => getItem<User | null>(KEYS.CURRENT_USER, null) || initialUsers[0],
+  setCurrentUser: (user: User | null) => {
+    if (user) {
+      setItem(KEYS.CURRENT_USER, user);
+    } else {
+      localStorage.removeItem(KEYS.CURRENT_USER);
+    }
+  },
+  logoutUser: () => {
+    localStorage.removeItem(KEYS.CURRENT_USER);
+  },
   getAllUsers: (): User[] => getItem<User[]>(KEYS.USERS, initialUsers),
   getUsersByInstitution: (institutionId: string): User[] => {
     return storageService.getAllUsers().filter(u => u.institutionId === institutionId);
@@ -269,8 +283,8 @@ export const storageService = {
     const list = storageService.getAllUsers().map(u => u.id === updatedUser.id ? updatedUser : u);
     setItem(KEYS.USERS, list);
     // If current user updated, update current session as well
-    const current = storageService.getCurrentUser();
-    if (current.id === updatedUser.id) {
+    const current = storageService.getSessionUser();
+    if (current && current.id === updatedUser.id) {
       setItem(KEYS.CURRENT_USER, updatedUser);
     }
   },

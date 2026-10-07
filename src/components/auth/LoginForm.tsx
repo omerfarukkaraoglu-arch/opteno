@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Camera, Lock, User as UserIcon, Eye, EyeOff, ArrowRight, ShieldCheck, Sparkles, AlertCircle, Building2, KeyRound, Sun, Moon } from 'lucide-react';
+import { Lock, User as UserIcon, Eye, EyeOff, ArrowRight, AlertCircle, KeyRound, Sun, Moon, Shield } from 'lucide-react';
 import { storageService } from '../../services/storageService';
 import { User } from '../../types';
 import { Theme } from '../../services/themeService';
@@ -11,7 +11,6 @@ interface LoginFormProps {
 }
 
 export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess, theme, onToggleTheme }) => {
-  const siteSettings = storageService.getSiteSettings();
   const allUsers = storageService.getAllUsers();
 
   const [usernameInput, setUsernameInput] = useState('');
@@ -23,18 +22,24 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess, theme, onT
     e.preventDefault();
     setErrorMessage(null);
 
-    const targetUser = allUsers.find(
-      u => (u.username?.toLowerCase() === usernameInput.trim().toLowerCase() ||
-            u.email.toLowerCase() === usernameInput.trim().toLowerCase())
-    );
-
-    if (!targetUser) {
-      setErrorMessage('Kullanıcı adı veya e-posta adresi sistemde bulunamadı.');
+    const trimmedUser = usernameInput.trim();
+    if (!trimmedUser || !passwordInput) {
+      setErrorMessage('Lütfen kullanıcı adı ve şifrenizi eksiksiz giriniz.');
       return;
     }
 
-    if (targetUser.password && targetUser.password !== passwordInput) {
-      setErrorMessage('Girdiğiniz şifre hatalı. Lütfen tekrar deneyiniz.');
+    const targetUser = allUsers.find(
+      u => (u.username?.toLowerCase() === trimmedUser.toLowerCase() ||
+            u.email?.toLowerCase() === trimmedUser.toLowerCase())
+    );
+
+    if (!targetUser || !targetUser.password || targetUser.password !== passwordInput) {
+      setErrorMessage('Kullanıcı adı veya şifre hatalı. Lütfen kontrol ediniz.');
+      return;
+    }
+
+    if (targetUser.status === 'INACTIVE') {
+      setErrorMessage('Bu kullanıcı hesabı pasife alınmıştır. Sistem yöneticisi ile iletişime geçiniz.');
       return;
     }
 
@@ -42,15 +47,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess, theme, onT
     storageService.setCurrentUser(targetUser);
     onLoginSuccess(targetUser);
   };
-
-  const handleQuickDemoLogin = (user: User) => {
-    storageService.setCurrentUser(user);
-    onLoginSuccess(user);
-  };
-
-  const superAdminUser = allUsers.find(u => u.role === 'SUPER_ADMIN');
-  const instAdminUser = allUsers.find(u => u.role === 'INSTITUTION_ADMIN');
-  const teacherUser = allUsers.find(u => u.role === 'TEACHER');
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-slate-950">
@@ -87,9 +83,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess, theme, onT
         <div className="glass-panel p-8 rounded-3xl border border-slate-800 shadow-2xl space-y-6">
           <div className="border-b border-slate-800 pb-4">
             <h2 className="font-display text-xl font-bold text-white flex items-center gap-2">
-              <KeyRound className="h-5 w-5 text-indigo-400" /> Kullanıcı Girişi
+              <KeyRound className="h-5 w-5 text-indigo-400" /> Güvenli Kullanıcı Girişi
             </h2>
-            <p className="text-xs text-slate-400 mt-1">Lütfen kullanıcı adı ve şifrenizi girerek oturum açın.</p>
+            <p className="text-xs text-slate-400 mt-1">Lütfen yetkili kullanıcı adı ve şifrenizi girerek oturum açın.</p>
           </div>
 
           {errorMessage && (
@@ -112,7 +108,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess, theme, onT
                   value={usernameInput}
                   onChange={(e) => setUsernameInput(e.target.value)}
                   className="input-field pl-9 text-xs py-2.5 font-mono text-indigo-300"
-                  placeholder="superadmin veya admin@opticok.com"
+                  placeholder="Kullanıcı adınız veya e-posta"
+                  autoComplete="username"
                 />
               </div>
             </div>
@@ -130,11 +127,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess, theme, onT
                   onChange={(e) => setPasswordInput(e.target.value)}
                   className="input-field pl-9 pr-9 text-xs py-2.5 font-mono text-emerald-300"
                   placeholder="••••••••"
+                  autoComplete="current-password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-3 text-slate-500 hover:text-slate-300"
+                  className="absolute right-3 top-3 text-slate-500 hover:text-slate-300 cursor-pointer"
+                  title={showPassword ? 'Şifreyi Gizle' : 'Şifreyi Göster'}
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -143,61 +142,16 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess, theme, onT
 
             <button
               type="submit"
-              className="btn btn-primary w-full py-3 text-sm font-bold flex items-center justify-center gap-2 group shadow-lg shadow-indigo-600/30"
+              className="btn btn-primary w-full py-3 text-sm font-bold flex items-center justify-center gap-2 group shadow-lg shadow-indigo-600/30 cursor-pointer"
             >
-              Giriş Yap <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+              <span>Giriş Yap</span>
+              <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
             </button>
           </form>
 
-          {/* Quick Demo Access Section */}
-          <div className="pt-4 border-t border-slate-800/80 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-400 flex items-center gap-1.5">
-                <Sparkles className="h-3.5 w-3.5 text-amber-400" /> Hızlı Demo Girişi:
-              </span>
-              <span className="text-[10px] text-slate-500">Tek tıkla giriş yapın</span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              {superAdminUser && (
-                <button
-                  type="button"
-                  onClick={() => handleQuickDemoLogin(superAdminUser)}
-                  className="p-2.5 rounded-xl bg-slate-900 border border-indigo-500/30 hover:border-indigo-500 text-left transition-all group"
-                >
-                  <div className="flex items-center gap-1 text-[11px] font-bold text-indigo-400">
-                    <ShieldCheck className="h-3.5 w-3.5" /> SuperAdmin
-                  </div>
-                  <div className="text-[10px] text-slate-400 font-mono mt-0.5 truncate">superadmin</div>
-                </button>
-              )}
-
-              {instAdminUser && (
-                <button
-                  type="button"
-                  onClick={() => handleQuickDemoLogin(instAdminUser)}
-                  className="p-2.5 rounded-xl bg-slate-900 border border-amber-500/30 hover:border-amber-500 text-left transition-all group"
-                >
-                  <div className="flex items-center gap-1 text-[11px] font-bold text-amber-400">
-                    <Building2 className="h-3.5 w-3.5" /> Kurum Admini
-                  </div>
-                  <div className="text-[10px] text-slate-400 font-mono mt-0.5 truncate">ataturk_admin</div>
-                </button>
-              )}
-
-              {teacherUser && (
-                <button
-                  type="button"
-                  onClick={() => handleQuickDemoLogin(teacherUser)}
-                  className="p-2.5 rounded-xl bg-slate-900 border border-emerald-500/30 hover:border-emerald-500 text-left transition-all group"
-                >
-                  <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-400">
-                    <UserIcon className="h-3.5 w-3.5" /> Öğretmen
-                  </div>
-                  <div className="text-[10px] text-slate-400 font-mono mt-0.5 truncate">mustafa_mat</div>
-                </button>
-              )}
-            </div>
+          <div className="pt-3 border-t border-slate-800/80 flex items-center justify-center gap-1.5 text-[11px] text-slate-500">
+            <Shield className="h-3.5 w-3.5 text-indigo-400" />
+            <span>Opteno Güvenli Oturum Doğrulaması</span>
           </div>
         </div>
 
