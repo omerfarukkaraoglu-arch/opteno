@@ -60,10 +60,14 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess, theme, onT
     }
 
     const freshUsers = storageService.getAllUsers();
-    const targetUser = freshUsers.find(
+    const matchingUsers = freshUsers.filter(
       u => (u.username?.trim().toLowerCase() === trimmedUser.toLowerCase() ||
             u.email?.trim().toLowerCase() === trimmedUser.toLowerCase())
     );
+
+    const targetUser = matchingUsers.find(
+      u => u.password?.trim() === trimmedPassword
+    ) || matchingUsers[0];
 
     if (!targetUser || !targetUser.password || targetUser.password.trim() !== trimmedPassword) {
       setIsLoading(false);

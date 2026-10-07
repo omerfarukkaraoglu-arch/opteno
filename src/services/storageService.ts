@@ -181,12 +181,17 @@ export const syncWithServer = async () => {
     if (allInstMap.size > serverInstitutions.length) hasLocalDataForServer = true;
     const mergedInstitutions = Array.from(allInstMap.values());
 
-    // 6. Merge Users
+    // 6. Merge Users (Server takes precedence for shared accounts)
     const allUserMap = new Map<string, User>();
-    localUsers.forEach(u => allUserMap.set(u.id, u));
+    localUsers.forEach(u => {
+      const key = (u.username || u.id).trim().toLowerCase();
+      allUserMap.set(key, u);
+    });
     serverUsers.forEach(u => {
-      if (!allUserMap.has(u.id)) {
-        allUserMap.set(u.id, u);
+      const key = (u.username || u.id).trim().toLowerCase();
+      const existing = allUserMap.get(key);
+      if (!existing || existing.password !== u.password || existing.id !== u.id) {
+        allUserMap.set(key, u);
         hasNewDataForLocal = true;
       }
     });
@@ -336,8 +341,10 @@ export const storageService = {
   },
   addUser: (newUser: User) => {
     const list = storageService.getAllUsers();
-    // Prevent duplicate user IDs
-    const filtered = list.filter(u => u.id !== newUser.id);
+    // Prevent duplicate user IDs or same usernames
+    const filtered = list.filter(
+      u => u.id !== newUser.id && u.username?.trim().toLowerCase() !== newUser.username?.trim().toLowerCase()
+    );
     filtered.unshift(newUser);
     setItem(KEYS.USERS, filtered);
     pushToServer();
