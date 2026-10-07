@@ -384,8 +384,28 @@ export const storageService = {
     window.dispatchEvent(new CustomEvent('opticok-data-updated'));
   },
   deleteInstitution: (institutionId: string) => {
-    const list = storageService.getInstitutions().filter(i => i.id !== institutionId);
-    setItem(KEYS.INSTITUTIONS, list);
+    // 1. Remove institution
+    const instList = storageService.getInstitutions().filter(i => i.id !== institutionId);
+    setItem(KEYS.INSTITUTIONS, instList);
+
+    // 2. Remove associated users (preserve SuperAdmin)
+    const userList = storageService.getAllUsers().filter(
+      u => u.institutionId !== institutionId || u.role === 'SUPER_ADMIN'
+    );
+    setItem(KEYS.USERS, userList);
+
+    // 3. Remove associated classes
+    const classList = storageService.getClasses().filter(c => c.institutionId !== institutionId);
+    setItem(KEYS.CLASSES, classList);
+
+    // 4. Remove associated students
+    const studentList = storageService.getStudents().filter(s => s.institutionId !== institutionId);
+    setItem(KEYS.STUDENTS, studentList);
+
+    // 5. Remove associated exams
+    const examList = storageService.getExams().filter(e => e.institutionId !== institutionId);
+    setItem(KEYS.EXAMS, examList);
+
     pushToServer();
     window.dispatchEvent(new CustomEvent('opticok-data-updated'));
   },

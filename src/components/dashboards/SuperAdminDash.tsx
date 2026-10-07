@@ -132,6 +132,20 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
     setAdminPassword('');
   };
 
+  // Delete Institution
+  const handleDeleteInstitution = (inst: Institution) => {
+    const personnelCount = storageService.getUsersByInstitution(inst.id).length;
+    const confirmMsg = `"${inst.name}" adlı kurumu ve bu kuruma bağlı tüm personelleri (${personnelCount} kişi), sınıfları ve sınavları sistemden tamamen silmek istediğinize emin misiniz?\n\nBu işlem geri alınamaz!`;
+
+    if (window.confirm(confirmMsg)) {
+      storageService.deleteInstitution(inst.id);
+      if (selectedInstDetails?.id === inst.id) {
+        setSelectedInstDetails(null);
+      }
+      reloadData();
+    }
+  };
+
   // Create Exam
   const handleAddExam = (e: React.FormEvent) => {
     e.preventDefault();
@@ -364,12 +378,21 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
 
                     <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs font-semibold">
                       <span className="text-slate-400">{inst.studentCount} Öğrenci | {instPersonnel.length} Personel</span>
-                      <button
-                        onClick={() => setSelectedInstDetails(inst)}
-                        className="text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer"
-                      >
-                        Detaylar <ChevronRight className="h-3.5 w-3.5" />
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setSelectedInstDetails(inst)}
+                          className="text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer"
+                        >
+                          Detaylar <ChevronRight className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteInstitution(inst)}
+                          className="p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-all cursor-pointer border border-red-500/20"
+                          title="Kurumu Sil"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -931,6 +954,18 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* Delete Institution Footer Action */}
+            <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
+              <span className="text-[11px] text-slate-500">Bu işlem kurumu ve bağlı tüm kayıtları buluttan kalıcı olarak siler.</span>
+              <button
+                type="button"
+                onClick={() => handleDeleteInstitution(selectedInstDetails)}
+                className="btn btn-secondary text-xs py-2 px-3 text-red-400 hover:bg-red-500/20 border-red-500/30 flex items-center gap-1.5 cursor-pointer"
+              >
+                <Trash2 className="h-4 w-4" /> Kurumu Tamamen Sil
+              </button>
             </div>
           </div>
         </div>
