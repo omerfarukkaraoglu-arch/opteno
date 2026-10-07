@@ -52,6 +52,17 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
   const [showAddInstModal, setShowAddInstModal] = useState(false);
   const [showAddExamModal, setShowAddExamModal] = useState(false);
   const [selectedInstDetails, setSelectedInstDetails] = useState<Institution | null>(null);
+  const [instToDelete, setInstToDelete] = useState<Institution | null>(null);
+  const [isDeletingInst, setIsDeletingInst] = useState(false);
+
+  // Auto-refresh when background sync or direct storage updates occur
+  React.useEffect(() => {
+    const handleUpdate = () => {
+      reloadData();
+    };
+    window.addEventListener('opticok-data-updated', handleUpdate);
+    return () => window.removeEventListener('opticok-data-updated', handleUpdate);
+  }, []);
 
   // New Institution Form State
   const [instName, setInstName] = useState('');
@@ -133,17 +144,25 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
     setAdminPassword('');
   };
 
-  // Delete Institution
-  const handleDeleteInstitution = async (inst: Institution) => {
-    const personnelCount = storageService.getUsersByInstitution(inst.id).length;
-    const confirmMsg = `"${inst.name}" adlı kurumu ve bu kuruma bağlı tüm personelleri (${personnelCount} kişi), sınıfları ve sınavları sistemden tamamen silmek istediğinize emin misiniz?\n\nBu işlem geri alınamaz!`;
+  // Delete Institution Trigger
+  const handleDeleteInstitution = (inst: Institution) => {
+    setInstToDelete(inst);
+  };
 
-    if (window.confirm(confirmMsg)) {
-      await storageService.deleteInstitution(inst.id);
-      if (selectedInstDetails?.id === inst.id) {
+  const handleConfirmDeleteInstitution = async () => {
+    if (!instToDelete) return;
+    setIsDeletingInst(true);
+    try {
+      await storageService.deleteInstitution(instToDelete.id);
+      if (selectedInstDetails?.id === instToDelete.id) {
         setSelectedInstDetails(null);
       }
       reloadData();
+    } catch (err) {
+      console.error('Kurum silinirken hata oluştu:', err);
+    } finally {
+      setIsDeletingInst(false);
+      setInstToDelete(null);
     }
   };
 
@@ -1029,6 +1048,78 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                   className="btn btn-secondary text-xs py-2 px-3 text-red-400 hover:bg-red-500/20 border-red-500/30 flex items-center gap-1.5 cursor-pointer rounded-xl"
                 >
                   <Trash2 className="h-4 w-4" /> Kurumu Tamamen Sil
+                </motion.button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Confirmation Modal for Institution Deletion */}
+      <AnimatePresence>
+        {instToDelete && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => !isDeletingInst && setInstToDelete(null)}
+              className="fixed inset-0 bg-slate-950/80 backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.94, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+              className="glass-panel relative z-10 max-w-md w-full p-6 sm:p-7 rounded-3xl border border-rose-500/30 bg-slate-900/95 shadow-2xl space-y-4"
+            >
+              <div className="flex items-center gap-3 text-rose-400">
+                <div className="p-3 rounded-2xl bg-rose-500/15 border border-rose-500/25 shrink-0">
+                  <Trash2 className="h-6 w-6 text-rose-400" />
+                </div>
+                <div>
+                  <h3 className="font-display text-lg font-bold text-white">Kurumu Kalıcı Olarak Sil</h3>
+                  <p className="text-xs text-rose-300 font-medium">Bu işlem geri alınamaz!</p>
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-rose-950/20 border border-rose-500/20 text-xs text-slate-300 space-y-2">
+                <p>
+                  <strong className="text-white font-bold font-display text-sm">"{instToDelete.name}"</strong> adlı kurumu silmek üzeresiniz.
+                </p>
+                <p className="text-slate-400 text-[11px] leading-relaxed">
+                  Bu işlem kurumu, kuruma ait tüm yönetici/öğretmen hesaplarını, sınıfları, öğrencileri ve sınav kayıtlarını hem yerel cihazdan hem de <strong>Firebase bulut veritabanından kalıcı olarak silecektir</strong>.
+                </p>
+              </div>
+
+              <div className="flex justify-end gap-2.5 pt-2">
+                <motion.button
+                  whileTap={{ scale: 0.96 }}
+                  type="button"
+                  disabled={isDeletingInst}
+                  onClick={() => setInstToDelete(null)}
+                  className="btn btn-secondary text-xs rounded-xl py-2.5 px-4 cursor-pointer"
+                >
+                  İptal
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.96 }}
+                  type="button"
+                  disabled={isDeletingInst}
+                  onClick={handleConfirmDeleteInstitution}
+                  className="btn btn-danger text-xs rounded-xl py-2.5 px-4 flex items-center gap-2 cursor-pointer shadow-lg shadow-rose-600/30 disabled:opacity-50"
+                >
+                  {isDeletingInst ? (
+                    <>
+                      <span className="h-3.5 w-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span>Buluttan Siliniyor...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="h-4 w-4" />
+                      <span>Evet, Kalıcı Olarak Sil</span>
+                    </>
+                  )}
                 </motion.button>
               </div>
             </motion.div>

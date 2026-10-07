@@ -54,10 +54,14 @@ export const resetAllStorage = () => {
 };
 
 let isSyncing = false;
+let isPushing = false;
 let syncStarted = false;
+let lastLocalWriteTime = 0;
 
 // Push entire application state to Firebase Cloud Database
 export const pushToServer = async () => {
+  isPushing = true;
+  lastLocalWriteTime = Date.now();
   try {
     const results = getItem<ScanResult[]>(KEYS.RESULTS, initialScanResults);
     const exams = getItem<Exam[]>(KEYS.EXAMS, initialExams);
@@ -67,7 +71,7 @@ export const pushToServer = async () => {
     const users = getItem<User[]>(KEYS.USERS, initialUsers);
     const siteSettings = getItem<SiteSettings>(KEYS.SITE_SETTINGS, initialSiteSettings);
 
-    await fetch(`${FIREBASE_DB_URL}.json`, {
+    const res = await fetch(`${FIREBASE_DB_URL}.json`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -80,14 +84,23 @@ export const pushToServer = async () => {
         siteSettings
       })
     });
+    if (!res.ok) {
+      console.error('Firebase push returned non-OK status:', res.status);
+    }
   } catch (err) {
     console.error('Firebase push failed:', err);
+  } finally {
+    // Keep lock active briefly so background GET requests cannot overwrite fresh local push
+    setTimeout(() => {
+      isPushing = false;
+    }, 1500);
   }
 };
 
 // Synchronization with Firebase Cloud Database (Authoritative Single Source of Truth)
 export const syncWithServer = async () => {
-  if (isSyncing) return;
+  // If pushing or recent local write happened within 3.5 seconds, don't overwrite with stale server cache
+  if (isSyncing || isPushing || (Date.now() - lastLocalWriteTime < 3500)) return;
   isSyncing = true;
   try {
     const res = await fetch(`${FIREBASE_DB_URL}.json`);
@@ -96,6 +109,12 @@ export const syncWithServer = async () => {
       return;
     }
     const serverData = await res.json();
+
+    // Re-check after network response in case a user mutation occurred while awaiting
+    if (isPushing || (Date.now() - lastLocalWriteTime < 3500)) {
+      isSyncing = false;
+      return;
+    }
 
     if (!serverData) {
       // Cloud database empty: push our current baseline
@@ -327,30 +346,64 @@ export const storageService = {
     window.dispatchEvent(new CustomEvent('opticok-data-updated'));
   },
   deleteInstitution: async (institutionId: string) => {
+    isPushing = true;
+    lastLocalWriteTime = Date.now();
+
     // 1. Remove institution
-    const instList = storageService.getInstitutions().filter(i => i.id !== institutionId);
+    const currentInst = storageService.getInstitutions();
+    const instList = currentInst.filter(i => i.id !== institutionId);
     setItem(KEYS.INSTITUTIONS, instList);
 
     // 2. Remove associated users (preserve SuperAdmin)
-    const userList = storageService.getAllUsers().filter(
+    const currentUserList = storageService.getAllUsers();
+    const userList = currentUserList.filter(
       u => u.institutionId !== institutionId || u.role === 'SUPER_ADMIN'
     );
     setItem(KEYS.USERS, userList);
 
     // 3. Remove associated classes
-    const classList = storageService.getClasses().filter(c => c.institutionId !== institutionId);
+    const currentClasses = storageService.getClasses();
+    const classList = currentClasses.filter(c => c.institutionId !== institutionId);
     setItem(KEYS.CLASSES, classList);
 
     // 4. Remove associated students
-    const studentList = storageService.getStudents().filter(s => s.institutionId !== institutionId);
+    const currentStudents = storageService.getStudents();
+    const studentList = currentStudents.filter(s => s.institutionId !== institutionId);
     setItem(KEYS.STUDENTS, studentList);
 
     // 5. Remove associated exams
-    const examList = storageService.getExams().filter(e => e.institutionId !== institutionId);
+    const currentExams = storageService.getExams();
+    const examList = currentExams.filter(e => e.institutionId !== institutionId);
     setItem(KEYS.EXAMS, examList);
 
     window.dispatchEvent(new CustomEvent('opticok-data-updated'));
-    await pushToServer();
+
+    // 6. Direct authoritative push to Firebase Cloud Database
+    try {
+      const siteSettings = getItem<SiteSettings>(KEYS.SITE_SETTINGS, initialSiteSettings);
+      const results = getItem<ScanResult[]>(KEYS.RESULTS, initialScanResults);
+
+      await fetch(`${FIREBASE_DB_URL}.json`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          results,
+          exams: examList,
+          students: studentList,
+          classes: classList,
+          institutions: instList,
+          users: userList,
+          siteSettings
+        })
+      });
+      lastLocalWriteTime = Date.now();
+    } catch (err) {
+      console.error('Direct Firebase delete push failed:', err);
+    } finally {
+      setTimeout(() => {
+        isPushing = false;
+      }, 2000);
+    }
   },
 
   // Classes
