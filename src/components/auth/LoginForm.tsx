@@ -132,7 +132,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess, theme, onT
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.15),rgba(255,255,255,0))] pointer-events-none" />
 
       <div className="max-w-md w-full relative z-10 space-y-6">
-        {/* Brand Header with Spring entrance */}
+        {/* Brand Header with Spring entrance & 3D Clay Base */}
         <motion.div 
           initial={{ opacity: 0, y: -20, scale: 0.9 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -140,9 +140,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess, theme, onT
           className="text-center space-y-2"
         >
           <motion.div 
-            whileHover={{ scale: 1.03, y: -2 }}
+            whileHover={{ scale: 1.04, y: -3 }}
+            whileTap={{ scale: 0.97 }}
             transition={{ type: 'spring', stiffness: 350, damping: 20 }}
-            className="inline-flex items-center justify-center bg-white rounded-3xl px-6 py-3 shadow-2xl shadow-indigo-950/40 border border-white/40 mb-1"
+            className="inline-flex items-center justify-center bg-white rounded-[28px] px-7 py-3.5 shadow-[0_16px_36px_-8px_rgba(0,0,0,0.4),inset_0_3px_6px_rgba(255,255,255,1),inset_0_-4px_8px_rgba(0,0,0,0.12)] border border-white/60 mb-1 cursor-pointer"
           >
             <img 
               src="/opteno-logo.png" 
@@ -152,24 +153,21 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess, theme, onT
           </motion.div>
         </motion.div>
 
-        {/* Login Card with Spring scale-in */}
+        {/* Login Card with Claymorphism 3D Volume */}
         <motion.div 
           initial={{ opacity: 0, y: 24, scale: 0.96 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ type: 'spring', stiffness: 260, damping: 24, delay: 0.08 }}
-          className="glass-panel p-8 sm:p-9 rounded-3xl border border-slate-700/60 shadow-2xl shadow-black/50 space-y-6 backdrop-blur-2xl bg-slate-900/75 relative overflow-hidden"
+          className="clay-panel p-8 sm:p-9 rounded-[32px] space-y-6 relative overflow-hidden"
         >
-          {/* Subtle top card glow line */}
-          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-indigo-500/70 to-transparent" />
-
           <div className="border-b border-slate-800/90 pb-4">
             <h2 className="font-display text-xl font-bold text-white flex items-center gap-2.5">
-              <span className="p-1.5 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+              <span className="p-2 rounded-2xl bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 shadow-[inset_0_2px_4px_rgba(255,255,255,0.25),0_4px_8px_rgba(0,0,0,0.3)]">
                 <KeyRound className="h-4 w-4" />
               </span>
               Güvenli Kullanıcı Girişi
             </h2>
-            <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
+            <p className="text-xs text-slate-400 mt-1.5 leading-relaxed font-medium">
               Lütfen yetkili kullanıcı adı ve şifrenizi girerek oturum açın.
             </p>
           </div>
@@ -187,7 +185,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess, theme, onT
                 }}
                 exit={{ opacity: 0, y: -6, scale: 0.95 }}
                 transition={{ duration: 0.4 }}
-                className="p-3.5 rounded-2xl bg-rose-500/15 border border-rose-500/40 text-rose-200 text-xs font-medium flex items-center gap-2.5 shadow-lg shadow-rose-950/20"
+                className="p-4 rounded-2xl bg-rose-500/15 border border-rose-500/40 text-rose-200 text-xs font-semibold flex items-center gap-2.5 shadow-[0_8px_20px_-4px_rgba(244,63,94,0.3),inset_0_2px_4px_rgba(255,255,255,0.15)]"
               >
                 <AlertCircle className="h-4 w-4 text-rose-400 shrink-0" />
                 <span>{errorMessage}</span>
@@ -197,17 +195,17 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess, theme, onT
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              <label className="block text-xs font-bold text-slate-300 mb-1.5 tracking-wide">
                 Kullanıcı Adı veya E-posta
               </label>
               <div className="relative group">
-                <UserIcon className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
+                <UserIcon className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400 group-focus-within:text-indigo-400 transition-colors" />
                 <input
                   type="text"
                   required
                   value={usernameInput}
                   onChange={(e) => setUsernameInput(e.target.value)}
-                  className="input-field pl-10 text-xs py-3 font-mono text-indigo-200 bg-slate-950/60 border-slate-700/80 rounded-2xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all placeholder:text-slate-500"
+                  className="input-field pl-10 text-xs py-3.5 font-mono text-indigo-200 placeholder:text-slate-500 rounded-2xl"
                   placeholder="Kullanıcı adınız veya e-posta"
                   autoComplete="username"
                 />
@@ -215,24 +213,24 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess, theme, onT
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              <label className="block text-xs font-bold text-slate-300 mb-1.5 tracking-wide">
                 Giriş Şifresi
               </label>
               <div className="relative group">
-                <Lock className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
+                <Lock className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400 group-focus-within:text-indigo-400 transition-colors" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   required
                   value={passwordInput}
                   onChange={(e) => setPasswordInput(e.target.value)}
-                  className="input-field pl-10 pr-10 text-xs py-3 font-mono text-emerald-200 bg-slate-950/60 border-slate-700/80 rounded-2xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all placeholder:text-slate-500"
+                  className="input-field pl-10 pr-10 text-xs py-3.5 font-mono text-emerald-200 placeholder:text-slate-500 rounded-2xl"
                   placeholder="••••••••"
                   autoComplete="current-password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-3.5 text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
+                  className="absolute right-3.5 top-3.5 text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
                   title={showPassword ? 'Şifreyi Gizle' : 'Şifreyi Göster'}
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -243,17 +241,17 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess, theme, onT
             <motion.button
               type="submit"
               disabled={isLoading}
-              whileHover={!isLoading ? { scale: 1.02, y: -1 } : {}}
-              whileTap={!isLoading ? { scale: 0.98 } : {}}
+              whileHover={!isLoading ? { scale: 1.02, y: -2 } : {}}
+              whileTap={!isLoading ? { scale: 0.96, y: 2 } : {}}
               transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-              className="btn btn-primary w-full py-3.5 text-sm font-bold flex items-center justify-center gap-2 group shadow-xl shadow-indigo-600/30 rounded-2xl cursor-pointer disabled:opacity-60 relative overflow-hidden"
+              className="btn btn-primary w-full py-4 text-sm font-extrabold flex items-center justify-center gap-2 group rounded-2xl cursor-pointer disabled:opacity-60 tracking-wide"
             >
               <span>{isLoading ? 'Doğrulanıyor...' : 'Giriş Yap'}</span>
               <ArrowRight className="h-4 w-4 group-hover:translate-x-1.5 transition-transform" />
             </motion.button>
           </form>
 
-          <div className="pt-3 border-t border-slate-800/80 flex items-center justify-center gap-2 text-[11px] text-slate-400">
+          <div className="pt-3 border-t border-slate-800/80 flex items-center justify-center gap-2 text-[11px] text-slate-400 font-medium">
             <Shield className="h-3.5 w-3.5 text-indigo-400" />
             <span>Opteno Güvenli Oturum & Bulut Doğrulaması</span>
           </div>

@@ -216,13 +216,15 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
   return (
     <div className="space-y-6">
       {/* Sub Navigation Bar for SuperAdmin */}
-      <div className="glass-panel p-2 rounded-xl flex items-center justify-between gap-2 overflow-x-auto">
-        <div className="flex items-center gap-1.5 min-w-max p-1 bg-slate-900/60 rounded-2xl border border-slate-800">
+      <div className="clay-panel p-2 rounded-2xl flex items-center justify-between gap-2 overflow-x-auto">
+        <div className="flex items-center gap-1.5 min-w-max p-1.5 clay-sunken rounded-2xl">
           <motion.button
             whileTap={{ scale: 0.96 }}
             onClick={() => setActiveSubTab('INSTITUTIONS')}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
-              activeSubTab === 'INSTITUTIONS' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-slate-400 hover:text-white'
+              activeSubTab === 'INSTITUTIONS' 
+                ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-[0_6px_14px_rgba(79,70,229,0.4),inset_0_2px_4px_rgba(255,255,255,0.35),inset_0_-2px_4px_rgba(0,0,0,0.2)]' 
+                : 'text-slate-400 hover:text-white'
             }`}
           >
             <Building2 className="h-4 w-4" /> Kurumlar Paneli
@@ -232,7 +234,9 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
             whileTap={{ scale: 0.96 }}
             onClick={() => setActiveSubTab('PERSONNEL')}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
-              activeSubTab === 'PERSONNEL' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-slate-400 hover:text-white'
+              activeSubTab === 'PERSONNEL' 
+                ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-[0_6px_14px_rgba(79,70,229,0.4),inset_0_2px_4px_rgba(255,255,255,0.35),inset_0_-2px_4px_rgba(0,0,0,0.2)]' 
+                : 'text-slate-400 hover:text-white'
             }`}
           >
             <Shield className="h-4 w-4 text-amber-400" /> Kurum Personelleri & Girişler
@@ -242,7 +246,9 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
             whileTap={{ scale: 0.96 }}
             onClick={() => setActiveSubTab('STUDENTS')}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
-              activeSubTab === 'STUDENTS' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-slate-400 hover:text-white'
+              activeSubTab === 'STUDENTS' 
+                ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-[0_6px_14px_rgba(79,70,229,0.4),inset_0_2px_4px_rgba(255,255,255,0.35),inset_0_-2px_4px_rgba(0,0,0,0.2)]' 
+                : 'text-slate-400 hover:text-white'
             }`}
           >
             <Users className="h-4 w-4 text-emerald-400" /> Tüm Öğrenciler
@@ -252,7 +258,9 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
             whileTap={{ scale: 0.96 }}
             onClick={() => setActiveSubTab('EXAMS')}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
-              activeSubTab === 'EXAMS' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-slate-400 hover:text-white'
+              activeSubTab === 'EXAMS' 
+                ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-[0_6px_14px_rgba(79,70,229,0.4),inset_0_2px_4px_rgba(255,255,255,0.35),inset_0_-2px_4px_rgba(0,0,0,0.2)]' 
+                : 'text-slate-400 hover:text-white'
             }`}
           >
             <FileText className="h-4 w-4 text-fuchsia-400" /> Sınav Açma & Yönetimi
@@ -262,7 +270,9 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
             whileTap={{ scale: 0.96 }}
             onClick={() => setActiveSubTab('SITE_SETTINGS')}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
-              activeSubTab === 'SITE_SETTINGS' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-slate-400 hover:text-white'
+              activeSubTab === 'SITE_SETTINGS' 
+                ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-[0_6px_14px_rgba(79,70,229,0.4),inset_0_2px_4px_rgba(255,255,255,0.35),inset_0_-2px_4px_rgba(0,0,0,0.2)]' 
+                : 'text-slate-400 hover:text-white'
             }`}
           >
             <Settings className="h-4 w-4 text-cyan-400" /> Site Düzenlemeleri
@@ -275,51 +285,51 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
         <div className="space-y-6">
           {/* Stat Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="glass-panel p-5 border-l-4 border-indigo-500">
+            <div className="clay-card p-5 border border-indigo-500/30">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-semibold text-slate-400">Toplam Kayıtlı Kurum</p>
-                  <h3 className="font-display text-2xl font-extrabold text-white mt-1">{institutions.length}</h3>
+                  <h3 className="font-display text-2xl font-black text-white mt-1">{institutions.length}</h3>
                 </div>
-                <div className="h-10 w-10 rounded-xl bg-indigo-500/20 flex items-center justify-center text-indigo-400">
+                <div className="h-11 w-11 rounded-2xl bg-indigo-500/20 flex items-center justify-center text-indigo-400 shadow-[inset_0_2px_4px_rgba(255,255,255,0.3),inset_0_-2px_4px_rgba(0,0,0,0.25)]">
                   <Building2 className="h-5 w-5" />
                 </div>
               </div>
             </div>
 
-            <div className="glass-panel p-5 border-l-4 border-emerald-500">
+            <div className="clay-card p-5 border border-emerald-500/30">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-semibold text-slate-400">Toplam Kayıtlı Öğrenci</p>
-                  <h3 className="font-display text-2xl font-extrabold text-white mt-1">{totalStudentsCount}</h3>
+                  <h3 className="font-display text-2xl font-black text-white mt-1">{totalStudentsCount}</h3>
                 </div>
-                <div className="h-10 w-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400">
+                <div className="h-11 w-11 rounded-2xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 shadow-[inset_0_2px_4px_rgba(255,255,255,0.3),inset_0_-2px_4px_rgba(0,0,0,0.25)]">
                   <Users className="h-5 w-5" />
                 </div>
               </div>
             </div>
 
-            <div className="glass-panel p-5 border-l-4 border-fuchsia-500">
+            <div className="clay-card p-5 border border-fuchsia-500/30">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-semibold text-slate-400">Toplam Sınav & Optik Okuma</p>
-                  <h3 className="font-display text-2xl font-extrabold text-white mt-1">{totalExamsCount}</h3>
+                  <h3 className="font-display text-2xl font-black text-white mt-1">{totalExamsCount}</h3>
                 </div>
-                <div className="h-10 w-10 rounded-xl bg-fuchsia-500/20 flex items-center justify-center text-fuchsia-400">
+                <div className="h-11 w-11 rounded-2xl bg-fuchsia-500/20 flex items-center justify-center text-fuchsia-400 shadow-[inset_0_2px_4px_rgba(255,255,255,0.3),inset_0_-2px_4px_rgba(0,0,0,0.25)]">
                   <FileText className="h-5 w-5" />
                 </div>
               </div>
             </div>
 
-            <div className="glass-panel p-5 border-l-4 border-amber-500">
+            <div className="clay-card p-5 border border-amber-500/30">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-semibold text-slate-400">Sistem Durumu</p>
-                  <h3 className="font-display text-lg font-bold text-emerald-400 mt-1 flex items-center gap-1.5">
+                  <h3 className="font-display text-lg font-black text-emerald-400 mt-1 flex items-center gap-1.5">
                     <CheckCircle className="h-4 w-4" /> %99.9 Aktif
                   </h3>
                 </div>
-                <div className="h-10 w-10 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-400">
+                <div className="h-11 w-11 rounded-2xl bg-amber-500/20 flex items-center justify-center text-amber-400 shadow-[inset_0_2px_4px_rgba(255,255,255,0.3),inset_0_-2px_4px_rgba(0,0,0,0.25)]">
                   <CheckCircle className="h-5 w-5" />
                 </div>
               </div>
@@ -327,7 +337,7 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
           </div>
 
           {/* Institutions Panel Header & Search */}
-          <div className="glass-panel p-6">
+          <div className="clay-panel p-6 rounded-[28px]">
             <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
               <div>
                 <h2 className="font-display text-lg font-bold text-white">Tüm Kurumlar Paneli</h2>
@@ -361,7 +371,7 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                 const instPersonnel = storageService.getUsersByInstitution(inst.id);
                 const instAdmin = instPersonnel.find(u => u.role === 'INSTITUTION_ADMIN');
                 return (
-                  <div key={inst.id} className="glass-card p-5 rounded-xl border border-slate-700/60 flex flex-col justify-between">
+                  <div key={inst.id} className="clay-card p-5 rounded-[24px] border border-slate-700/50 flex flex-col justify-between hover:border-indigo-500/40">
                     <div>
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <span className="badge badge-primary text-[10px]">{inst.code}</span>

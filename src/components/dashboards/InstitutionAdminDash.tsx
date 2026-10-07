@@ -77,15 +77,15 @@ export const InstitutionAdminDash: React.FC<Props> = ({ setActiveTab }) => {
         <motion.div 
           variants={itemVariants}
           whileHover={{ y: -4, transition: { duration: 0.2 } }}
-          className="glass-panel p-5 border-l-4 border-indigo-500 relative overflow-hidden group shadow-lg"
+          className="clay-card p-5 relative overflow-hidden group border border-indigo-500/30"
         >
           <div className="flex items-center justify-between relative z-10">
             <div>
               <p className="text-xs font-semibold text-slate-400">Aktif Sınıf Sayısı</p>
-              <h3 className="font-display text-3xl font-extrabold text-white mt-1.5">{classes.length}</h3>
+              <h3 className="font-display text-3xl font-black text-white mt-1.5">{classes.length}</h3>
             </div>
-            <div className="h-12 w-12 rounded-2xl bg-indigo-500/15 border border-indigo-500/20 flex items-center justify-center text-indigo-400 group-hover:scale-110 transition-transform">
-              <BookOpen className="h-5 w-5" />
+            <div className="h-12 w-12 rounded-2xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center shadow-[inset_0_2px_4px_rgba(255,255,255,0.3),inset_0_-2px_4px_rgba(0,0,0,0.25)] group-hover:scale-110 transition-transform">
+              <BookOpen className="h-6 w-6" />
             </div>
           </div>
         </motion.div>
@@ -93,15 +93,15 @@ export const InstitutionAdminDash: React.FC<Props> = ({ setActiveTab }) => {
         <motion.div 
           variants={itemVariants}
           whileHover={{ y: -4, transition: { duration: 0.2 } }}
-          className="glass-panel p-5 border-l-4 border-emerald-500 relative overflow-hidden group shadow-lg"
+          className="clay-card p-5 relative overflow-hidden group border border-emerald-500/30"
         >
           <div className="flex items-center justify-between relative z-10">
             <div>
               <p className="text-xs font-semibold text-slate-400">Toplam Öğrenci</p>
-              <h3 className="font-display text-3xl font-extrabold text-white mt-1.5">{students.length}</h3>
+              <h3 className="font-display text-3xl font-black text-white mt-1.5">{students.length}</h3>
             </div>
-            <div className="h-12 w-12 rounded-2xl bg-emerald-500/15 border border-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform">
-              <Users className="h-5 w-5" />
+            <div className="h-12 w-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shadow-[inset_0_2px_4px_rgba(255,255,255,0.3),inset_0_-2px_4px_rgba(0,0,0,0.25)] group-hover:scale-110 transition-transform">
+              <Users className="h-6 w-6" />
             </div>
           </div>
         </motion.div>
@@ -109,15 +109,15 @@ export const InstitutionAdminDash: React.FC<Props> = ({ setActiveTab }) => {
         <motion.div 
           variants={itemVariants}
           whileHover={{ y: -4, transition: { duration: 0.2 } }}
-          className="glass-panel p-5 border-l-4 border-amber-500 relative overflow-hidden group shadow-lg"
+          className="clay-card p-5 relative overflow-hidden group border border-amber-500/30"
         >
           <div className="flex items-center justify-between relative z-10">
             <div>
               <p className="text-xs font-semibold text-slate-400">Kayıtlı Personel</p>
-              <h3 className="font-display text-3xl font-extrabold text-white mt-1.5">{personnel.length}</h3>
+              <h3 className="font-display text-3xl font-black text-white mt-1.5">{personnel.length}</h3>
             </div>
-            <div className="h-12 w-12 rounded-2xl bg-amber-500/15 border border-amber-500/20 flex items-center justify-center text-amber-400 group-hover:scale-110 transition-transform">
-              <Shield className="h-5 w-5" />
+            <div className="h-12 w-12 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center shadow-[inset_0_2px_4px_rgba(255,255,255,0.3),inset_0_-2px_4px_rgba(0,0,0,0.25)] group-hover:scale-110 transition-transform">
+              <Shield className="h-6 w-6" />
             </div>
           </div>
         </motion.div>
@@ -125,15 +125,15 @@ export const InstitutionAdminDash: React.FC<Props> = ({ setActiveTab }) => {
         <motion.div 
           variants={itemVariants}
           whileHover={{ y: -4, transition: { duration: 0.2 } }}
-          className="glass-panel p-5 border-l-4 border-fuchsia-500 relative overflow-hidden group shadow-lg"
+          className="clay-card p-5 relative overflow-hidden group border border-fuchsia-500/30"
         >
           <div className="flex items-center justify-between relative z-10">
             <div>
               <p className="text-xs font-semibold text-slate-400">Oluşturulan Sınav / Optik</p>
-              <h3 className="font-display text-3xl font-extrabold text-white mt-1.5">{exams.length} / {totalScanned}</h3>
+              <h3 className="font-display text-3xl font-black text-white mt-1.5">{exams.length} / {totalScanned}</h3>
             </div>
-            <div className="h-12 w-12 rounded-2xl bg-fuchsia-500/15 border border-fuchsia-500/20 flex items-center justify-center text-fuchsia-400 group-hover:scale-110 transition-transform">
-              <FileText className="h-5 w-5" />
+            <div className="h-12 w-12 rounded-2xl bg-fuchsia-500/20 text-fuchsia-400 flex items-center justify-center shadow-[inset_0_2px_4px_rgba(255,255,255,0.3),inset_0_-2px_4px_rgba(0,0,0,0.25)] group-hover:scale-110 transition-transform">
+              <FileText className="h-6 w-6" />
             </div>
           </div>
         </motion.div>
@@ -149,53 +149,53 @@ export const InstitutionAdminDash: React.FC<Props> = ({ setActiveTab }) => {
         <motion.button 
           variants={itemVariants}
           whileHover={{ y: -4, scale: 1.01 }}
-          whileTap={{ scale: 0.97 }}
+          whileTap={{ scale: 0.96 }}
           onClick={() => setActiveTab('create-exam')} 
-          className="glass-card flex flex-col items-center justify-center p-6 gap-3 group border border-slate-700/60 rounded-3xl"
+          className="clay-card flex flex-col items-center justify-center p-6 gap-3 group rounded-[28px] cursor-pointer"
         >
-          <div className="h-13 w-13 rounded-2xl bg-indigo-500/20 flex items-center justify-center text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-md group-hover:shadow-indigo-500/40">
-            <FileText className="h-6 w-6" />
+          <div className="h-14 w-14 rounded-2xl bg-indigo-500/20 flex items-center justify-center text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-[inset_0_2px_4px_rgba(255,255,255,0.25),inset_0_-2px_4px_rgba(0,0,0,0.2)] group-hover:shadow-[0_8px_16px_rgba(79,70,229,0.45)]">
+            <FileText className="h-7 w-7" />
           </div>
-          <span className="text-sm font-semibold text-slate-200">Sınav Oluştur</span>
+          <span className="text-sm font-bold text-slate-200">Sınav Oluştur</span>
         </motion.button>
 
         <motion.button 
           variants={itemVariants}
           whileHover={{ y: -4, scale: 1.01 }}
-          whileTap={{ scale: 0.97 }}
+          whileTap={{ scale: 0.96 }}
           onClick={() => setActiveTab('scan')} 
-          className="glass-card flex flex-col items-center justify-center p-6 gap-3 group border border-slate-700/60 rounded-3xl"
+          className="clay-card flex flex-col items-center justify-center p-6 gap-3 group rounded-[28px] cursor-pointer"
         >
-          <div className="h-13 w-13 rounded-2xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover:bg-emerald-600 group-hover:text-white transition-all shadow-md group-hover:shadow-emerald-500/40">
-            <Camera className="h-6 w-6" />
+          <div className="h-14 w-14 rounded-2xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover:bg-emerald-600 group-hover:text-white transition-all shadow-[inset_0_2px_4px_rgba(255,255,255,0.25),inset_0_-2px_4px_rgba(0,0,0,0.2)] group-hover:shadow-[0_8px_16px_rgba(16,185,129,0.45)]">
+            <Camera className="h-7 w-7" />
           </div>
-          <span className="text-sm font-semibold text-slate-200">Kamera ile Oku</span>
+          <span className="text-sm font-bold text-slate-200">Kamera ile Oku</span>
         </motion.button>
 
         <motion.button 
           variants={itemVariants}
           whileHover={{ y: -4, scale: 1.01 }}
-          whileTap={{ scale: 0.97 }}
+          whileTap={{ scale: 0.96 }}
           onClick={() => setActiveTab('management')} 
-          className="glass-card flex flex-col items-center justify-center p-6 gap-3 group border border-slate-700/60 rounded-3xl"
+          className="clay-card flex flex-col items-center justify-center p-6 gap-3 group rounded-[28px] cursor-pointer"
         >
-          <div className="h-13 w-13 rounded-2xl bg-amber-500/20 flex items-center justify-center text-amber-400 group-hover:bg-amber-600 group-hover:text-white transition-all shadow-md group-hover:shadow-amber-500/40">
-            <Users className="h-6 w-6" />
+          <div className="h-14 w-14 rounded-2xl bg-amber-500/20 flex items-center justify-center text-amber-400 group-hover:bg-amber-600 group-hover:text-white transition-all shadow-[inset_0_2px_4px_rgba(255,255,255,0.25),inset_0_-2px_4px_rgba(0,0,0,0.2)] group-hover:shadow-[0_8px_16px_rgba(245,158,11,0.45)]">
+            <Users className="h-7 w-7" />
           </div>
-          <span className="text-sm font-semibold text-slate-200">Personel & Sınıf Yönetimi</span>
+          <span className="text-sm font-bold text-slate-200">Personel & Sınıf Yönetimi</span>
         </motion.button>
 
         <motion.button 
           variants={itemVariants}
           whileHover={{ y: -4, scale: 1.01 }}
-          whileTap={{ scale: 0.97 }}
+          whileTap={{ scale: 0.96 }}
           onClick={() => setActiveTab('results')} 
-          className="glass-card flex flex-col items-center justify-center p-6 gap-3 group border border-slate-700/60 rounded-3xl"
+          className="clay-card flex flex-col items-center justify-center p-6 gap-3 group rounded-[28px] cursor-pointer"
         >
-          <div className="h-13 w-13 rounded-2xl bg-fuchsia-500/20 flex items-center justify-center text-fuchsia-400 group-hover:bg-fuchsia-600 group-hover:text-white transition-all shadow-md group-hover:shadow-fuchsia-500/40">
-            <BarChart3 className="h-6 w-6" />
+          <div className="h-14 w-14 rounded-2xl bg-fuchsia-500/20 flex items-center justify-center text-fuchsia-400 group-hover:bg-fuchsia-600 group-hover:text-white transition-all shadow-[inset_0_2px_4px_rgba(255,255,255,0.25),inset_0_-2px_4px_rgba(0,0,0,0.2)] group-hover:shadow-[0_8px_16px_rgba(217,70,239,0.45)]">
+            <BarChart3 className="h-7 w-7" />
           </div>
-          <span className="text-sm font-semibold text-slate-200">Sınav Sonuçları</span>
+          <span className="text-sm font-bold text-slate-200">Sınav Sonuçları</span>
         </motion.button>
       </motion.div>
 
@@ -204,14 +204,14 @@ export const InstitutionAdminDash: React.FC<Props> = ({ setActiveTab }) => {
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="glass-panel p-6 rounded-3xl border border-slate-700/60 shadow-xl"
+        className="clay-panel p-6 rounded-[28px] shadow-xl"
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-display text-lg font-bold text-white">Son Sınavlar</h3>
           <motion.button 
             whileHover={{ x: 2 }}
             onClick={() => setActiveTab('results')} 
-            className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 flex items-center gap-1 cursor-pointer"
+            className="text-xs font-bold text-indigo-400 hover:text-indigo-300 flex items-center gap-1 cursor-pointer"
           >
             Tümünü Gör <ChevronRight className="h-3.5 w-3.5" />
           </motion.button>
@@ -226,11 +226,11 @@ export const InstitutionAdminDash: React.FC<Props> = ({ setActiveTab }) => {
                 key={exam.id} 
                 whileHover={{ scale: 1.01, x: 2 }}
                 whileTap={{ scale: 0.99 }}
-                className="flex items-center justify-between p-4 rounded-2xl bg-slate-900/60 border border-slate-700/60 hover:border-indigo-500/40 hover:bg-slate-800/60 transition-all cursor-pointer shadow-sm" 
+                className="flex items-center justify-between p-4 rounded-2xl clay-card hover:border-indigo-500/40 transition-all cursor-pointer" 
                 onClick={() => setActiveTab('results')}
               >
                 <div>
-                  <h4 className="font-semibold text-slate-100">{exam.title}</h4>
+                  <h4 className="font-bold text-slate-100">{exam.title}</h4>
                   <p className="text-xs text-slate-400 mt-1">
                     {exam.examCode} • {exam.date} • {exam.totalQuestions} Soru
                   </p>
