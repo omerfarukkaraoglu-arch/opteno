@@ -101,17 +101,17 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
 
     storageService.addInstitution(newInst);
 
-    // Create default Institution Admin if name provided
-    if (adminName) {
-      const uName = adminUsername || `admin_${instName.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
-      const uPass = adminPassword || 'kurum123pass';
+    // Create default Institution Admin if any admin field provided
+    if (adminName || adminUsername || adminPassword) {
+      const uName = (adminUsername || `admin_${instName.toLowerCase().replace(/[^a-z0-9]/g, '')}`).trim();
+      const uPass = (adminPassword || 'kurum123pass').trim();
       const newAdmin: User = {
         id: `user-${Date.now()}`,
-        name: adminName,
+        name: (adminName || adminUsername || `${instName} Yöneticisi`).trim(),
         username: uName,
         password: uPass,
-        email: instEmail || `admin@${instName.toLowerCase().replace(/\s+/g, '')}.com`,
-        phone: instPhone,
+        email: instEmail?.trim() || `${uName}@opteno.com`,
+        phone: instPhone?.trim(),
         role: 'INSTITUTION_ADMIN',
         institutionId: instId,
         institutionName: instName,
