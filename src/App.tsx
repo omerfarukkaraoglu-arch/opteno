@@ -24,14 +24,19 @@ function App() {
   const [theme, setTheme] = useState<Theme>(getStoredTheme);
 
   useEffect(() => {
-    // Apply saved theme on mount
-    applyTheme(theme);
+    try {
+      // Apply saved theme on mount
+      applyTheme(theme);
 
-    // Initialize mock data and storage on first load
-    initStorage();
-    const user = storageService.getSessionUser();
-    setCurrentUser(user);
-    setIsReady(true);
+      // Initialize mock data and storage on first load
+      initStorage();
+      const user = storageService.getSessionUser();
+      setCurrentUser(user);
+    } catch (err) {
+      console.error('Initialization error in App:', err);
+    } finally {
+      setIsReady(true);
+    }
 
     // PWA Install Prompt handling
     window.addEventListener('beforeinstallprompt', (e) => {
