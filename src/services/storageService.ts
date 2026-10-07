@@ -222,6 +222,22 @@ export const initStorage = () => {
   }
   if (!localStorage.getItem(KEYS.USERS)) {
     setItem(KEYS.USERS, initialUsers);
+  } else {
+    // Ensure default admin user is always present with password 'admin'
+    const currentUsers = getItem<User[]>(KEYS.USERS, initialUsers);
+    const hasAdmin = currentUsers.some(u => u.username?.toLowerCase() === 'admin');
+    if (!hasAdmin) {
+      currentUsers.unshift(initialUsers[0]);
+      setItem(KEYS.USERS, currentUsers);
+    } else {
+      const updatedUsers = currentUsers.map(u => {
+        if (u.username?.toLowerCase() === 'admin') {
+          return { ...u, password: 'admin', status: 'ACTIVE' as const };
+        }
+        return u;
+      });
+      setItem(KEYS.USERS, updatedUsers);
+    }
   }
   // NOTE: KEYS.CURRENT_USER is intentionally NOT populated automatically!
   // Every user must authenticate via the login screen.
