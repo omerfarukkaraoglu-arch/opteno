@@ -31,19 +31,22 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess, theme, onT
 
     setIsLoading(true);
 
-    // Sync latest credentials from Firebase Cloud Database so multi-device works instantly
+    // 1. Fetch fresh users directly from Firebase Cloud Database (bypasses cache/race conditions)
+    let freshUsers: User[] = [];
     try {
-      await syncWithServer();
+      freshUsers = await storageService.fetchDirectUsers();
     } catch {
-      // Offline fallback
+      freshUsers = storageService.getAllUsers();
+    }
+    if (!freshUsers || freshUsers.length === 0) {
+      freshUsers = storageService.getAllUsers();
     }
 
-    // Direct guaranteed authentication for default SuperAdmin
+    // 2. Direct guaranteed authentication for SuperAdmin
     if (
       (trimmedUser.toLowerCase() === 'admin' || trimmedUser.toLowerCase() === 'admin@opteno.com') &&
       trimmedPassword === 'admin'
     ) {
-      const freshUsers = storageService.getAllUsers();
       const adminUser: User = freshUsers.find(u => u.username?.toLowerCase() === 'admin') || {
         id: 'user-admin',
         name: 'Sistem Yöneticisi',
@@ -60,19 +63,39 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess, theme, onT
       return;
     }
 
-    const freshUsers = storageService.getAllUsers();
-    const matchingUsers = freshUsers.filter(
-      u => (u.username?.trim().toLowerCase() === trimmedUser.toLowerCase() ||
-            u.email?.trim().toLowerCase() === trimmedUser.toLowerCase())
-    );
+    // Helper for robust Turkish & case-insensitive normalization
+    const normalize = (str: string) => {
+      return (str || '')
+        .trim()
+        .toLocaleLowerCase('tr-TR')
+        .replace(/i̇/g, 'i')
+        .replace(/ı/g, 'i')
+        .toLowerCase();
+    };
 
-    const targetUser = matchingUsers.find(
-      u => u.password?.trim() === trimmedPassword
-    ) || matchingUsers[0];
+    const targetUser = freshUsers.find(u => {
+      const uName = u.username ? normalize(u.username) : '';
+      const uEmail = u.email ? normalize(u.email) : '';
+      const input = normalize(trimmedUser);
+      return uName === input || uEmail === input;
+    });
 
-    if (!targetUser || !targetUser.password || targetUser.password.trim() !== trimmedPassword) {
+    if (!targetUser) {
       setIsLoading(false);
-      setErrorMessage('Kullanıcı adı veya şifre hatalı. Lütfen kontrol ediniz.');
+      setErrorMessage(`"${trimmedUser}" kullanıcı adına veya e-postasına ait bir hesap bulunamadı.`);
+      return;
+    }
+
+    // Password validation (Exact trimmed match, with mobile keyboard case & Turkish 'ı'/'i' tolerance)
+    const storedPass = (targetUser.password || '').trim();
+    const isPasswordMatch = 
+      storedPass === trimmedPassword ||
+      storedPass.toLowerCase() === trimmedPassword.toLowerCase() ||
+      normalize(storedPass) === normalize(trimmedPassword);
+
+    if (!isPasswordMatch) {
+      setIsLoading(false);
+      setErrorMessage('Girdiğiniz şifre hatalı. Lütfen büyük/küçük harf durumunu kontrol ediniz.');
       return;
     }
 

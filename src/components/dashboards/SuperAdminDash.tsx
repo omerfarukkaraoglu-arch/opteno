@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Building2, Users, FileText, CheckCircle, Plus, Search, MapPin, Phone, Mail, ChevronRight, Settings, UserPlus, Shield, Trash2, Eye, Calendar, Sparkles, Download, Upload, FileSpreadsheet, CheckCircle2, GraduationCap, RotateCcw, BookOpen, Layers, X } from 'lucide-react';
+import { Building2, Users, FileText, CheckCircle, Plus, Search, MapPin, Phone, Mail, ChevronRight, Settings, UserPlus, Shield, Trash2, Eye, Calendar, Sparkles, Download, Upload, FileSpreadsheet, CheckCircle2, GraduationCap, RotateCcw, BookOpen, Layers, X, Copy, Key, Check } from 'lucide-react';
 import { storageService } from '../../services/storageService';
 import { studentExcelService } from '../../services/studentExcelService';
 import { pdfService } from '../../services/pdfService';
@@ -170,6 +170,14 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
   const [adminName, setAdminName] = useState('');
   const [adminUsername, setAdminUsername] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
+  const [editingAdminUser, setEditingAdminUser] = useState<User | null>(null);
+  const [editingAdminUsername, setEditingAdminUsername] = useState('');
+  const [editingAdminPassword, setEditingAdminPassword] = useState('');
+  const [copiedInfoMsg, setCopiedInfoMsg] = useState<string | null>(null);
+  const [newAdminForInstModal, setNewAdminForInstModal] = useState<Institution | null>(null);
+  const [assignAdminName, setAssignAdminName] = useState('');
+  const [assignAdminUsername, setAssignAdminUsername] = useState('');
+  const [assignAdminPassword, setAssignAdminPassword] = useState('');
 
   // New Exam Form State
   const [examInstId, setExamInstId] = useState<string>(institutions[0]?.id || '');
@@ -272,15 +280,15 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
   const totalStudentsCount = institutions.reduce((sum, i) => sum + i.studentCount, 0);
   const totalExamsCount = institutions.reduce((sum, i) => sum + i.examCount, 0);
 
-  // Create Institution & Admin Account
+  // Create Institution & Guaranteed Admin Account
   const handleAddInstitution = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!instName) return;
+    if (!instName.trim()) return;
 
     const instId = `inst-${Date.now()}`;
     const newInst: Institution = {
       id: instId,
-      name: instName,
+      name: instName.trim(),
       code: `INST-${Math.floor(100 + Math.random() * 900)}`,
       city: instCity,
       phone: instPhone || '0212 000 0000',
@@ -294,25 +302,28 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
 
     storageService.addInstitution(newInst);
 
-    // Create default Institution Admin if any admin field provided
-    if (adminName || adminUsername || adminPassword) {
-      const uName = (adminUsername || `admin_${instName.toLowerCase().replace(/[^a-z0-9]/g, '')}`).trim();
-      const uPass = (adminPassword || 'kurum123pass').trim();
-      const newAdmin: User = {
-        id: `user-${Date.now()}`,
-        name: (adminName || adminUsername || `${instName} Yöneticisi`).trim(),
-        username: uName,
-        password: uPass,
-        email: instEmail?.trim() || `${uName}@opteno.com`,
-        phone: instPhone?.trim(),
-        role: 'INSTITUTION_ADMIN',
-        institutionId: instId,
-        institutionName: instName,
-        status: 'ACTIVE',
-        createdAt: new Date().toISOString().split('T')[0]
-      };
-      storageService.addUser(newAdmin);
-    }
+    // GUARANTEED ADMIN CREATION: Always generate valid admin credentials
+    const cleanSlug = instName.toLowerCase()
+      .replace(/ğ/g, 'g').replace(/ü/g, 'u').replace(/ş/g, 's')
+      .replace(/ı/g, 'i').replace(/ö/g, 'o').replace(/ç/g, 'c')
+      .replace(/[^a-z0-9]/g, '');
+    const uName = (adminUsername || `admin_${cleanSlug || 'kurum'}`).trim();
+    const uPass = (adminPassword || `${cleanSlug || 'kurum'}123`).trim();
+
+    const newAdmin: User = {
+      id: `user-${Date.now()}`,
+      name: (adminName || `${instName} Yöneticisi`).trim(),
+      username: uName,
+      password: uPass,
+      email: instEmail?.trim() || `${uName}@opteno.com`,
+      phone: instPhone?.trim(),
+      role: 'INSTITUTION_ADMIN',
+      institutionId: instId,
+      institutionName: instName.trim(),
+      status: 'ACTIVE',
+      createdAt: new Date().toISOString().split('T')[0]
+    };
+    storageService.addUser(newAdmin);
 
     reloadData();
     setShowAddInstModal(false);
@@ -323,6 +334,56 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
     setAdminName('');
     setAdminUsername('');
     setAdminPassword('');
+
+    alert(`"${newInst.name}" ve Kurum Yöneticisi başarıyla kaydedildi!\n\nGiriş Bilgileri:\nKullanıcı Adı: ${uName}\nŞifre: ${uPass}`);
+  };
+
+  const handleSaveAdminCredentials = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingAdminUser || !editingAdminPassword.trim()) return;
+    const updated = {
+      ...editingAdminUser,
+      username: editingAdminUsername.trim() || editingAdminUser.username,
+      password: editingAdminPassword.trim()
+    };
+    storageService.updateUser(updated);
+    setEditingAdminUser(null);
+    reloadData();
+    alert('Kurum yöneticisi giriş bilgileri başarıyla güncellendi.');
+  };
+
+  const handleCreateAdminForInstitution = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newAdminForInstModal || !assignAdminUsername.trim() || !assignAdminPassword.trim()) {
+      alert('Lütfen kullanıcı adı ve şifreyi eksiksiz giriniz.');
+      return;
+    }
+    const adminUser: User = {
+      id: `user-${Date.now()}`,
+      name: (assignAdminName || `${newAdminForInstModal.name} Yöneticisi`).trim(),
+      username: assignAdminUsername.trim(),
+      password: assignAdminPassword.trim(),
+      email: `${assignAdminUsername.trim()}@opteno.com`,
+      role: 'INSTITUTION_ADMIN',
+      institutionId: newAdminForInstModal.id,
+      institutionName: newAdminForInstModal.name,
+      status: 'ACTIVE',
+      createdAt: new Date().toISOString().split('T')[0]
+    };
+    storageService.addUser(adminUser);
+    setNewAdminForInstModal(null);
+    setAssignAdminName('');
+    setAssignAdminUsername('');
+    setAssignAdminPassword('');
+    reloadData();
+    alert(`"${newAdminForInstModal.name}" için yönetici hesabı başarıyla oluşturuldu!`);
+  };
+
+  const copyCredentials = (username: string, pass: string, instName: string) => {
+    const text = `Opteno Giriş Bilgileri (${instName}):\nKullanıcı Adı: ${username}\nŞifre: ${pass}\nGiriş Adresi: ${window.location.origin}`;
+    navigator.clipboard.writeText(text);
+    setCopiedInfoMsg(`"${instName}" giriş bilgileri panoya kopyalandı!`);
+    setTimeout(() => setCopiedInfoMsg(null), 3500);
   };
 
   // Delete Institution Trigger
@@ -519,7 +580,7 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                 <div>
                   <p className="text-xs font-semibold text-slate-400">Sistem Durumu</p>
                   <h3 className="font-display text-lg font-black text-emerald-400 mt-1 flex items-center gap-1.5">
-                    <CheckCircle className="h-4 w-4" /> %99.9 Aktif
+                    <CheckCircle className="h-4 w-4" /> Çevrimiçi & Aktif
                   </h3>
                 </div>
                 <div className="h-11 w-11 rounded-2xl bg-amber-500/20 flex items-center justify-center text-amber-400 shadow-[inset_0_2px_4px_rgba(255,255,255,0.3),inset_0_-2px_4px_rgba(0,0,0,0.25)]">
@@ -528,6 +589,19 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
               </div>
             </div>
           </div>
+
+          {/* Toast for copied credentials */}
+          {copiedInfoMsg && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="p-3 bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 rounded-2xl text-xs font-bold flex items-center gap-2 mb-3 shadow-lg"
+            >
+              <Check className="h-4 w-4 text-emerald-400 shrink-0" />
+              <span>{copiedInfoMsg}</span>
+            </motion.div>
+          )}
 
           {/* Institutions Panel Header & Search */}
           <div className="clay-panel p-6 rounded-[28px]">
@@ -581,12 +655,45 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                             <Building2 className="h-5 w-5" />
                           </div>
                         )}
-                        <div>
-                          <h3 className="font-display font-bold text-base text-white">{inst.name}</h3>
-                          {instAdmin && (
-                            <p className="text-xs text-amber-300 font-semibold mt-0.5">
-                              Yönetici: {instAdmin.name} ({instAdmin.username})
-                            </p>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-display font-bold text-base text-white truncate">{inst.name}</h3>
+                          {instAdmin ? (
+                            <div className="mt-1.5 flex items-center justify-between gap-1 bg-slate-900/90 px-2 py-1 rounded-xl border border-indigo-500/20">
+                              <div className="text-[11px] font-mono leading-tight truncate">
+                                <span className="text-amber-300 font-bold">👤 {instAdmin.username}</span>
+                                <span className="text-slate-500 mx-1">•</span>
+                                <span className="text-emerald-400 font-bold">🔑 {instAdmin.password}</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  copyCredentials(instAdmin.username || '', instAdmin.password || '', inst.name);
+                                }}
+                                className="p-1 rounded-md bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 transition-colors shrink-0"
+                                title="Giriş Bilgilerini Kopyala"
+                              >
+                                <Copy className="h-3 w-3" />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="mt-1 flex items-center gap-1.5">
+                              <span className="text-[10px] text-rose-400 font-semibold">⚠️ Yönetici Yok</span>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setNewAdminForInstModal(inst);
+                                  setAssignAdminName(`${inst.name} Yöneticisi`);
+                                  const clean = inst.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+                                  setAssignAdminUsername(`admin_${clean || 'kurum'}`);
+                                  setAssignAdminPassword(`${clean || 'kurum'}123`);
+                                }}
+                                className="text-[10px] text-indigo-400 hover:text-indigo-300 underline font-bold"
+                              >
+                                Yönetici Ata
+                              </button>
+                            </div>
                           )}
                         </div>
                       </div>
@@ -1484,21 +1591,81 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                 </div>
               </div>
 
-              {/* Institution Personnel */}
+              {/* Institution Personnel & Admin Credentials */}
               <div>
-                <h4 className="text-xs font-bold text-indigo-400 mb-2">Kurum Yöneticileri ve Personeller</h4>
-                <div className="space-y-2">
-                  {storageService.getUsersByInstitution(selectedInstDetails.id).map(p => (
-                    <div key={p.id} className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 flex items-center justify-between text-xs">
-                      <div>
-                        <span className="font-bold text-white">{p.name}</span> ({p.role === 'INSTITUTION_ADMIN' ? 'Kurum Yöneticisi' : 'Öğretmen'})
-                        <div className="text-[11px] text-slate-400 font-mono mt-0.5">
-                          Kullanıcı Adı: <strong className="text-indigo-300">{p.username || p.email}</strong> | Şifre: <strong className="text-emerald-400">{p.password || '******'}</strong>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-xs font-bold text-indigo-400">Kurum Yöneticileri ve Giriş Bilgileri</h4>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNewAdminForInstModal(selectedInstDetails);
+                      setAssignAdminName(`${selectedInstDetails.name} Yöneticisi`);
+                      const clean = selectedInstDetails.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+                      setAssignAdminUsername(`admin_${clean || 'kurum'}`);
+                      setAssignAdminPassword(`${clean || 'kurum'}123`);
+                    }}
+                    className="text-[11px] text-indigo-400 hover:text-indigo-300 font-bold flex items-center gap-1 cursor-pointer"
+                  >
+                    <UserPlus className="h-3 w-3" /> Yeni Yönetici Ekle
+                  </button>
+                </div>
+                
+                {storageService.getUsersByInstitution(selectedInstDetails.id).length === 0 ? (
+                  <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-center space-y-2">
+                    <p className="text-xs text-amber-300 font-semibold">Bu kuruma henüz tanımlı bir yönetici hesabı bulunmuyor.</p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNewAdminForInstModal(selectedInstDetails);
+                        setAssignAdminName(`${selectedInstDetails.name} Yöneticisi`);
+                        const clean = selectedInstDetails.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+                        setAssignAdminUsername(`admin_${clean || 'kurum'}`);
+                        setAssignAdminPassword(`${clean || 'kurum'}123`);
+                      }}
+                      className="btn btn-primary text-xs py-1.5 px-3 mx-auto flex items-center gap-1.5"
+                    >
+                      <Plus className="h-3.5 w-3.5" /> Hemen Yönetici Hesabı Oluştur
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {storageService.getUsersByInstitution(selectedInstDetails.id).map(p => (
+                      <div key={p.id} className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 flex items-center justify-between text-xs">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-white">{p.name}</span>
+                            <span className="badge badge-primary text-[10px]">{p.role === 'INSTITUTION_ADMIN' ? 'Kurum Yöneticisi' : 'Öğretmen'}</span>
+                          </div>
+                          <div className="text-[11px] text-slate-400 font-mono mt-1">
+                            Kullanıcı Adı: <strong className="text-amber-300">{p.username || p.email}</strong> &nbsp;|&nbsp; Şifre: <strong className="text-emerald-400">{p.password || '******'}</strong>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => copyCredentials(p.username || '', p.password || '', selectedInstDetails.name)}
+                            className="btn btn-secondary text-[11px] py-1.5 px-2.5 flex items-center gap-1 rounded-xl"
+                            title="Giriş Bilgilerini Kopyala"
+                          >
+                            <Copy className="h-3 w-3 text-indigo-400" /> Kopyala
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingAdminUser(p);
+                              setEditingAdminUsername(p.username || '');
+                              setEditingAdminPassword(p.password || '');
+                            }}
+                            className="btn btn-primary text-[11px] py-1.5 px-2.5 flex items-center gap-1 rounded-xl"
+                            title="Şifreyi Değiştir"
+                          >
+                            <Key className="h-3 w-3" /> Şifre Düzenle
+                          </button>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Delete Institution Footer Action */}
@@ -1514,6 +1681,181 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                   <Trash2 className="h-4 w-4" /> Kurumu Tamamen Sil
                 </motion.button>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Edit Admin Credentials Modal */}
+      <AnimatePresence>
+        {editingAdminUser && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setEditingAdminUser(null)}
+              className="fixed inset-0 bg-slate-950/80 backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="glass-panel relative z-10 max-w-sm w-full p-6 rounded-3xl border border-indigo-500/30 bg-slate-900 shadow-2xl space-y-4"
+            >
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 className="font-display text-base font-bold text-white flex items-center gap-2">
+                  <Key className="h-4 w-4 text-amber-400" /> Şifre & Kullanıcı Adı Düzenle
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setEditingAdminUser(null)}
+                  className="p-1 rounded-lg text-slate-400 hover:text-white"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveAdminCredentials} className="space-y-3">
+                <div>
+                  <label className="text-xs text-slate-400 font-semibold mb-1 block">Yönetici Adı</label>
+                  <input
+                    type="text"
+                    disabled
+                    value={editingAdminUser.name}
+                    className="input-field text-xs bg-slate-800/50 opacity-70"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-400 font-semibold mb-1 block">Kullanıcı Adı</label>
+                  <input
+                    type="text"
+                    value={editingAdminUsername}
+                    onChange={(e) => setEditingAdminUsername(e.target.value)}
+                    className="input-field text-xs font-mono"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-400 font-semibold mb-1 block">Yeni Şifre</label>
+                  <input
+                    type="text"
+                    value={editingAdminPassword}
+                    onChange={(e) => setEditingAdminPassword(e.target.value)}
+                    className="input-field text-xs font-mono text-emerald-300"
+                    placeholder="Yeni şifre giriniz"
+                    required
+                  />
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingAdminUser(null)}
+                    className="btn btn-secondary text-xs rounded-xl"
+                  >
+                    İptal
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary text-xs rounded-xl"
+                  >
+                    Kaydet ve Güncelle
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Assign New Admin to Institution Modal */}
+      <AnimatePresence>
+        {newAdminForInstModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setNewAdminForInstModal(null)}
+              className="fixed inset-0 bg-slate-950/80 backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="glass-panel relative z-10 max-w-sm w-full p-6 rounded-3xl border border-indigo-500/30 bg-slate-900 shadow-2xl space-y-4"
+            >
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 className="font-display text-base font-bold text-white flex items-center gap-2">
+                  <UserPlus className="h-4 w-4 text-indigo-400" /> Kuruma Yönetici Ata
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setNewAdminForInstModal(null)}
+                  className="p-1 rounded-lg text-slate-400 hover:text-white"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <form onSubmit={handleCreateAdminForInstitution} className="space-y-3">
+                <div>
+                  <label className="text-xs text-slate-400 font-semibold mb-1 block">Kurum</label>
+                  <input
+                    type="text"
+                    disabled
+                    value={newAdminForInstModal.name}
+                    className="input-field text-xs bg-slate-800/50 opacity-70"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-400 font-semibold mb-1 block">Yönetici Ad Soyad</label>
+                  <input
+                    type="text"
+                    value={assignAdminName}
+                    onChange={(e) => setAssignAdminName(e.target.value)}
+                    className="input-field text-xs"
+                    placeholder="ör. Müdür Ahmet"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-400 font-semibold mb-1 block">Kullanıcı Adı</label>
+                  <input
+                    type="text"
+                    value={assignAdminUsername}
+                    onChange={(e) => setAssignAdminUsername(e.target.value)}
+                    className="input-field text-xs font-mono"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-400 font-semibold mb-1 block">Giriş Şifresi</label>
+                  <input
+                    type="text"
+                    value={assignAdminPassword}
+                    onChange={(e) => setAssignAdminPassword(e.target.value)}
+                    className="input-field text-xs font-mono text-emerald-300"
+                    placeholder="Şifre belirleyin"
+                    required
+                  />
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setNewAdminForInstModal(null)}
+                    className="btn btn-secondary text-xs rounded-xl"
+                  >
+                    İptal
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary text-xs rounded-xl"
+                  >
+                    Yöneticiyi Oluştur
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </div>
         )}

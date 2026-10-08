@@ -159,6 +159,34 @@ export const pushToServer = async () => {
   }
 };
 
+// Directly push users array to Firebase users endpoint to avoid race conditions
+export const pushUsersToServer = async (usersToPush?: User[]) => {
+  try {
+    const users = usersToPush || getItem<User[]>(KEYS.USERS, initialUsers);
+    await fetch(`${FIREBASE_DB_URL}/users.json`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(users)
+    });
+  } catch (e) {
+    console.error('Direct push users to Firebase failed:', e);
+  }
+};
+
+// Directly push institutions array to Firebase institutions endpoint
+export const pushInstitutionsToServer = async (instsToPush?: Institution[]) => {
+  try {
+    const insts = instsToPush || getItem<Institution[]>(KEYS.INSTITUTIONS, initialInstitutions);
+    await fetch(`${FIREBASE_DB_URL}/institutions.json`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(insts)
+    });
+  } catch (e) {
+    console.error('Direct push institutions to Firebase failed:', e);
+  }
+};
+
 // Synchronization with Firebase Cloud Database (Authoritative Single Source of Truth)
 export const syncWithServer = async () => {
   // If pushing or recent local write happened within 3.5 seconds, don't overwrite with stale server cache
@@ -392,6 +420,30 @@ export const storageService = {
     localStorage.removeItem(KEYS.CURRENT_USER);
   },
   getAllUsers: (): User[] => getItem<User[]>(KEYS.USERS, initialUsers),
+  setAllUsers: (users: User[]) => {
+    setItem(KEYS.USERS, users);
+    window.dispatchEvent(new CustomEvent('opticok-data-updated'));
+  },
+  // Directly fetch users from Firebase with quick fallback to local storage
+  fetchDirectUsers: async (): Promise<User[]> => {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 4000);
+      const res = await fetch(`${FIREBASE_DB_URL}/users.json`, { signal: controller.signal });
+      clearTimeout(timeout);
+      if (res.ok) {
+        const cloudUsers = await res.json();
+        if (Array.isArray(cloudUsers) && cloudUsers.length > 0) {
+          setItem(KEYS.USERS, cloudUsers);
+          window.dispatchEvent(new CustomEvent('opticok-data-updated'));
+          return cloudUsers;
+        }
+      }
+    } catch (e) {
+      console.warn('Direct cloud users fetch failed, using local users cache:', e);
+    }
+    return storageService.getAllUsers();
+  },
   getUsersByInstitution: (institutionId: string): User[] => {
     return storageService.getAllUsers().filter(u => u.institutionId === institutionId);
   },
@@ -403,6 +455,7 @@ export const storageService = {
     );
     filtered.unshift(newUser);
     setItem(KEYS.USERS, filtered);
+    pushUsersToServer(filtered);
     pushToServer();
     window.dispatchEvent(new CustomEvent('opticok-data-updated'));
   },
@@ -413,12 +466,14 @@ export const storageService = {
     if (current && current.id === updatedUser.id) {
       setItem(KEYS.CURRENT_USER, updatedUser);
     }
+    pushUsersToServer(list);
     pushToServer();
     window.dispatchEvent(new CustomEvent('opticok-data-updated'));
   },
   deleteUser: (userId: string) => {
     const list = storageService.getAllUsers().filter(u => u.id !== userId);
     setItem(KEYS.USERS, list);
+    pushUsersToServer(list);
     pushToServer();
     window.dispatchEvent(new CustomEvent('opticok-data-updated'));
   },
@@ -430,12 +485,14 @@ export const storageService = {
     const filtered = list.filter(i => i.id !== institution.id);
     filtered.unshift(institution);
     setItem(KEYS.INSTITUTIONS, filtered);
+    pushInstitutionsToServer(filtered);
     pushToServer();
     window.dispatchEvent(new CustomEvent('opticok-data-updated'));
   },
   updateInstitution: (updated: Institution) => {
     const list = storageService.getInstitutions().map(i => i.id === updated.id ? updated : i);
     setItem(KEYS.INSTITUTIONS, list);
+    pushInstitutionsToServer(list);
     pushToServer();
     window.dispatchEvent(new CustomEvent('opticok-data-updated'));
   },
