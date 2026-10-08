@@ -88,13 +88,22 @@ export const Header: React.FC<HeaderProps> = ({
               whileHover={{ scale: 1.03, y: -1 }}
               whileTap={{ scale: 0.97 }}
               transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-              className="flex items-center rounded-2xl bg-white px-3 sm:px-4 py-1.5 shadow-[0_6px_16px_rgba(0,0,0,0.12),inset_0_2px_4px_rgba(255,255,255,0.9),inset_0_-2px_4px_rgba(0,0,0,0.06)] border border-slate-200/90 dark:border-white/20 transition-all"
+              className="flex items-center gap-2.5 sm:gap-3 rounded-2xl bg-white px-3 sm:px-4 py-1.5 shadow-[0_6px_16px_rgba(0,0,0,0.12),inset_0_2px_4px_rgba(255,255,255,0.9),inset_0_-2px_4px_rgba(0,0,0,0.06)] border border-slate-200/90 dark:border-white/20 transition-all select-none"
             >
               <img 
-                src="/opteno-logo.png" 
-                alt="Opteno - Dijital Sınav Yönetim Sistemi" 
-                className="h-8 sm:h-9 md:h-10 w-auto object-contain"
+                src="/opteno-icon.png" 
+                alt="Opteno Logo" 
+                className="h-8 sm:h-9 md:h-10 w-auto object-contain shrink-0 drop-shadow-xs"
               />
+              <div className="flex flex-col text-left justify-center">
+                <div className="font-display font-black text-xl sm:text-2xl md:text-[26px] tracking-tight leading-none flex items-baseline">
+                  <span className="text-indigo-600">Opt</span>
+                  <span className="text-slate-900">eno</span>
+                </div>
+                <span className="text-[8.5px] sm:text-[9.5px] font-extrabold tracking-[0.15em] text-slate-500 uppercase mt-0.5 whitespace-nowrap">
+                  DİJİTAL SINAV SİSTEMİ
+                </span>
+              </div>
             </motion.div>
             {siteSettings.maintenanceMode && (
               <span className="badge badge-warning text-[9px] px-1.5 py-0.5 animate-pulse">Bakım</span>
