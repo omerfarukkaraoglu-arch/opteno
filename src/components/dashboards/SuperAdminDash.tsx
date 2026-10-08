@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Building2, Users, FileText, CheckCircle, Plus, Search, MapPin, Phone, Mail, ChevronRight, Settings, UserPlus, Shield, Trash2, Eye, Calendar, Sparkles, Download, Upload, FileSpreadsheet, CheckCircle2, GraduationCap, RotateCcw, BookOpen, Layers } from 'lucide-react';
+import { Building2, Users, FileText, CheckCircle, Plus, Search, MapPin, Phone, Mail, ChevronRight, Settings, UserPlus, Shield, Trash2, Eye, Calendar, Sparkles, Download, Upload, FileSpreadsheet, CheckCircle2, GraduationCap, RotateCcw, BookOpen, Layers, X } from 'lucide-react';
 import { storageService } from '../../services/storageService';
 import { studentExcelService } from '../../services/studentExcelService';
 import { pdfService } from '../../services/pdfService';
@@ -42,6 +42,84 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
   const [studentSearchTerm, setStudentSearchTerm] = useState<string>('');
   const [studentImportSuccessMsg, setStudentImportSuccessMsg] = useState<string | null>(null);
   const [selectedCumulativeStudentId, setSelectedCumulativeStudentId] = useState<string | null>(null);
+
+  // Single Student Creation State for Super Admin
+  const [showAddStudentModal, setShowAddStudentModal] = useState(false);
+  const [studentFormInstId, setStudentFormInstId] = useState<string>('');
+  const [studentFormFirstName, setStudentFormFirstName] = useState('');
+  const [studentFormLastName, setStudentFormLastName] = useState('');
+  const [studentFormNo, setStudentFormNo] = useState('');
+  const [studentFormClassId, setStudentFormClassId] = useState('');
+
+  const handleSuperAdminAddStudent = (e: React.FormEvent) => {
+    e.preventDefault();
+    const targetInstId = studentFormInstId || (institutions[0]?.id || 'inst-1');
+    const targetInst = institutions.find(i => i.id === targetInstId);
+    if (!targetInst) {
+      alert('Lütfen geçerli bir kurum seçiniz.');
+      return;
+    }
+
+    if (!studentFormFirstName.trim() || !studentFormLastName.trim() || !studentFormNo.trim()) {
+      alert('Lütfen öğrenci adı, soyadı ve numarasını eksiksiz doldurunuz.');
+      return;
+    }
+
+    const instClasses = storageService.getClasses(targetInstId);
+    let selectedClass = instClasses.find(c => c.id === studentFormClassId);
+
+    // If selected from global classes pool
+    if (!selectedClass) {
+      const globalCls = globalClasses.find(g => g.id === studentFormClassId || g.name === studentFormClassId);
+      if (globalCls) {
+        // Auto-create or find existing class with same name in institution
+        const existingClassWithName = instClasses.find(c => c.name.toLowerCase() === globalCls.name.toLowerCase());
+        if (existingClassWithName) {
+          selectedClass = existingClassWithName;
+        } else {
+          const newCls = {
+            id: `cls-${Date.now()}`,
+            institutionId: targetInstId,
+            name: globalCls.name,
+            gradeLevel: globalCls.gradeLevel,
+            studentCount: 1
+          };
+          storageService.addClass(newCls);
+          selectedClass = newCls;
+        }
+      } else {
+        alert('Lütfen bir sınıf seçiniz.');
+        return;
+      }
+    }
+
+    // Check duplicate studentNo in that institution
+    const instStudents = storageService.getStudents(targetInstId);
+    if (instStudents.some(s => s.studentNo.trim() === studentFormNo.trim())) {
+      alert(`"${studentFormNo.trim()}" numaralı öğrenci ${targetInst.name} kurumunda zaten kayıtlıdır.`);
+      return;
+    }
+
+    const newStudent: Student = {
+      id: `std-${Date.now()}`,
+      institutionId: targetInstId,
+      classId: selectedClass.id,
+      className: selectedClass.name,
+      studentNo: studentFormNo.trim(),
+      firstName: studentFormFirstName.trim(),
+      lastName: studentFormLastName.trim()
+    };
+
+    storageService.addStudent(newStudent);
+    reloadData();
+    setShowAddStudentModal(false);
+    setStudentFormFirstName('');
+    setStudentFormLastName('');
+    setStudentFormNo('');
+    setStudentFormClassId('');
+    setStudentImportSuccessMsg(`"${newStudent.firstName} ${newStudent.lastName}" (${selectedClass.name}) başarıyla ${targetInst.name} kurumuna eklendi.`);
+    setTimeout(() => setStudentImportSuccessMsg(null), 4000);
+  };
 
   const handleSuperAdminStudentExcelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -567,6 +645,25 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
+              {/* Single Student Add Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  const targetInst = selectedStudentInstId !== 'ALL' ? selectedStudentInstId : (institutions[0]?.id || '');
+                  setStudentFormInstId(targetInst);
+                  setStudentFormFirstName('');
+                  setStudentFormLastName('');
+                  setStudentFormNo('');
+                  setStudentFormClassId('');
+                  setShowAddStudentModal(true);
+                }}
+                className="btn btn-primary text-xs py-2 px-3.5 flex items-center gap-1.5 rounded-xl shadow-lg shadow-indigo-600/30 cursor-pointer"
+                title="Yeni Tekil Öğrenci Ekle"
+              >
+                <Plus className="h-4 w-4" />
+                <span>+ Yeni Öğrenci (Tekli)</span>
+              </button>
+
               {/* Sample Template Download */}
               <button
                 onClick={() => {
@@ -1712,6 +1809,166 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                     className="btn btn-primary text-xs rounded-xl py-2.5 px-5 flex items-center gap-1.5 cursor-pointer shadow-lg shadow-indigo-600/30"
                   >
                     <Plus className="h-4 w-4" /> Kademeyi Sisteme Ekle
+                  </motion.button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+
+        {/* ADD SINGLE STUDENT MODAL (SUPER ADMIN) */}
+        {showAddStudentModal && (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="glass-panel p-6 w-full max-w-lg space-y-4 border border-slate-700/60 shadow-2xl relative"
+            >
+              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                    <UserPlus className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-display font-semibold text-white text-base">Yeni Öğrenci Ekle (Tekli)</h3>
+                    <p className="text-xs text-slate-400">Sistem Admini olarak kuruma manuel tekil öğrenci kaydı yapın</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowAddStudentModal(false)}
+                  className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSuperAdminAddStudent} className="space-y-4">
+                {/* Institution Select */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    Öğrencinin Ekleneceği Kurum *
+                  </label>
+                  <select
+                    required
+                    value={studentFormInstId || (institutions[0]?.id || '')}
+                    onChange={(e) => {
+                      setStudentFormInstId(e.target.value);
+                      setStudentFormClassId('');
+                    }}
+                    className="input-field text-xs rounded-xl bg-slate-900 border-slate-700"
+                  >
+                    {institutions.map(inst => (
+                      <option key={inst.id} value={inst.id}>
+                        {inst.name} ({inst.city})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Class Select */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    Sınıf / Şube Seçimi *
+                  </label>
+                  {(() => {
+                    const currentInstId = studentFormInstId || institutions[0]?.id || '';
+                    const instClasses = storageService.getClasses(currentInstId);
+                    return (
+                      <select
+                        required
+                        value={studentFormClassId}
+                        onChange={(e) => setStudentFormClassId(e.target.value)}
+                        className="input-field text-xs rounded-xl bg-slate-900 border-slate-700"
+                      >
+                        <option value="">-- Sınıf Seçiniz --</option>
+                        {instClasses.length > 0 && (
+                          <optgroup label="Kurumun Mevcut Sınıfları">
+                            {instClasses.map(cls => (
+                              <option key={cls.id} value={cls.id}>
+                                {cls.name} {cls.gradeLevel ? `(${cls.gradeLevel}. Sınıf)` : ''}
+                              </option>
+                            ))}
+                          </optgroup>
+                        )}
+                        <optgroup label="Sistem Standart Şablonları (Kuruma Otomatik Tanımlanır)">
+                          {globalClasses.map(gcls => (
+                            <option key={`gcls-${gcls.id}`} value={gcls.id}>
+                              ⭐ {gcls.name} ({gcls.gradeLevel}. Sınıf Şablonu)
+                            </option>
+                          ))}
+                        </optgroup>
+                      </select>
+                    );
+                  })()}
+                  <p className="text-[11px] text-slate-500 mt-1">
+                    Kurumun mevcut sınıflarından birini seçebilir veya sistem standart şablonlarından seçerek kuruma otomatik sınıf tanımlayabilirsiniz.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                      Öğrenci Adı *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={studentFormFirstName}
+                      onChange={(e) => setStudentFormFirstName(e.target.value)}
+                      placeholder="ör. Ahmet"
+                      className="input-field text-xs rounded-xl"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                      Öğrenci Soyadı *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={studentFormLastName}
+                      onChange={(e) => setStudentFormLastName(e.target.value)}
+                      placeholder="ör. Yılmaz"
+                      className="input-field text-xs rounded-xl"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    Okul / Öğrenci Numarası *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={studentFormNo}
+                    onChange={(e) => setStudentFormNo(e.target.value)}
+                    placeholder="ör. 1042"
+                    className="input-field text-xs rounded-xl font-mono"
+                  />
+                  <p className="text-[11px] text-slate-500 mt-1">
+                    Bu numara optik form okumalarında öğrenci eşleştirmesi için kullanılacaktır.
+                  </p>
+                </div>
+
+                <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-800">
+                  <motion.button
+                    whileTap={{ scale: 0.96 }}
+                    type="button"
+                    onClick={() => setShowAddStudentModal(false)}
+                    className="btn btn-secondary text-xs rounded-xl py-2.5 px-4 cursor-pointer"
+                  >
+                    İptal
+                  </motion.button>
+                  <motion.button
+                    whileTap={{ scale: 0.96 }}
+                    type="submit"
+                    className="btn btn-primary text-xs rounded-xl py-2.5 px-5 flex items-center gap-1.5 cursor-pointer shadow-lg shadow-indigo-600/30"
+                  >
+                    <Plus className="h-4 w-4" /> Öğrenciyi Kaydet
                   </motion.button>
                 </div>
               </form>
