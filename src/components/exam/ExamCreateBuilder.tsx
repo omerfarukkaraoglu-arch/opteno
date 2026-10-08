@@ -520,7 +520,7 @@ const getSampleOutcomesForSubject = (name: string, count: number): string[] => {
       </div>
 
       {/* Main Form Container */}
-      <div className="glass-panel p-6 space-y-6">
+      <div className="glass-panel p-4 sm:p-6 space-y-6">
 
         {/* STEP 1: EXAM BASIC INFO */}
         {currentStep === 1 && (
@@ -563,7 +563,7 @@ const getSampleOutcomesForSubject = (name: string, count: number): string[] => {
                 <select
                   value={gradeLevel}
                   onChange={(e) => setGradeLevel(e.target.value)}
-                  className="input-field text-xs bg-slate-900"
+                  className="select-field text-xs"
                 >
                   {gradeLevels.map(gl => (
                     <option key={gl.id} value={gl.name}>{gl.name} ({gl.category})</option>
@@ -578,7 +578,7 @@ const getSampleOutcomesForSubject = (name: string, count: number): string[] => {
                   <select
                     value={selectedInstId}
                     onChange={(e) => setSelectedInstId(e.target.value)}
-                    className="input-field text-xs bg-slate-900"
+                    className="select-field text-xs"
                   >
                     {institutions.map(inst => (
                       <option key={inst.id} value={inst.id}>{inst.name} ({inst.city})</option>
@@ -600,7 +600,7 @@ const getSampleOutcomesForSubject = (name: string, count: number): string[] => {
                   <select
                     value={defaultOptionCount}
                     onChange={(e) => handleDefaultOptionChange(Number(e.target.value))}
-                    className="input-field text-xs bg-slate-950"
+                    className="select-field text-xs"
                   >
                     <option value={4}>4 Şıklı (A, B, C, D - LGS Standart)</option>
                     <option value={5}>5 Şıklı (A, B, C, D, E - TYT / YKS Standart)</option>
@@ -612,7 +612,7 @@ const getSampleOutcomesForSubject = (name: string, count: number): string[] => {
                   <select
                     value={netPenaltyRatio}
                     onChange={(e) => setNetPenaltyRatio(Number(e.target.value))}
-                    className="input-field text-xs bg-slate-950"
+                    className="select-field text-xs"
                   >
                     <option value={3}>3 Yanlış 1 Doğruyu Götürür (LGS)</option>
                     <option value={4}>4 Yanlış 1 Doğruyu Götürür (TYT / YKS)</option>
@@ -622,7 +622,7 @@ const getSampleOutcomesForSubject = (name: string, count: number): string[] => {
               </div>
 
               <div className="pt-2 flex flex-col gap-2.5">
-                <label className="flex items-center gap-2 text-xs text-slate-200 cursor-pointer">
+                <label className="flex items-center gap-2 text-xs text-slate-300 dark:text-slate-200 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={isStudentSpecific}
@@ -632,7 +632,7 @@ const getSampleOutcomesForSubject = (name: string, count: number): string[] => {
                   Öğrenciye Özel İsimli ve Karekodlu (QR) Optik Basımı Açık Olacak
                 </label>
 
-                <label className="flex items-start gap-2 text-xs text-slate-200 cursor-pointer">
+                <label className="flex items-start gap-2 text-xs text-slate-300 dark:text-slate-200 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={hasBookletTypes}
@@ -640,7 +640,7 @@ const getSampleOutcomesForSubject = (name: string, count: number): string[] => {
                     className="rounded accent-indigo-600 h-4 w-4 cursor-pointer mt-0.5"
                   />
                   <div>
-                    <span className="font-semibold text-white">Çoklu Kitapçık Türü (A ve B Kitapçığı) Kullanılsın</span>
+                    <span className="font-semibold text-slate-100 dark:text-white">Çoklu Kitapçık Türü (A ve B Kitapçığı) Kullanılsın</span>
                     <p className="text-[11px] text-slate-400">
                       Etkinleştirildiğinde optik formda A/B kodlama kutucukları çıkar ve 2 farklı cevap anahtarı tanımlanabilir.
                     </p>
@@ -649,12 +649,12 @@ const getSampleOutcomesForSubject = (name: string, count: number): string[] => {
               </div>
             </div>
 
-            <div className="flex justify-end pt-2">
+            <div className="flex flex-col sm:flex-row justify-end pt-3">
               <button
                 type="submit"
-                className="btn btn-primary text-xs py-2.5 px-5 flex items-center gap-2"
+                className="btn btn-primary text-xs py-2.5 px-4 sm:px-5 flex items-center justify-center gap-2 w-full sm:w-auto"
               >
-                Sonraki Adım: Dersler & Soru Sayıları <ArrowRight className="h-4 w-4" />
+                Sonraki Adım: Dersler & Soru Sayıları <ArrowRight className="h-4 w-4 shrink-0" />
               </button>
             </div>
           </form>
@@ -751,21 +751,21 @@ const getSampleOutcomesForSubject = (name: string, count: number): string[] => {
               </button>
             </div>
 
-            <div className="flex items-center justify-between pt-4 border-t border-slate-800">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-4 border-t border-slate-800">
               <button
                 type="button"
                 onClick={() => setCurrentStep(1)}
-                className="btn btn-secondary text-xs py-2 px-4 flex items-center gap-1.5"
+                className="btn btn-secondary text-xs py-2.5 px-4 flex items-center justify-center gap-1.5 w-full sm:w-auto order-2 sm:order-1"
               >
-                <ChevronLeft className="h-4 w-4" /> Önceki Adım
+                <ChevronLeft className="h-4 w-4 shrink-0" /> Önceki Adım
               </button>
 
               <button
                 type="button"
                 onClick={() => setCurrentStep(3)}
-                className="btn btn-primary text-xs py-2.5 px-5 flex items-center gap-2"
+                className="btn btn-primary text-xs py-2.5 px-5 flex items-center justify-center gap-2 w-full sm:w-auto order-1 sm:order-2"
               >
-                Sonraki Adım: Cevap Anahtarı <ArrowRight className="h-4 w-4" />
+                Sonraki Adım: Cevap Anahtarı <ArrowRight className="h-4 w-4 shrink-0" />
               </button>
             </div>
           </div>
@@ -969,21 +969,21 @@ const getSampleOutcomesForSubject = (name: string, count: number): string[] => {
             </div>
 
             {/* Save Exam Action Bar */}
-            <div className="pt-4 border-t border-slate-800 flex items-center justify-between gap-3">
+            <div className="pt-4 border-t border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
               <button
                 type="button"
                 onClick={() => setCurrentStep(2)}
-                className="btn btn-secondary text-xs py-2 px-4 flex items-center gap-1.5"
+                className="btn btn-secondary text-xs py-2.5 px-4 flex items-center justify-center gap-1.5 w-full sm:w-auto order-2 sm:order-1"
               >
-                <ChevronLeft className="h-4 w-4" /> Önceki Adım
+                <ChevronLeft className="h-4 w-4 shrink-0" /> Önceki Adım
               </button>
 
               <button
                 type="button"
                 onClick={handleSaveExam}
-                className="btn btn-primary py-3 px-8 text-sm font-bold shadow-xl shadow-indigo-600/30 flex items-center gap-2"
+                className="btn btn-primary py-3 px-6 text-sm font-bold shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2 w-full sm:w-auto order-1 sm:order-2"
               >
-                <FileText className="h-5 w-5" /> Sınavı Kaydet & Sisteme Ekle
+                <FileText className="h-5 w-5 shrink-0" /> Sınavı Kaydet & Sisteme Ekle
               </button>
             </div>
           </div>

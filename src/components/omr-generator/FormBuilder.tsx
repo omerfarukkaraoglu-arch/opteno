@@ -263,7 +263,7 @@ export const FormBuilder: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
         {/* Left Form Builder Wizard Panel */}
-        <div className="lg:col-span-7 glass-panel p-6 space-y-6">
+        <div className="lg:col-span-7 glass-panel p-4 sm:p-6 space-y-6">
 
           {/* STEP 1: EXAM BASIC INFO */}
           {currentStep === 1 && (
@@ -306,7 +306,7 @@ export const FormBuilder: React.FC = () => {
                   <select
                     value={gradeLevel}
                     onChange={(e) => setGradeLevel(e.target.value)}
-                    className="input-field text-xs bg-slate-900"
+                    className="select-field text-xs"
                   >
                     {gradeLevels.map(gl => (
                       <option key={gl.id} value={gl.name}>{gl.name} ({gl.category})</option>
@@ -320,7 +320,7 @@ export const FormBuilder: React.FC = () => {
                   <select
                     value={selectedInstId}
                     onChange={(e) => setSelectedInstId(e.target.value)}
-                    className="input-field text-xs bg-slate-900"
+                    className="select-field text-xs"
                   >
                     {institutions.map(inst => (
                       <option key={inst.id} value={inst.id}>{inst.name} ({inst.city})</option>
@@ -341,7 +341,7 @@ export const FormBuilder: React.FC = () => {
                     <select
                       value={defaultOptionCount}
                       onChange={(e) => handleDefaultOptionChange(Number(e.target.value))}
-                      className="input-field text-xs bg-slate-950"
+                      className="select-field text-xs"
                     >
                       <option value={4}>4 Şıklı (A, B, C, D - LGS Standart)</option>
                       <option value={5}>5 Şıklı (A, B, C, D, E - TYT / YKS Standart)</option>
@@ -353,7 +353,7 @@ export const FormBuilder: React.FC = () => {
                     <select
                       value={netPenaltyRatio}
                       onChange={(e) => setNetPenaltyRatio(Number(e.target.value))}
-                      className="input-field text-xs bg-slate-950"
+                      className="select-field text-xs"
                     >
                       <option value={3}>3 Yanlış 1 Doğruyu Götürür (LGS)</option>
                       <option value={4}>4 Yanlış 1 Doğruyu Götürür (TYT / YKS)</option>
@@ -375,13 +375,13 @@ export const FormBuilder: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex justify-end pt-2">
+              <div className="flex flex-col sm:flex-row justify-end pt-3">
                 <button
                   type="button"
                   onClick={() => setCurrentStep(2)}
-                  className="btn btn-primary text-xs py-2.5 px-5 flex items-center gap-2"
+                  className="btn btn-primary text-xs py-2.5 px-4 sm:px-5 flex items-center justify-center gap-2 w-full sm:w-auto"
                 >
-                  Sonraki Adım: Dersler & Soru Sayıları <ArrowRight className="h-4 w-4" />
+                  Sonraki Adım: Dersler & Soru Sayıları <ArrowRight className="h-4 w-4 shrink-0" />
                 </button>
               </div>
             </div>
@@ -478,21 +478,21 @@ export const FormBuilder: React.FC = () => {
                 </button>
               </div>
 
-              <div className="flex items-center justify-between pt-4 border-t border-slate-800">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-4 border-t border-slate-800">
                 <button
                   type="button"
                   onClick={() => setCurrentStep(1)}
-                  className="btn btn-secondary text-xs py-2 px-4 flex items-center gap-1.5"
+                  className="btn btn-secondary text-xs py-2.5 px-4 flex items-center justify-center gap-1.5 w-full sm:w-auto order-2 sm:order-1"
                 >
-                  <ChevronLeft className="h-4 w-4" /> Önceki Adım
+                  <ChevronLeft className="h-4 w-4 shrink-0" /> Önceki Adım
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setCurrentStep(3)}
-                  className="btn btn-primary text-xs py-2.5 px-5 flex items-center gap-2"
+                  className="btn btn-primary text-xs py-2.5 px-5 flex items-center justify-center gap-2 w-full sm:w-auto order-1 sm:order-2"
                 >
-                  Sonraki Adım: Cevap Anahtarı <ArrowRight className="h-4 w-4" />
+                  Sonraki Adım: Cevap Anahtarı <ArrowRight className="h-4 w-4 shrink-0" />
                 </button>
               </div>
             </div>
@@ -631,25 +631,25 @@ export const FormBuilder: React.FC = () => {
               </div>
 
               {/* Export Action Button */}
-              <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-3">
+              <div className="pt-4 border-t border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
                 <button
                   type="button"
                   onClick={() => setCurrentStep(2)}
-                  className="btn btn-secondary text-xs py-2 px-4 flex items-center gap-1.5"
+                  className="btn btn-secondary text-xs py-2.5 px-4 flex items-center justify-center gap-1.5 w-full sm:w-auto order-2 sm:order-1"
                 >
-                  <ChevronLeft className="h-4 w-4" /> Ders Düzenle
+                  <ChevronLeft className="h-4 w-4 shrink-0" /> Ders Düzenle
                 </button>
 
                 <button
                   type="button"
                   onClick={handleSaveAndExportPDF}
                   disabled={isExporting}
-                  className="btn btn-primary py-3 px-6 text-sm font-bold shadow-xl shadow-indigo-600/30 flex items-center gap-2"
+                  className="btn btn-primary py-3 px-6 text-sm font-bold shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2 w-full sm:w-auto order-1 sm:order-2"
                 >
-                  {isExporting ? <Printer className="h-5 w-5 animate-spin" /> : <Download className="h-5 w-5" />}
-                  {isExporting 
+                  {isExporting ? <Printer className="h-5 w-5 animate-spin shrink-0" /> : <Download className="h-5 w-5 shrink-0" />}
+                  <span>{isExporting 
                     ? 'Optik Form PDF Üretiliyor...' 
-                    : `Sınavı Kaydet & PDF İndir (${pageFormat === 'A5' ? 'A5 Tasarruf' : 'A4'})`}
+                    : `Sınavı Kaydet & PDF İndir (${pageFormat === 'A5' ? 'A5 Tasarruf' : 'A4'})`}</span>
                 </button>
               </div>
 

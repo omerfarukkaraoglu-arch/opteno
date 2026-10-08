@@ -173,13 +173,13 @@ export const PersonnelManagement: React.FC<PersonnelManagementProps> = ({ curren
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
           {currentUser.role === 'SUPER_ADMIN' && (
-            <div className="relative">
+            <div className="relative w-full sm:w-auto">
               <select
                 value={selectedInstId}
                 onChange={(e) => setSelectedInstId(e.target.value)}
-                className="input-field text-xs py-2 bg-slate-900 border-slate-700 pr-8"
+                className="input-field text-xs py-2 bg-slate-900 border-slate-700 pr-8 w-full sm:w-44"
               >
                 <option value="ALL">Tüm Kurumlar</option>
                 {institutions.map(inst => (
@@ -189,22 +189,22 @@ export const PersonnelManagement: React.FC<PersonnelManagementProps> = ({ curren
             </div>
           )}
 
-          <div className="relative">
+          <div className="relative w-full sm:w-auto flex-1 sm:flex-initial">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
             <input
               type="text"
               placeholder="Personel veya Kullanıcı Adı Ara..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="input-field pl-10 text-xs py-2 w-60"
+              className="input-field pl-10 text-xs py-2 w-full sm:w-60"
             />
           </div>
 
           <button
             onClick={handleOpenAddModal}
-            className="btn btn-primary text-xs py-2 flex items-center gap-1.5"
+            className="btn btn-primary text-xs py-2 px-3 sm:px-4 flex items-center justify-center gap-1.5 w-full sm:w-auto shrink-0"
           >
-            <UserPlus className="h-4 w-4" /> Yeni Personel / Kullanıcı Ekle
+            <UserPlus className="h-4 w-4 shrink-0" /> <span>Yeni Personel / Kullanıcı Ekle</span>
           </button>
         </div>
       </div>
@@ -249,23 +249,23 @@ export const PersonnelManagement: React.FC<PersonnelManagementProps> = ({ curren
               </div>
             </div>
 
-            <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs">
+            <div className="mt-4 pt-3 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs">
               <button
                 onClick={() => handleCopyCredentials(u)}
-                className="text-slate-300 hover:text-white flex items-center gap-1 cursor-pointer"
+                className="text-slate-300 hover:text-white flex items-center gap-1 cursor-pointer py-1"
               >
                 {copiedId === u.id ? (
                   <>
-                    <Check className="h-3.5 w-3.5 text-emerald-400" /> <span className="text-emerald-400">Kopyalandı</span>
+                    <Check className="h-3.5 w-3.5 text-emerald-400 shrink-0" /> <span className="text-emerald-400 font-semibold">Kopyalandı</span>
                   </>
                 ) : (
                   <>
-                    <Copy className="h-3.5 w-3.5 text-slate-400" /> Bilgileri Kopyala
+                    <Copy className="h-3.5 w-3.5 text-slate-400 shrink-0" /> <span>Bilgileri Kopyala</span>
                   </>
                 )}
               </button>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 ml-auto">
                 <button
                   onClick={() => handleOpenEditModal(u)}
                   className="p-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-all"
