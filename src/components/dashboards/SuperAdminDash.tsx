@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Building2, Users, FileText, CheckCircle, Plus, Search, MapPin, Phone, Mail, ChevronRight, Settings, UserPlus, Shield, Trash2, Eye, Calendar, Sparkles, Download, Upload, FileSpreadsheet, CheckCircle2 } from 'lucide-react';
+import { Building2, Users, FileText, CheckCircle, Plus, Search, MapPin, Phone, Mail, ChevronRight, Settings, UserPlus, Shield, Trash2, Eye, Calendar, Sparkles, Download, Upload, FileSpreadsheet, CheckCircle2, GraduationCap } from 'lucide-react';
 import { storageService } from '../../services/storageService';
 import { studentExcelService } from '../../services/studentExcelService';
 import { pdfService } from '../../services/pdfService';
 import { Institution, Student, Exam, User } from '../../types';
 import { PersonnelManagement } from '../management/PersonnelManagement';
 import { SiteSettings } from '../management/SiteSettings';
+import { StudentCumulativeReport } from '../results/StudentCumulativeReport';
 
 interface SuperAdminDashProps {
   currentUser?: User;
@@ -23,6 +24,7 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
   const [selectedStudentInstId, setSelectedStudentInstId] = useState<string>('ALL');
   const [studentSearchTerm, setStudentSearchTerm] = useState<string>('');
   const [studentImportSuccessMsg, setStudentImportSuccessMsg] = useState<string | null>(null);
+  const [selectedCumulativeStudentId, setSelectedCumulativeStudentId] = useState<string | null>(null);
 
   const handleSuperAdminStudentExcelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -565,7 +567,15 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                             <td className="p-3 font-semibold text-white">{s.firstName} {s.lastName}</td>
                             <td className="p-3"><span className="badge badge-primary">{s.className}</span></td>
                             <td className="p-3 text-slate-400 font-semibold">{inst?.name || 'Bilinmiyor'}</td>
-                            <td className="p-3 text-right">
+                            <td className="p-3 text-right whitespace-nowrap">
+                              <button
+                                onClick={() => setSelectedCumulativeStudentId(s.id)}
+                                className="text-indigo-400 hover:text-indigo-300 p-1 mr-2 transition-colors cursor-pointer inline-flex items-center gap-1"
+                                title="Çoklu Deneme Gelişim Karnesi"
+                              >
+                                <GraduationCap className="h-4 w-4" />
+                                <span className="text-[11px] font-semibold hidden sm:inline">Gelişim</span>
+                              </button>
                               <button
                                 onClick={() => {
                                   if (window.confirm(`${s.firstName} ${s.lastName} adlı öğrenciyi silmek istiyor musunuz?`)) {
@@ -573,7 +583,7 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                                     setStudents(storageService.getStudents());
                                   }
                                 }}
-                                className="text-red-400 hover:text-red-300 p-1"
+                                className="text-red-400 hover:text-red-300 p-1 cursor-pointer"
                                 title="Öğrenciyi Sil"
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -1136,6 +1146,18 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
           </div>
         )}
       </AnimatePresence>
+
+      {/* Student Cumulative Multi-Exam Report Modal */}
+      {selectedCumulativeStudentId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-3 sm:p-6 animate-fade-in overflow-y-auto">
+          <div className="max-w-5xl w-full my-auto max-h-[92vh] overflow-y-auto">
+            <StudentCumulativeReport
+              initialStudentId={selectedCumulativeStudentId}
+              onClose={() => setSelectedCumulativeStudentId(null)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

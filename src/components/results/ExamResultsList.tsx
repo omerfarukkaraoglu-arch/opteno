@@ -5,6 +5,7 @@ import {
   Download,
   Search,
   ChevronDown,
+  ChevronRight,
   CheckCircle2,
   XCircle,
   MinusCircle,
@@ -29,6 +30,7 @@ import { Exam, ScanResult } from '../../types';
 import { examExportService, ExportType, ExportFormat } from '../../services/examExportService';
 import { computeOutcomeAnalyses } from '../../services/omrEngine';
 import { StudentReportCardCharts } from './StudentReportCardCharts';
+import { StudentCumulativeReport } from './StudentCumulativeReport';
 import {
   calculateStudentRankings,
   calculateQuestionAnalytics,
@@ -54,7 +56,8 @@ export const ExamResultsList: React.FC<ExamResultsListProps> = ({ initialExamId 
     return exams.length > 0 ? exams[0].id : '';
   });
 
-  const [activeTab, setActiveTab] = useState<'leaderboard' | 'question_analysis' | 'outcomes_report'>('leaderboard');
+  const [activeTab, setActiveTab] = useState<'leaderboard' | 'question_analysis' | 'outcomes_report' | 'cumulative_report'>('leaderboard');
+  const [cumulativeStudentId, setCumulativeStudentId] = useState<string | undefined>(undefined);
   const [analysisClassFilter, setAnalysisClassFilter] = useState<string>('ALL');
   const [copiedResultId, setCopiedResultId] = useState<string | null>(null);
 
@@ -269,10 +272,21 @@ export const ExamResultsList: React.FC<ExamResultsListProps> = ({ initialExamId 
                 >
                   <Target className="h-3.5 w-3.5 text-emerald-400" /> Sınıf & Kurum Kazanım Raporu
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('cumulative_report')}
+                  className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                    activeTab === 'cumulative_report'
+                      ? 'bg-gradient-to-r from-indigo-600 to-fuchsia-600 text-white shadow-md shadow-indigo-600/30'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <GraduationCap className="h-3.5 w-3.5 text-cyan-400" /> Öğrenci Gelişim & Çoklu Karne
+                </button>
               </div>
 
               {/* Class Filter Selector (For Question & Outcome Analysis) */}
-              {activeTab !== 'leaderboard' && (
+              {(activeTab === 'question_analysis' || activeTab === 'outcomes_report') && (
                 <div className="flex items-center gap-2 text-xs">
                   <span className="text-slate-400 font-semibold">Sınıf Filtresi:</span>
                   <select
@@ -723,6 +737,14 @@ export const ExamResultsList: React.FC<ExamResultsListProps> = ({ initialExamId 
               </div>
             )}
 
+            {/* TAB 4: STUDENT CUMULATIVE & MULTI-EXAM REPORT */}
+            {activeTab === 'cumulative_report' && (
+              <StudentCumulativeReport
+                initialStudentId={cumulativeStudentId}
+                onOpenSingleReportCard={(result) => setSelectedStudentResult(result)}
+              />
+            )}
+
           </div>
         )}
       </div>
@@ -791,6 +813,23 @@ export const ExamResultsList: React.FC<ExamResultsListProps> = ({ initialExamId 
                 </div>
               );
             })()}
+
+            {/* View Multi-Exam Cumulative Report for this student */}
+            <button
+              type="button"
+              onClick={() => {
+                setCumulativeStudentId(selectedStudentResult.studentId);
+                setActiveTab('cumulative_report');
+                setSelectedStudentResult(null);
+              }}
+              className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-indigo-900/60 to-fuchsia-900/60 hover:from-indigo-800/80 hover:to-fuchsia-800/80 border border-indigo-500/40 text-white font-bold text-xs flex items-center justify-between transition-all shadow-sm cursor-pointer group"
+            >
+              <div className="flex items-center gap-2">
+                <GraduationCap className="h-4 w-4 text-cyan-400 group-hover:scale-110 transition-transform" />
+                <span>Bu Öğrencinin Tüm Deneme Geçmişi & Çoklu Gelişim Karnesi</span>
+              </div>
+              <ChevronRight className="h-4 w-4 text-indigo-300 group-hover:translate-x-1 transition-transform" />
+            </button>
 
             {/* Visual Charts & Comparison Component */}
             {selectedExam && (

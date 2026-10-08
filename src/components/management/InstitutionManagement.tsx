@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Users, BookOpen, Plus, Trash2, Edit2, Search, Shield, UserPlus, FileSpreadsheet, Upload, Download, CheckCircle2, Building2, Image as ImageIcon, MapPin, Phone, Mail, Save } from 'lucide-react';
+import { Users, BookOpen, Plus, Trash2, Edit2, Search, Shield, UserPlus, FileSpreadsheet, Upload, Download, CheckCircle2, Building2, Image as ImageIcon, MapPin, Phone, Mail, Save, GraduationCap } from 'lucide-react';
 import { storageService } from '../../services/storageService';
 import { studentExcelService } from '../../services/studentExcelService';
 import { SchoolClass, Student, User, Institution } from '../../types';
 import { PersonnelManagement } from './PersonnelManagement';
+import { StudentCumulativeReport } from '../results/StudentCumulativeReport';
 
 export const InstitutionManagement: React.FC = () => {
   const currentUser = storageService.getCurrentUser();
@@ -12,6 +13,7 @@ export const InstitutionManagement: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'personnel' | 'classes' | 'students' | 'profile'>('personnel');
   const [classes, setClasses] = useState<SchoolClass[]>(storageService.getClasses(instId));
   const [students, setStudents] = useState<Student[]>(storageService.getStudents(instId));
+  const [cumulativeStudentId, setCumulativeStudentId] = useState<string | null>(null);
 
   const [institution, setInstitution] = useState<Institution | undefined>(() => {
     return storageService.getInstitutions().find(i => i.id === instId) || {
@@ -350,10 +352,18 @@ export const InstitutionManagement: React.FC = () => {
                       <td className="px-4 py-3 font-mono font-bold text-indigo-400">{student.studentNo}</td>
                       <td className="px-4 py-3 font-semibold text-white">{student.firstName} {student.lastName}</td>
                       <td className="px-4 py-3"><span className="badge badge-primary">{student.className}</span></td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-4 py-3 text-right whitespace-nowrap">
+                        <button
+                          onClick={() => setCumulativeStudentId(student.id)}
+                          className="text-indigo-400 hover:text-indigo-300 p-1 mr-2 transition-colors cursor-pointer inline-flex items-center gap-1"
+                          title="Çoklu Deneme Gelişim Karnesi"
+                        >
+                          <GraduationCap className="h-4 w-4" />
+                          <span className="text-[11px] font-semibold hidden sm:inline">Gelişim</span>
+                        </button>
                         <button
                           onClick={() => handleDeleteStudent(student.id)}
-                          className="text-slate-400 hover:text-rose-400 p-1"
+                          className="text-slate-400 hover:text-rose-400 p-1 transition-colors cursor-pointer"
                           title="Sil"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -684,6 +694,18 @@ export const InstitutionManagement: React.FC = () => {
                 <button type="submit" className="btn btn-primary text-xs">Öğrenciyi Kaydet</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Student Cumulative Multi-Exam Report Modal */}
+      {cumulativeStudentId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-3 sm:p-6 animate-fade-in overflow-y-auto">
+          <div className="max-w-5xl w-full my-auto max-h-[92vh] overflow-y-auto">
+            <StudentCumulativeReport
+              initialStudentId={cumulativeStudentId}
+              onClose={() => setCumulativeStudentId(null)}
+            />
           </div>
         </div>
       )}
