@@ -347,28 +347,28 @@ export const InstitutionManagement: React.FC = () => {
         {activeTab === 'students' && (
           <div className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-              <div className="relative">
+              <div className="relative w-full sm:w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
                 <input
                   type="text"
                   placeholder="İsim veya Okul No Ara..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="input-field pl-10 text-xs py-2 w-64"
+                  className="input-field pl-10 text-xs py-2 w-full"
                 />
               </div>
 
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                 <button
                   type="button"
                   onClick={() => studentExcelService.downloadSampleTemplate(currentUser.institutionName || 'Kurum')}
-                  className="btn btn-secondary text-xs py-2 px-3 flex items-center gap-1.5 text-slate-200 border-slate-700 hover:border-emerald-500"
+                  className="btn btn-secondary text-xs py-2 px-3 flex items-center justify-center gap-1.5 text-slate-200 border-slate-700 hover:border-emerald-500 flex-1 sm:flex-initial"
                 >
-                  <Download className="h-3.5 w-3.5 text-emerald-400" /> Örnek Şablon İndir (.xlsx)
+                  <Download className="h-3.5 w-3.5 text-emerald-400" /> Şablon İndir
                 </button>
 
-                <label className="btn btn-secondary text-xs py-2 px-3 cursor-pointer flex items-center gap-1.5 text-emerald-400 border-emerald-500/30 shrink-0">
-                  <Upload className="h-3.5 w-3.5" /> Excel İle Toplu Yükle
+                <label className="btn btn-secondary text-xs py-2 px-3 cursor-pointer flex items-center justify-center gap-1.5 text-emerald-400 border-emerald-500/30 flex-1 sm:flex-initial shrink-0">
+                  <Upload className="h-3.5 w-3.5" /> Toplu Yükle
                   <input
                     type="file"
                     accept=".csv,.txt,.tsv,.xlsx"
@@ -379,9 +379,9 @@ export const InstitutionManagement: React.FC = () => {
 
                 <button
                   onClick={() => setShowAddStudent(true)}
-                  className="btn btn-primary text-xs py-2 px-3 flex items-center gap-1"
+                  className="btn btn-primary text-xs py-2 px-3 flex items-center justify-center gap-1 flex-1 sm:flex-initial"
                 >
-                  <Plus className="h-4 w-4" /> Yeni Öğrenci (Tekli)
+                  <Plus className="h-4 w-4" /> Yeni Öğrenci
                 </button>
               </div>
             </div>

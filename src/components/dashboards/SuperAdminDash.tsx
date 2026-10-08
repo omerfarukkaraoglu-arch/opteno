@@ -946,7 +946,7 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {exams.map(e => (
-              <div key={e.id} className="glass-card p-5 rounded-xl border border-slate-700/60 flex flex-col justify-between">
+              <div key={e.id} className="clay-card p-5 rounded-2xl border border-slate-700/60 flex flex-col justify-between overflow-hidden shadow-sm">
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="badge badge-primary text-[10px]">{e.examCode}</span>
@@ -958,25 +958,26 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                   <h3 className="font-display font-bold text-base text-white">{e.title}</h3>
                   <p className="text-xs text-indigo-400 mt-1 font-semibold">{e.institutionName}</p>
 
-                  <div className="mt-3 flex items-center gap-4 text-xs text-slate-300">
+                  <div className="mt-3 flex flex-wrap items-center gap-3 sm:gap-4 text-xs text-slate-300">
                     <div><strong>{e.totalQuestions}</strong> Soru</div>
                     <div><strong>{e.subjects.length}</strong> Ders</div>
                     <div><strong>{e.totalExamsScanned || 0}</strong> Okunan Optik</div>
                   </div>
                 </div>
 
-                <div className="mt-4 pt-4 border-t border-slate-700/60 flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
+                <div className="mt-4 pt-3.5 border-t border-slate-700/60 flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
                     <button
                       onClick={async () => {
                         const studentsList = storageService.getStudents(e.institutionId);
                         const pdf = await pdfService.generateOMRPDF(e, studentsList, 'A4');
                         pdf.save(`${e.examCode}_Optik_Form_A4.pdf`);
                       }}
-                      className="btn btn-secondary py-1 px-2 text-[10.5px] flex items-center gap-1 text-indigo-300 border-indigo-500/30"
+                      className="btn btn-secondary py-1.5 px-3 text-[11px] font-bold flex items-center justify-center gap-1.5 text-indigo-300 border-indigo-500/30 flex-1 sm:flex-initial rounded-xl whitespace-nowrap min-w-[85px]"
                       title="1 Sayfada 1 Tam Boy Optik Form"
                     >
-                      <Download className="h-3 w-3" /> A4 İndir
+                      <Download className="h-3.5 w-3.5 shrink-0" />
+                      <span>A4 İndir</span>
                     </button>
                     <button
                       onClick={async () => {
@@ -984,10 +985,11 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                         const pdf = await pdfService.generateOMRPDF(e, studentsList, 'A5');
                         pdf.save(`${e.examCode}_Optik_Form_A5_Tasarruf.pdf`);
                       }}
-                      className="btn btn-secondary py-1 px-2 text-[10.5px] flex items-center gap-1 text-emerald-400 border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20"
+                      className="btn btn-secondary py-1.5 px-3 text-[11px] font-bold flex items-center justify-center gap-1.5 text-emerald-400 border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 flex-1 sm:flex-initial rounded-xl whitespace-nowrap min-w-[85px]"
                       title="1 Sayfada Altlı Üstlü 2 Optik Form (A5 Kesimli, %50 Kağıt Tasarrufu)"
                     >
-                      <Download className="h-3 w-3" /> A5 İndir (2'li Tasarruf)
+                      <Download className="h-3.5 w-3.5 shrink-0" />
+                      <span>A5 İndir (2'li)</span>
                     </button>
                   </div>
 
@@ -998,10 +1000,11 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                         setExams(storageService.getExams());
                       }
                     }}
-                    className="text-red-400 hover:text-red-300 p-1 flex items-center gap-1"
+                    className="p-2 rounded-xl text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 transition-all flex items-center gap-1 text-xs shrink-0 cursor-pointer ml-auto sm:ml-0"
                     title="Sınavı Sil"
                   >
-                    <Trash2 className="h-3.5 w-3.5" /> Sil
+                    <Trash2 className="h-4 w-4" />
+                    <span className="hidden sm:inline">Sil</span>
                   </button>
                 </div>
               </div>

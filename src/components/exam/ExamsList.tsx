@@ -221,38 +221,41 @@ export const ExamsList: React.FC<ExamsListProps> = ({
 
               {/* Action Buttons */}
               <div className="pt-3 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-2">
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
                   {onNavigateToResults && (
                     <button
                       onClick={() => onNavigateToResults(exam.id)}
-                      className="btn btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5 text-amber-400 border-amber-500/30"
+                      className="btn btn-secondary text-xs py-1.5 px-2.5 sm:px-3 flex items-center justify-center gap-1.5 text-amber-400 border-amber-500/30 flex-1 sm:flex-initial rounded-xl"
                     >
-                      <Sparkles className="h-3.5 w-3.5" /> Sonuçları Gör ({storageService.getResults(exam.id).length})
+                      <Sparkles className="h-3.5 w-3.5 shrink-0" /> 
+                      <span>Sonuçlar ({storageService.getResults(exam.id).length})</span>
                     </button>
                   )}
 
                   {onNavigateToOMR && (
                     <button
                       onClick={() => onNavigateToOMR(exam.id)}
-                      className="btn btn-primary text-xs py-1.5 px-3 flex items-center gap-1.5"
+                      className="btn btn-primary text-xs py-1.5 px-2.5 sm:px-3 flex items-center justify-center gap-1.5 flex-1 sm:flex-initial rounded-xl"
                     >
-                      <Printer className="h-3.5 w-3.5" /> Optik Üret
+                      <Printer className="h-3.5 w-3.5 shrink-0" /> 
+                      <span>Optik Üret</span>
                     </button>
                   )}
 
                   {onNavigateToScan && (
                     <button
                       onClick={onNavigateToScan}
-                      className="btn btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5 text-emerald-400 border-emerald-500/30"
+                      className="btn btn-secondary text-xs py-1.5 px-2.5 sm:px-3 flex items-center justify-center gap-1.5 text-emerald-400 border-emerald-500/30 flex-1 sm:flex-initial rounded-xl"
                     >
-                      <Camera className="h-3.5 w-3.5" /> Optik Oku
+                      <Camera className="h-3.5 w-3.5 shrink-0" /> 
+                      <span>Optik Oku</span>
                     </button>
                   )}
                 </div>
 
                 <button
                   onClick={() => handleDeleteExam(exam.id, exam.title)}
-                  className="p-1.5 text-slate-500 hover:text-red-400 transition-colors"
+                  className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-colors cursor-pointer shrink-0 ml-auto sm:ml-0"
                   title="Sınavı Sil"
                 >
                   <Trash2 className="h-4 w-4" />
