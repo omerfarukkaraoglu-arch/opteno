@@ -1,4 +1,4 @@
-const CACHE_NAME = 'opteno-v2';
+const CACHE_NAME = 'opteno-v3';
 
 self.addEventListener('install', () => {
   // Activate new service worker immediately without waiting
