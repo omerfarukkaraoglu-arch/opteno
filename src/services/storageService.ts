@@ -1,4 +1,4 @@
-import { Institution, SchoolClass, Student, Exam, ScanResult, User, SiteSettings, GlobalClassTemplate } from '../types';
+import { Institution, SchoolClass, Student, Exam, ScanResult, User, SiteSettings, GlobalClassTemplate, SystemGradeLevel } from '../types';
 import { initialInstitutions, initialClasses, initialStudents, initialExams, initialScanResults, initialUsers, initialSiteSettings } from './mockData';
 
 const FIREBASE_DB_URL = 'https://opteno-aba91-default-rtdb.europe-west1.firebasedatabase.app/opteno';
@@ -8,6 +8,7 @@ const KEYS = {
   CURRENT_USER: 'opticok_current_user',
   INSTITUTIONS: 'opticok_institutions',
   CLASSES: 'opticok_classes',
+  GRADE_LEVELS: 'opticok_grade_levels',
   GLOBAL_CLASSES: 'opticok_global_classes',
   STUDENTS: 'opticok_students',
   EXAMS: 'opticok_exams',
@@ -15,7 +16,31 @@ const KEYS = {
   SITE_SETTINGS: 'opticok_site_settings'
 };
 
+export const initialGradeLevels: SystemGradeLevel[] = [
+  { id: 'grade-5', level: 5, name: '5. Sınıf', category: 'Ortaokul', description: 'Ortaokul 1. Kademe', isActive: true, order: 1 },
+  { id: 'grade-6', level: 6, name: '6. Sınıf', category: 'Ortaokul', description: 'Ortaokul 2. Kademe', isActive: true, order: 2 },
+  { id: 'grade-7', level: 7, name: '7. Sınıf', category: 'Ortaokul', description: 'Ortaokul 3. Kademe', isActive: true, order: 3 },
+  { id: 'grade-8', level: 8, name: '8. Sınıf (LGS)', category: 'Ortaokul', description: 'LGS Sınav Hazırlık Kademesi', isActive: true, order: 4 },
+  { id: 'grade-9', level: 9, name: '9. Sınıf', category: 'Lise', description: 'Lise 1. Kademe', isActive: true, order: 5 },
+  { id: 'grade-10', level: 10, name: '10. Sınıf', category: 'Lise', description: 'Lise 2. Kademe', isActive: true, order: 6 },
+  { id: 'grade-11', level: 11, name: '11. Sınıf', category: 'Lise', description: 'Lise Alan Seçimi Kademesi', isActive: true, order: 7 },
+  { id: 'grade-12', level: 12, name: '12. Sınıf (YKS)', category: 'Lise', description: 'YKS (TYT - AYT) Sınav Hazırlık Kademesi', isActive: true, order: 8 },
+  { id: 'grade-13', level: 13, name: 'Mezun (YKS)', category: 'Mezun / Diğer', description: 'Mezun YKS Hazırlık Grubu', isActive: true, order: 9 }
+];
+
 export const initialGlobalClasses: GlobalClassTemplate[] = [
+  { id: 'gcls-5a', name: '5-A', gradeLevel: 5, description: '5. Sınıf Ortaokul Şubesi' },
+  { id: 'gcls-5b', name: '5-B', gradeLevel: 5, description: '5. Sınıf Ortaokul Şubesi' },
+  { id: 'gcls-5c', name: '5-C', gradeLevel: 5, description: '5. Sınıf Ortaokul Şubesi' },
+
+  { id: 'gcls-6a', name: '6-A', gradeLevel: 6, description: '6. Sınıf Ortaokul Şubesi' },
+  { id: 'gcls-6b', name: '6-B', gradeLevel: 6, description: '6. Sınıf Ortaokul Şubesi' },
+  { id: 'gcls-6c', name: '6-C', gradeLevel: 6, description: '6. Sınıf Ortaokul Şubesi' },
+
+  { id: 'gcls-7a', name: '7-A', gradeLevel: 7, description: '7. Sınıf Ortaokul Şubesi' },
+  { id: 'gcls-7b', name: '7-B', gradeLevel: 7, description: '7. Sınıf Ortaokul Şubesi' },
+  { id: 'gcls-7c', name: '7-C', gradeLevel: 7, description: '7. Sınıf Ortaokul Şubesi' },
+
   { id: 'gcls-8a', name: '8-A', gradeLevel: 8, description: '8. Sınıf LGS Şubesi' },
   { id: 'gcls-8b', name: '8-B', gradeLevel: 8, description: '8. Sınıf LGS Şubesi' },
   { id: 'gcls-8c', name: '8-C', gradeLevel: 8, description: '8. Sınıf LGS Şubesi' },
@@ -39,8 +64,8 @@ export const initialGlobalClasses: GlobalClassTemplate[] = [
   { id: 'gcls-12say2', name: '12-SAY-2', gradeLevel: 12, description: '12. Sınıf YKS Sayısal - 2' },
   { id: 'gcls-12ea1', name: '12-EA-1', gradeLevel: 12, description: '12. Sınıf YKS Eşit Ağırlık - 1' },
   { id: 'gcls-12soz', name: '12-SÖZ', gradeLevel: 12, description: '12. Sınıf YKS Sözel' },
-  { id: 'gcls-mezun-say', name: 'Mezun Sayısal', gradeLevel: 12, description: 'Mezun YKS Sayısal Grubu' },
-  { id: 'gcls-mezun-ea', name: 'Mezun Eşit Ağırlık', gradeLevel: 12, description: 'Mezun YKS Eşit Ağırlık Grubu' }
+  { id: 'gcls-mezun-say', name: 'Mezun Sayısal', gradeLevel: 13, description: 'Mezun YKS Sayısal Grubu' },
+  { id: 'gcls-mezun-ea', name: 'Mezun Eşit Ağırlık', gradeLevel: 13, description: 'Mezun YKS Eşit Ağırlık Grubu' }
 ];
 
 // Helper for local storage
@@ -65,6 +90,7 @@ const setItem = <T>(key: string, value: T): void => {
 export const resetAllStorage = () => {
   localStorage.removeItem(KEYS.INSTITUTIONS);
   localStorage.removeItem(KEYS.CLASSES);
+  localStorage.removeItem(KEYS.GRADE_LEVELS);
   localStorage.removeItem(KEYS.GLOBAL_CLASSES);
   localStorage.removeItem(KEYS.STUDENTS);
   localStorage.removeItem(KEYS.EXAMS);
@@ -76,6 +102,7 @@ export const resetAllStorage = () => {
   setItem(KEYS.USERS, initialUsers);
   setItem(KEYS.INSTITUTIONS, initialInstitutions);
   setItem(KEYS.CLASSES, initialClasses);
+  setItem(KEYS.GRADE_LEVELS, initialGradeLevels);
   setItem(KEYS.GLOBAL_CLASSES, initialGlobalClasses);
   setItem(KEYS.STUDENTS, initialStudents);
   setItem(KEYS.EXAMS, initialExams);
@@ -98,6 +125,7 @@ export const pushToServer = async () => {
     const exams = getItem<Exam[]>(KEYS.EXAMS, initialExams);
     const students = getItem<Student[]>(KEYS.STUDENTS, initialStudents);
     const classes = getItem<SchoolClass[]>(KEYS.CLASSES, initialClasses);
+    const gradeLevels = getItem<SystemGradeLevel[]>(KEYS.GRADE_LEVELS, initialGradeLevels);
     const globalClasses = getItem<GlobalClassTemplate[]>(KEYS.GLOBAL_CLASSES, initialGlobalClasses);
     const institutions = getItem<Institution[]>(KEYS.INSTITUTIONS, initialInstitutions);
     const users = getItem<User[]>(KEYS.USERS, initialUsers);
@@ -111,6 +139,7 @@ export const pushToServer = async () => {
         exams,
         students,
         classes,
+        gradeLevels,
         globalClasses,
         institutions,
         users,
@@ -160,6 +189,7 @@ export const syncWithServer = async () => {
     const serverResults: ScanResult[] = serverData.results || [];
     const serverStudents: Student[] = serverData.students || [];
     const serverClasses: SchoolClass[] = serverData.classes || [];
+    const serverGradeLevels: SystemGradeLevel[] = serverData.gradeLevels || [];
     const serverGlobalClasses: GlobalClassTemplate[] = serverData.globalClasses || [];
     const serverInstitutions: Institution[] = serverData.institutions || [];
     const serverUsers: User[] = serverData.users || [];
@@ -174,6 +204,7 @@ export const syncWithServer = async () => {
     const localResultsRaw = localStorage.getItem(KEYS.RESULTS) || '[]';
     const localStudentsRaw = localStorage.getItem(KEYS.STUDENTS) || '[]';
     const localClassesRaw = localStorage.getItem(KEYS.CLASSES) || '[]';
+    const localGradeLevelsRaw = localStorage.getItem(KEYS.GRADE_LEVELS) || '[]';
     const localGlobalClassesRaw = localStorage.getItem(KEYS.GLOBAL_CLASSES) || '[]';
     const localInstRaw = localStorage.getItem(KEYS.INSTITUTIONS) || '[]';
     const localUsersRaw = localStorage.getItem(KEYS.USERS) || '[]';
@@ -182,6 +213,7 @@ export const syncWithServer = async () => {
     const serverResultsStr = JSON.stringify(serverResults);
     const serverStudentsStr = JSON.stringify(serverStudents);
     const serverClassesStr = JSON.stringify(serverClasses);
+    const serverGradeLevelsStr = JSON.stringify(serverGradeLevels);
     const serverGlobalClassesStr = JSON.stringify(serverGlobalClasses);
     const serverInstStr = JSON.stringify(serverInstitutions);
     const serverUsersStr = JSON.stringify(serverUsers);
@@ -202,6 +234,10 @@ export const syncWithServer = async () => {
     }
     if (localClassesRaw !== serverClassesStr) {
       setItem(KEYS.CLASSES, serverClasses);
+      hasChanged = true;
+    }
+    if (serverGradeLevels.length > 0 && localGradeLevelsRaw !== serverGradeLevelsStr) {
+      setItem(KEYS.GRADE_LEVELS, serverGradeLevels);
       hasChanged = true;
     }
     if (serverGlobalClasses.length > 0 && localGlobalClassesRaw !== serverGlobalClassesStr) {
@@ -247,8 +283,23 @@ export const initStorage = () => {
   if (!localStorage.getItem(KEYS.CLASSES)) {
     setItem(KEYS.CLASSES, initialClasses);
   }
+  if (!localStorage.getItem(KEYS.GRADE_LEVELS)) {
+    setItem(KEYS.GRADE_LEVELS, initialGradeLevels);
+  } else {
+    // Ensure 5th, 6th, 7th grades are present in existing localStorage
+    const currentGrades = getItem<SystemGradeLevel[]>(KEYS.GRADE_LEVELS, []);
+    if (!currentGrades.some(g => g.level === 5)) {
+      setItem(KEYS.GRADE_LEVELS, initialGradeLevels);
+    }
+  }
   if (!localStorage.getItem(KEYS.GLOBAL_CLASSES)) {
     setItem(KEYS.GLOBAL_CLASSES, initialGlobalClasses);
+  } else {
+    // Ensure 5th, 6th, 7th grade classes are present in existing localStorage
+    const currentGlobalCls = getItem<GlobalClassTemplate[]>(KEYS.GLOBAL_CLASSES, []);
+    if (!currentGlobalCls.some(g => g.gradeLevel === 5)) {
+      setItem(KEYS.GLOBAL_CLASSES, initialGlobalClasses);
+    }
   }
   if (!localStorage.getItem(KEYS.STUDENTS)) {
     setItem(KEYS.STUDENTS, initialStudents);
@@ -469,6 +520,43 @@ export const storageService = {
     window.dispatchEvent(new CustomEvent('opticok-data-updated'));
   },
 
+  // Grade Levels / Sınıf Kademeleri (Managed by Super Admin)
+  getGradeLevels: (): SystemGradeLevel[] => {
+    const list = getItem<SystemGradeLevel[]>(KEYS.GRADE_LEVELS, initialGradeLevels);
+    return list.slice().sort((a, b) => (a.order || a.level) - (b.order || b.level));
+  },
+  addGradeLevel: (gradeLevel: SystemGradeLevel) => {
+    const list = getItem<SystemGradeLevel[]>(KEYS.GRADE_LEVELS, initialGradeLevels);
+    const filtered = list.filter(g => g.id !== gradeLevel.id && g.level !== gradeLevel.level);
+    filtered.push(gradeLevel);
+    setItem(KEYS.GRADE_LEVELS, filtered);
+    pushToServer();
+    window.dispatchEvent(new CustomEvent('opticok-data-updated'));
+  },
+  updateGradeLevel: (gradeLevel: SystemGradeLevel) => {
+    const list = getItem<SystemGradeLevel[]>(KEYS.GRADE_LEVELS, initialGradeLevels);
+    const index = list.findIndex(g => g.id === gradeLevel.id);
+    if (index >= 0) {
+      list[index] = gradeLevel;
+    } else {
+      list.push(gradeLevel);
+    }
+    setItem(KEYS.GRADE_LEVELS, list);
+    pushToServer();
+    window.dispatchEvent(new CustomEvent('opticok-data-updated'));
+  },
+  deleteGradeLevel: (gradeLevelId: string) => {
+    const list = getItem<SystemGradeLevel[]>(KEYS.GRADE_LEVELS, initialGradeLevels).filter(g => g.id !== gradeLevelId);
+    setItem(KEYS.GRADE_LEVELS, list);
+    pushToServer();
+    window.dispatchEvent(new CustomEvent('opticok-data-updated'));
+  },
+  resetGradeLevelsToDefault: () => {
+    setItem(KEYS.GRADE_LEVELS, initialGradeLevels);
+    pushToServer();
+    window.dispatchEvent(new CustomEvent('opticok-data-updated'));
+  },
+
   // Global Standard Classes (Managed by Super Admin)
   getGlobalClasses: (gradeLevel?: number): GlobalClassTemplate[] => {
     const list = getItem<GlobalClassTemplate[]>(KEYS.GLOBAL_CLASSES, initialGlobalClasses);
@@ -597,6 +685,7 @@ export const storageService = {
       siteSettings: getItem(KEYS.SITE_SETTINGS, initialSiteSettings),
       institutions: getItem(KEYS.INSTITUTIONS, initialInstitutions),
       classes: getItem(KEYS.CLASSES, initialClasses),
+      gradeLevels: getItem(KEYS.GRADE_LEVELS, initialGradeLevels),
       globalClasses: getItem(KEYS.GLOBAL_CLASSES, initialGlobalClasses),
       students: getItem(KEYS.STUDENTS, initialStudents),
       exams: getItem(KEYS.EXAMS, initialExams),
@@ -632,6 +721,7 @@ export const storageService = {
           if (data.siteSettings) setItem(KEYS.SITE_SETTINGS, data.siteSettings);
           if (Array.isArray(data.institutions)) setItem(KEYS.INSTITUTIONS, data.institutions);
           if (Array.isArray(data.classes)) setItem(KEYS.CLASSES, data.classes);
+          if (Array.isArray(data.gradeLevels)) setItem(KEYS.GRADE_LEVELS, data.gradeLevels);
           if (Array.isArray(data.globalClasses)) setItem(KEYS.GLOBAL_CLASSES, data.globalClasses);
           if (Array.isArray(data.students)) setItem(KEYS.STUDENTS, data.students);
           if (Array.isArray(data.exams)) setItem(KEYS.EXAMS, data.exams);

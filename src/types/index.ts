@@ -51,11 +51,21 @@ export interface SchoolClass {
   studentCount: number;
 }
 
+export interface SystemGradeLevel {
+  id: string; // e.g. "grade-5", "grade-8"
+  level: number; // numeric grade level (e.g. 5, 6, 7, 8, 9, 10, 11, 12, 13)
+  name: string; // e.g. "5. Sınıf", "6. Sınıf", "7. Sınıf", "8. Sınıf (LGS)", "12. Sınıf (YKS)", "Mezun"
+  category: 'İlkokul' | 'Ortaokul' | 'Lise' | 'Mezun / Diğer';
+  description?: string;
+  isActive: boolean;
+  order?: number;
+}
+
 export interface GlobalClassTemplate {
   id: string;
-  name: string; // e.g. "8-A", "12-SAY", "Mezun"
-  gradeLevel: number; // e.g. 8, 9, 10, 11, 12
-  description?: string; // e.g. "LGS Hazırlık", "YKS Sayısal"
+  name: string; // e.g. "5-A", "8-A", "12-SAY", "Mezun"
+  gradeLevel: number; // e.g. 5, 6, 7, 8, 9, 10, 11, 12
+  description?: string; // e.g. "Ortaokul", "LGS Hazırlık", "YKS Sayısal"
   createdAt?: string;
 }
 

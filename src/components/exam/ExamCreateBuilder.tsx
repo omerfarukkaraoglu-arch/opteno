@@ -17,6 +17,7 @@ export const ExamCreateBuilder: React.FC<ExamCreateBuilderProps> = ({
 }) => {
   const activeUser = currentUser || storageService.getCurrentUser();
   const institutions = storageService.getInstitutions();
+  const gradeLevels = storageService.getGradeLevels();
 
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
 
@@ -26,7 +27,7 @@ export const ExamCreateBuilder: React.FC<ExamCreateBuilderProps> = ({
   );
   const [examTitle, setExamTitle] = useState<string>('');
   const [examCode, setExamCode] = useState<string>('');
-  const [gradeLevel, setGradeLevel] = useState<string>('8. Sınıf');
+  const [gradeLevel, setGradeLevel] = useState<string>(gradeLevels[0]?.name || '8. Sınıf');
   const [defaultOptionCount, setDefaultOptionCount] = useState<number>(4);
   const [netPenaltyRatio, setNetPenaltyRatio] = useState<number>(3); // 3 for LGS
   const [isStudentSpecific, setIsStudentSpecific] = useState<boolean>(true);
@@ -564,11 +565,9 @@ const getSampleOutcomesForSubject = (name: string, count: number): string[] => {
                   onChange={(e) => setGradeLevel(e.target.value)}
                   className="input-field text-xs bg-slate-900"
                 >
-                  <option value="8. Sınıf">8. Sınıf (LGS)</option>
-                  <option value="12. Sınıf">12. Sınıf (YKS / TYT / AYT)</option>
-                  <option value="9. Sınıf">9. Sınıf</option>
-                  <option value="10. Sınıf">10. Sınıf</option>
-                  <option value="11. Sınıf">11. Sınıf</option>
+                  {gradeLevels.map(gl => (
+                    <option key={gl.id} value={gl.name}>{gl.name} ({gl.category})</option>
+                  ))}
                   <option value="Tüm Seviyeler">Genel / Tüm Seviyeler</option>
                 </select>
               </div>

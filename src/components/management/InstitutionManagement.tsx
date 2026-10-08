@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Users, BookOpen, Plus, Trash2, Edit2, Search, Shield, UserPlus, FileSpreadsheet, Upload, Download, CheckCircle2, Building2, Image as ImageIcon, MapPin, Phone, Mail, Save, GraduationCap } from 'lucide-react';
 import { storageService } from '../../services/storageService';
 import { studentExcelService } from '../../services/studentExcelService';
-import { SchoolClass, Student, User, Institution, GlobalClassTemplate } from '../../types';
+import { SchoolClass, Student, User, Institution, GlobalClassTemplate, SystemGradeLevel } from '../../types';
 import { PersonnelManagement } from './PersonnelManagement';
 import { StudentCumulativeReport } from '../results/StudentCumulativeReport';
 
@@ -13,6 +13,7 @@ export const InstitutionManagement: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'personnel' | 'classes' | 'students' | 'profile'>('personnel');
   const [classes, setClasses] = useState<SchoolClass[]>(storageService.getClasses(instId));
   const [students, setStudents] = useState<Student[]>(storageService.getStudents(instId));
+  const [gradeLevels, setGradeLevels] = useState<SystemGradeLevel[]>(storageService.getGradeLevels());
   const [globalClasses, setGlobalClasses] = useState<GlobalClassTemplate[]>(storageService.getGlobalClasses());
   const [cumulativeStudentId, setCumulativeStudentId] = useState<string | null>(null);
 
@@ -62,6 +63,7 @@ export const InstitutionManagement: React.FC = () => {
   const reloadData = () => {
     setClasses(storageService.getClasses(instId));
     setStudents(storageService.getStudents(instId));
+    setGradeLevels(storageService.getGradeLevels());
     setGlobalClasses(storageService.getGlobalClasses());
     const inst = storageService.getInstitutions().find(i => i.id === instId);
     if (inst) {
@@ -729,25 +731,29 @@ export const InstitutionManagement: React.FC = () => {
               <div className="space-y-4">
                 {/* Grade Level Filter Chips */}
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  {[
-                    { label: 'Tümü', value: 'ALL' },
-                    { label: '8. Sınıf', value: 8 },
-                    { label: '9. Sınıf', value: 9 },
-                    { label: '10. Sınıf', value: 10 },
-                    { label: '11. Sınıf', value: 11 },
-                    { label: '12 & Mezun', value: 12 }
-                  ].map(flt => (
+                  <button
+                    type="button"
+                    onClick={() => setTemplateGradeFilter('ALL')}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                      templateGradeFilter === 'ALL'
+                        ? 'bg-indigo-600 text-white shadow-sm'
+                        : 'bg-slate-800/80 text-slate-400 hover:text-white border border-slate-700/60'
+                    }`}
+                  >
+                    Tümü
+                  </button>
+                  {gradeLevels.map(gl => (
                     <button
-                      key={String(flt.value)}
+                      key={gl.id}
                       type="button"
-                      onClick={() => setTemplateGradeFilter(flt.value as any)}
+                      onClick={() => setTemplateGradeFilter(gl.level)}
                       className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
-                        templateGradeFilter === flt.value
+                        templateGradeFilter === gl.level
                           ? 'bg-indigo-600 text-white shadow-sm'
                           : 'bg-slate-800/80 text-slate-400 hover:text-white border border-slate-700/60'
                       }`}
                     >
-                      {flt.label}
+                      {gl.name}
                     </button>
                   ))}
                 </div>
@@ -825,7 +831,7 @@ export const InstitutionManagement: React.FC = () => {
                   <input
                     required
                     type="text"
-                    placeholder="ör. 8-VIP, 11-DİL-1 veya 12-ÖZEL-SAY"
+                    placeholder="ör. 5-A, 8-VIP, 11-DİL-1 veya 12-ÖZEL-SAY"
                     value={newClassName}
                     onChange={e => setNewClassName(e.target.value)}
                     className="input-field py-2 text-xs rounded-xl"
@@ -840,11 +846,11 @@ export const InstitutionManagement: React.FC = () => {
                     onChange={e => setNewGradeLevel(Number(e.target.value))}
                     className="input-field py-2 text-xs rounded-xl bg-slate-900"
                   >
-                    <option value={8}>8. Sınıf (LGS)</option>
-                    <option value={9}>9. Sınıf</option>
-                    <option value={10}>10. Sınıf</option>
-                    <option value={11}>11. Sınıf</option>
-                    <option value={12}>12. Sınıf & Mezun (YKS / TYT / AYT)</option>
+                    {gradeLevels.map(gl => (
+                      <option key={gl.id} value={gl.level}>
+                        {gl.name} ({gl.category})
+                      </option>
+                    ))}
                   </select>
                 </div>
 

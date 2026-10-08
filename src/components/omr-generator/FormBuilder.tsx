@@ -9,6 +9,7 @@ export const FormBuilder: React.FC = () => {
   const currentUser = storageService.getCurrentUser();
   const institutions = storageService.getInstitutions();
   const classes = storageService.getClasses(currentUser.institutionId);
+  const gradeLevels = storageService.getGradeLevels();
 
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
 
@@ -18,7 +19,7 @@ export const FormBuilder: React.FC = () => {
   );
   const [examTitle, setExamTitle] = useState<string>('8. Sınıf LGS Kurumsal Tarama - 01');
   const [examCode, setExamCode] = useState<string>('LGS-2026-01');
-  const [gradeLevel, setGradeLevel] = useState<string>('8. Sınıf');
+  const [gradeLevel, setGradeLevel] = useState<string>(gradeLevels[0]?.name || '8. Sınıf');
   const [defaultOptionCount, setDefaultOptionCount] = useState<number>(4);
   const [netPenaltyRatio, setNetPenaltyRatio] = useState<number>(3); // 3 for LGS
   const [selectedClassId, setSelectedClassId] = useState<string>('');
@@ -307,11 +308,9 @@ export const FormBuilder: React.FC = () => {
                     onChange={(e) => setGradeLevel(e.target.value)}
                     className="input-field text-xs bg-slate-900"
                   >
-                    <option value="8. Sınıf">8. Sınıf (LGS)</option>
-                    <option value="12. Sınıf">12. Sınıf (YKS / TYT / AYT)</option>
-                    <option value="9. Sınıf">9. Sınıf</option>
-                    <option value="10. Sınıf">10. Sınıf</option>
-                    <option value="11. Sınıf">11. Sınıf</option>
+                    {gradeLevels.map(gl => (
+                      <option key={gl.id} value={gl.name}>{gl.name} ({gl.category})</option>
+                    ))}
                     <option value="Tüm Seviyeler">Genel / Tüm Seviyeler</option>
                   </select>
                 </div>
