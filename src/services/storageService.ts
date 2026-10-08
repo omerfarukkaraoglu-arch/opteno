@@ -1,4 +1,4 @@
-import { Institution, SchoolClass, Student, Exam, ScanResult, User, SiteSettings } from '../types';
+import { Institution, SchoolClass, Student, Exam, ScanResult, User, SiteSettings, GlobalClassTemplate } from '../types';
 import { initialInstitutions, initialClasses, initialStudents, initialExams, initialScanResults, initialUsers, initialSiteSettings } from './mockData';
 
 const FIREBASE_DB_URL = 'https://opteno-aba91-default-rtdb.europe-west1.firebasedatabase.app/opteno';
@@ -8,11 +8,40 @@ const KEYS = {
   CURRENT_USER: 'opticok_current_user',
   INSTITUTIONS: 'opticok_institutions',
   CLASSES: 'opticok_classes',
+  GLOBAL_CLASSES: 'opticok_global_classes',
   STUDENTS: 'opticok_students',
   EXAMS: 'opticok_exams',
   RESULTS: 'opticok_results',
   SITE_SETTINGS: 'opticok_site_settings'
 };
+
+export const initialGlobalClasses: GlobalClassTemplate[] = [
+  { id: 'gcls-8a', name: '8-A', gradeLevel: 8, description: '8. Sınıf LGS Şubesi' },
+  { id: 'gcls-8b', name: '8-B', gradeLevel: 8, description: '8. Sınıf LGS Şubesi' },
+  { id: 'gcls-8c', name: '8-C', gradeLevel: 8, description: '8. Sınıf LGS Şubesi' },
+  { id: 'gcls-8d', name: '8-D', gradeLevel: 8, description: '8. Sınıf LGS Şubesi' },
+
+  { id: 'gcls-9a', name: '9-A', gradeLevel: 9, description: '9. Sınıf Şubesi' },
+  { id: 'gcls-9b', name: '9-B', gradeLevel: 9, description: '9. Sınıf Şubesi' },
+  { id: 'gcls-9c', name: '9-C', gradeLevel: 9, description: '9. Sınıf Şubesi' },
+
+  { id: 'gcls-10a', name: '10-A', gradeLevel: 10, description: '10. Sınıf Şubesi' },
+  { id: 'gcls-10b', name: '10-B', gradeLevel: 10, description: '10. Sınıf Şubesi' },
+  { id: 'gcls-10c', name: '10-C', gradeLevel: 10, description: '10. Sınıf Şubesi' },
+
+  { id: 'gcls-11a', name: '11-A', gradeLevel: 11, description: '11. Sınıf Genel' },
+  { id: 'gcls-11say', name: '11-SAY', gradeLevel: 11, description: '11. Sınıf Sayısal' },
+  { id: 'gcls-11ea', name: '11-EA', gradeLevel: 11, description: '11. Sınıf Eşit Ağırlık' },
+  { id: 'gcls-11soz', name: '11-SÖZ', gradeLevel: 11, description: '11. Sınıf Sözel' },
+
+  { id: 'gcls-12a', name: '12-A', gradeLevel: 12, description: '12. Sınıf Genel' },
+  { id: 'gcls-12say1', name: '12-SAY-1', gradeLevel: 12, description: '12. Sınıf YKS Sayısal - 1' },
+  { id: 'gcls-12say2', name: '12-SAY-2', gradeLevel: 12, description: '12. Sınıf YKS Sayısal - 2' },
+  { id: 'gcls-12ea1', name: '12-EA-1', gradeLevel: 12, description: '12. Sınıf YKS Eşit Ağırlık - 1' },
+  { id: 'gcls-12soz', name: '12-SÖZ', gradeLevel: 12, description: '12. Sınıf YKS Sözel' },
+  { id: 'gcls-mezun-say', name: 'Mezun Sayısal', gradeLevel: 12, description: 'Mezun YKS Sayısal Grubu' },
+  { id: 'gcls-mezun-ea', name: 'Mezun Eşit Ağırlık', gradeLevel: 12, description: 'Mezun YKS Eşit Ağırlık Grubu' }
+];
 
 // Helper for local storage
 const getItem = <T>(key: string, fallback: T): T => {
@@ -36,6 +65,7 @@ const setItem = <T>(key: string, value: T): void => {
 export const resetAllStorage = () => {
   localStorage.removeItem(KEYS.INSTITUTIONS);
   localStorage.removeItem(KEYS.CLASSES);
+  localStorage.removeItem(KEYS.GLOBAL_CLASSES);
   localStorage.removeItem(KEYS.STUDENTS);
   localStorage.removeItem(KEYS.EXAMS);
   localStorage.removeItem(KEYS.RESULTS);
@@ -46,6 +76,7 @@ export const resetAllStorage = () => {
   setItem(KEYS.USERS, initialUsers);
   setItem(KEYS.INSTITUTIONS, initialInstitutions);
   setItem(KEYS.CLASSES, initialClasses);
+  setItem(KEYS.GLOBAL_CLASSES, initialGlobalClasses);
   setItem(KEYS.STUDENTS, initialStudents);
   setItem(KEYS.EXAMS, initialExams);
   setItem(KEYS.RESULTS, initialScanResults);
@@ -67,6 +98,7 @@ export const pushToServer = async () => {
     const exams = getItem<Exam[]>(KEYS.EXAMS, initialExams);
     const students = getItem<Student[]>(KEYS.STUDENTS, initialStudents);
     const classes = getItem<SchoolClass[]>(KEYS.CLASSES, initialClasses);
+    const globalClasses = getItem<GlobalClassTemplate[]>(KEYS.GLOBAL_CLASSES, initialGlobalClasses);
     const institutions = getItem<Institution[]>(KEYS.INSTITUTIONS, initialInstitutions);
     const users = getItem<User[]>(KEYS.USERS, initialUsers);
     const siteSettings = getItem<SiteSettings>(KEYS.SITE_SETTINGS, initialSiteSettings);
@@ -79,6 +111,7 @@ export const pushToServer = async () => {
         exams,
         students,
         classes,
+        globalClasses,
         institutions,
         users,
         siteSettings
@@ -127,6 +160,7 @@ export const syncWithServer = async () => {
     const serverResults: ScanResult[] = serverData.results || [];
     const serverStudents: Student[] = serverData.students || [];
     const serverClasses: SchoolClass[] = serverData.classes || [];
+    const serverGlobalClasses: GlobalClassTemplate[] = serverData.globalClasses || [];
     const serverInstitutions: Institution[] = serverData.institutions || [];
     const serverUsers: User[] = serverData.users || [];
 
@@ -140,6 +174,7 @@ export const syncWithServer = async () => {
     const localResultsRaw = localStorage.getItem(KEYS.RESULTS) || '[]';
     const localStudentsRaw = localStorage.getItem(KEYS.STUDENTS) || '[]';
     const localClassesRaw = localStorage.getItem(KEYS.CLASSES) || '[]';
+    const localGlobalClassesRaw = localStorage.getItem(KEYS.GLOBAL_CLASSES) || '[]';
     const localInstRaw = localStorage.getItem(KEYS.INSTITUTIONS) || '[]';
     const localUsersRaw = localStorage.getItem(KEYS.USERS) || '[]';
 
@@ -147,6 +182,7 @@ export const syncWithServer = async () => {
     const serverResultsStr = JSON.stringify(serverResults);
     const serverStudentsStr = JSON.stringify(serverStudents);
     const serverClassesStr = JSON.stringify(serverClasses);
+    const serverGlobalClassesStr = JSON.stringify(serverGlobalClasses);
     const serverInstStr = JSON.stringify(serverInstitutions);
     const serverUsersStr = JSON.stringify(serverUsers);
 
@@ -166,6 +202,10 @@ export const syncWithServer = async () => {
     }
     if (localClassesRaw !== serverClassesStr) {
       setItem(KEYS.CLASSES, serverClasses);
+      hasChanged = true;
+    }
+    if (serverGlobalClasses.length > 0 && localGlobalClassesRaw !== serverGlobalClassesStr) {
+      setItem(KEYS.GLOBAL_CLASSES, serverGlobalClasses);
       hasChanged = true;
     }
     if (localInstRaw !== serverInstStr) {
@@ -206,6 +246,9 @@ export const initStorage = () => {
   }
   if (!localStorage.getItem(KEYS.CLASSES)) {
     setItem(KEYS.CLASSES, initialClasses);
+  }
+  if (!localStorage.getItem(KEYS.GLOBAL_CLASSES)) {
+    setItem(KEYS.GLOBAL_CLASSES, initialGlobalClasses);
   }
   if (!localStorage.getItem(KEYS.STUDENTS)) {
     setItem(KEYS.STUDENTS, initialStudents);
@@ -426,6 +469,31 @@ export const storageService = {
     window.dispatchEvent(new CustomEvent('opticok-data-updated'));
   },
 
+  // Global Standard Classes (Managed by Super Admin)
+  getGlobalClasses: (gradeLevel?: number): GlobalClassTemplate[] => {
+    const list = getItem<GlobalClassTemplate[]>(KEYS.GLOBAL_CLASSES, initialGlobalClasses);
+    return gradeLevel !== undefined ? list.filter(c => c.gradeLevel === gradeLevel) : list;
+  },
+  addGlobalClass: (template: GlobalClassTemplate) => {
+    const list = getItem<GlobalClassTemplate[]>(KEYS.GLOBAL_CLASSES, initialGlobalClasses);
+    const filtered = list.filter(c => c.id !== template.id);
+    filtered.push(template);
+    setItem(KEYS.GLOBAL_CLASSES, filtered);
+    pushToServer();
+    window.dispatchEvent(new CustomEvent('opticok-data-updated'));
+  },
+  deleteGlobalClass: (templateId: string) => {
+    const list = getItem<GlobalClassTemplate[]>(KEYS.GLOBAL_CLASSES, initialGlobalClasses).filter(c => c.id !== templateId);
+    setItem(KEYS.GLOBAL_CLASSES, list);
+    pushToServer();
+    window.dispatchEvent(new CustomEvent('opticok-data-updated'));
+  },
+  resetGlobalClassesToDefault: () => {
+    setItem(KEYS.GLOBAL_CLASSES, initialGlobalClasses);
+    pushToServer();
+    window.dispatchEvent(new CustomEvent('opticok-data-updated'));
+  },
+
   // Students
   getStudents: (institutionId?: string, classId?: string): Student[] => {
     let list = getItem<Student[]>(KEYS.STUDENTS, initialStudents);
@@ -529,6 +597,7 @@ export const storageService = {
       siteSettings: getItem(KEYS.SITE_SETTINGS, initialSiteSettings),
       institutions: getItem(KEYS.INSTITUTIONS, initialInstitutions),
       classes: getItem(KEYS.CLASSES, initialClasses),
+      globalClasses: getItem(KEYS.GLOBAL_CLASSES, initialGlobalClasses),
       students: getItem(KEYS.STUDENTS, initialStudents),
       exams: getItem(KEYS.EXAMS, initialExams),
       results: getItem(KEYS.RESULTS, initialScanResults),
@@ -563,6 +632,7 @@ export const storageService = {
           if (data.siteSettings) setItem(KEYS.SITE_SETTINGS, data.siteSettings);
           if (Array.isArray(data.institutions)) setItem(KEYS.INSTITUTIONS, data.institutions);
           if (Array.isArray(data.classes)) setItem(KEYS.CLASSES, data.classes);
+          if (Array.isArray(data.globalClasses)) setItem(KEYS.GLOBAL_CLASSES, data.globalClasses);
           if (Array.isArray(data.students)) setItem(KEYS.STUDENTS, data.students);
           if (Array.isArray(data.exams)) setItem(KEYS.EXAMS, data.exams);
           if (Array.isArray(data.results)) setItem(KEYS.RESULTS, data.results);

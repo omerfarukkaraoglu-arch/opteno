@@ -51,6 +51,14 @@ export interface SchoolClass {
   studentCount: number;
 }
 
+export interface GlobalClassTemplate {
+  id: string;
+  name: string; // e.g. "8-A", "12-SAY", "Mezun"
+  gradeLevel: number; // e.g. 8, 9, 10, 11, 12
+  description?: string; // e.g. "LGS Hazırlık", "YKS Sayısal"
+  createdAt?: string;
+}
+
 export interface Student {
   id: string;
   institutionId: string;

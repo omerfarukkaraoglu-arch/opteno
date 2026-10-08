@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Users, BookOpen, Plus, Trash2, Edit2, Search, Shield, UserPlus, FileSpreadsheet, Upload, Download, CheckCircle2, Building2, Image as ImageIcon, MapPin, Phone, Mail, Save, GraduationCap } from 'lucide-react';
 import { storageService } from '../../services/storageService';
 import { studentExcelService } from '../../services/studentExcelService';
-import { SchoolClass, Student, User, Institution } from '../../types';
+import { SchoolClass, Student, User, Institution, GlobalClassTemplate } from '../../types';
 import { PersonnelManagement } from './PersonnelManagement';
 import { StudentCumulativeReport } from '../results/StudentCumulativeReport';
 
@@ -13,6 +13,7 @@ export const InstitutionManagement: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'personnel' | 'classes' | 'students' | 'profile'>('personnel');
   const [classes, setClasses] = useState<SchoolClass[]>(storageService.getClasses(instId));
   const [students, setStudents] = useState<Student[]>(storageService.getStudents(instId));
+  const [globalClasses, setGlobalClasses] = useState<GlobalClassTemplate[]>(storageService.getGlobalClasses());
   const [cumulativeStudentId, setCumulativeStudentId] = useState<string | null>(null);
 
   const [institution, setInstitution] = useState<Institution | undefined>(() => {
@@ -41,6 +42,8 @@ export const InstitutionManagement: React.FC = () => {
 
   // Add Class Form State
   const [showAddClass, setShowAddClass] = useState(false);
+  const [classModalMode, setClassModalMode] = useState<'standard' | 'custom'>('standard');
+  const [templateGradeFilter, setTemplateGradeFilter] = useState<number | 'ALL'>('ALL');
   const [newClassName, setNewClassName] = useState('');
   const [newGradeLevel, setNewGradeLevel] = useState(12);
 
@@ -49,9 +52,17 @@ export const InstitutionManagement: React.FC = () => {
   const [showAddStudent, setShowAddStudent] = useState(false);
   const [importSuccessMsg, setImportSuccessMsg] = useState<string | null>(null);
 
+  // Sync with background updates
+  React.useEffect(() => {
+    const handleUpdate = () => reloadData();
+    window.addEventListener('opticok-data-updated', handleUpdate);
+    return () => window.removeEventListener('opticok-data-updated', handleUpdate);
+  }, [instId]);
+
   const reloadData = () => {
     setClasses(storageService.getClasses(instId));
     setStudents(storageService.getStudents(instId));
+    setGlobalClasses(storageService.getGlobalClasses());
     const inst = storageService.getInstitutions().find(i => i.id === instId);
     if (inst) {
       setInstitution(inst);
@@ -139,12 +150,18 @@ export const InstitutionManagement: React.FC = () => {
 
   const handleAddClass = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newClassName) return;
+    const trimmed = newClassName.trim();
+    if (!trimmed) return;
+
+    if (classes.some(c => c.name.toLowerCase() === trimmed.toLowerCase())) {
+      alert(`"${trimmed}" isimli sınıf kurumunuzda zaten tanımlıdır.`);
+      return;
+    }
 
     const newCls: SchoolClass = {
       id: `cls-${Date.now()}`,
       institutionId: instId,
-      name: newClassName,
+      name: trimmed,
       gradeLevel: newGradeLevel,
       studentCount: 0
     };
@@ -153,6 +170,24 @@ export const InstitutionManagement: React.FC = () => {
     reloadData();
     setShowAddClass(false);
     setNewClassName('');
+  };
+
+  const handleQuickAddTemplateClass = (template: GlobalClassTemplate) => {
+    if (classes.some(c => c.name.toLowerCase() === template.name.toLowerCase())) {
+      alert(`"${template.name}" sınıfı kurumunuzda zaten tanımlıdır.`);
+      return;
+    }
+
+    const newCls: SchoolClass = {
+      id: `cls-${Date.now()}`,
+      institutionId: instId,
+      name: template.name,
+      gradeLevel: template.gradeLevel,
+      studentCount: 0
+    };
+
+    storageService.addClass(newCls);
+    reloadData();
   };
 
   const handleDeleteClass = (classId: string) => {
@@ -267,11 +302,19 @@ export const InstitutionManagement: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               {classes.map(cls => {
                 const countInClass = students.filter(s => s.classId === cls.id).length;
+                const isStandard = globalClasses.some(g => g.name.toLowerCase() === cls.name.toLowerCase());
                 return (
-                  <div key={cls.id} className="glass-card p-4 flex items-center justify-between border border-slate-800 rounded-xl">
+                  <div key={cls.id} className="glass-card p-4 flex items-center justify-between border border-slate-800 rounded-xl hover:border-slate-700 transition-all">
                     <div>
-                      <h4 className="font-bold text-white text-lg">{cls.name}</h4>
-                      <p className="text-xs text-slate-400">{cls.gradeLevel}. Sınıf Seviyesi • {countInClass} Kayıtlı Öğrenci</p>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-bold text-white text-lg">{cls.name}</h4>
+                        {isStandard && (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                            Standart
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-400 mt-0.5">{cls.gradeLevel}. Sınıf Seviyesi • {countInClass} Kayıtlı Öğrenci</p>
                     </div>
                     <button
                       onClick={() => handleDeleteClass(cls.id)}
@@ -283,6 +326,17 @@ export const InstitutionManagement: React.FC = () => {
                   </div>
                 );
               })}
+              {classes.length === 0 && (
+                <div className="col-span-full p-8 text-center glass-card border border-slate-800 rounded-2xl space-y-2">
+                  <p className="text-xs text-slate-400">Henüz kurumunuza ait sınıf bulunmamaktadır.</p>
+                  <button
+                    onClick={() => setShowAddClass(true)}
+                    className="btn btn-primary text-xs py-2 px-3 inline-flex items-center gap-1.5"
+                  >
+                    <Plus className="h-3.5 w-3.5" /> Standart Sınıflardan Seç ve Ekle
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -618,43 +672,202 @@ export const InstitutionManagement: React.FC = () => {
 
       {/* Add Class Modal */}
       {showAddClass && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
-          <div className="glass-panel max-w-sm w-full p-6 rounded-2xl border-slate-700 space-y-4">
-            <h3 className="font-display text-lg font-bold text-white">Yeni Sınıf Tanımla</h3>
-
-            <form onSubmit={handleAddClass} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Sınıf Adı *</label>
-                <input
-                  required
-                  type="text"
-                  placeholder="ör. 12-A SAY veya 8-B LGS"
-                  value={newClassName}
-                  onChange={e => setNewClassName(e.target.value)}
-                  className="input-field py-2 text-xs"
-                />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4 overflow-y-auto">
+          <div className="glass-panel max-w-xl w-full p-6 sm:p-7 rounded-3xl border border-indigo-500/30 bg-slate-900/95 space-y-5 shadow-2xl my-auto max-h-[92vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2.5 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+                  <GraduationCap className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-display text-base sm:text-lg font-bold text-white">Kuruma Sınıf / Şube Tanımla</h3>
+                  <p className="text-xs text-slate-400">Sistem standart sınıflarından seçin veya özel sınıf oluşturun</p>
+                </div>
               </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAddClass(false);
+                  setNewClassName('');
+                }}
+                className="text-slate-400 hover:text-white p-1 text-lg font-bold"
+              >
+                ✕
+              </button>
+            </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Sınıf Seviyesi</label>
-                <select
-                  value={newGradeLevel}
-                  onChange={e => setNewGradeLevel(Number(e.target.value))}
-                  className="input-field py-2 text-xs bg-slate-900"
-                >
-                  <option value={8}>8. Sınıf (LGS)</option>
-                  <option value={9}>9. Sınıf</option>
-                  <option value={10}>10. Sınıf</option>
-                  <option value={11}>11. Sınıf</option>
-                  <option value={12}>12. Sınıf (YKS / TYT / AYT)</option>
-                </select>
-              </div>
+            {/* Mode Selector Tabs */}
+            <div className="grid grid-cols-2 p-1 rounded-xl bg-slate-950/80 border border-slate-800 text-xs font-bold">
+              <button
+                type="button"
+                onClick={() => setClassModalMode('standard')}
+                className={`py-2 px-3 rounded-lg transition-all flex items-center justify-center gap-2 ${
+                  classModalMode === 'standard'
+                    ? 'bg-indigo-600 text-white shadow-md'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <BookOpen className="h-3.5 w-3.5 text-amber-400" />
+                <span>Standart Sistem Sınıfları ({globalClasses.length})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setClassModalMode('custom')}
+                className={`py-2 px-3 rounded-lg transition-all flex items-center justify-center gap-2 ${
+                  classModalMode === 'custom'
+                    ? 'bg-indigo-600 text-white shadow-md'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Plus className="h-3.5 w-3.5 text-indigo-400" />
+                <span>Özel Sınıf Adı Tanımla</span>
+              </button>
+            </div>
 
-              <div className="flex justify-end gap-2 pt-2">
-                <button type="button" onClick={() => setShowAddClass(false)} className="btn btn-secondary text-xs">İptal</button>
-                <button type="submit" className="btn btn-primary text-xs">Sınıfı Kaydet</button>
+            {/* MODE 1: Standard System Classes Pool */}
+            {classModalMode === 'standard' && (
+              <div className="space-y-4">
+                {/* Grade Level Filter Chips */}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {[
+                    { label: 'Tümü', value: 'ALL' },
+                    { label: '8. Sınıf', value: 8 },
+                    { label: '9. Sınıf', value: 9 },
+                    { label: '10. Sınıf', value: 10 },
+                    { label: '11. Sınıf', value: 11 },
+                    { label: '12 & Mezun', value: 12 }
+                  ].map(flt => (
+                    <button
+                      key={String(flt.value)}
+                      type="button"
+                      onClick={() => setTemplateGradeFilter(flt.value as any)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                        templateGradeFilter === flt.value
+                          ? 'bg-indigo-600 text-white shadow-sm'
+                          : 'bg-slate-800/80 text-slate-400 hover:text-white border border-slate-700/60'
+                      }`}
+                    >
+                      {flt.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="text-[11px] text-slate-400 flex items-center justify-between">
+                  <span>Sistem Yöneticisi tarafından onaylanmış resmi sınıflar:</span>
+                  <span className="text-emerald-400 font-semibold">{classes.length} sınıfınız mevcut</span>
+                </div>
+
+                {/* Templates Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-64 overflow-y-auto pr-1">
+                  {globalClasses
+                    .filter(g => templateGradeFilter === 'ALL' || g.gradeLevel === templateGradeFilter)
+                    .map(tpl => {
+                      const isAlreadyAdded = classes.some(c => c.name.toLowerCase() === tpl.name.toLowerCase());
+                      return (
+                        <div
+                          key={tpl.id}
+                          className={`p-3 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
+                            isAlreadyAdded
+                              ? 'bg-slate-950/40 border-slate-800/60 opacity-60'
+                              : 'bg-slate-900/80 border-slate-800 hover:border-indigo-500/50 hover:bg-slate-800/50'
+                          }`}
+                        >
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-white text-sm tracking-wide">{tpl.name}</span>
+                              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                                {tpl.gradeLevel}. Snf
+                              </span>
+                            </div>
+                            {tpl.description && (
+                              <p className="text-[10px] text-slate-400 truncate mt-0.5">{tpl.description}</p>
+                            )}
+                          </div>
+
+                          <div>
+                            {isAlreadyAdded ? (
+                              <span className="px-2 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 text-[10px] font-bold border border-emerald-500/20 whitespace-nowrap flex items-center gap-1">
+                                <CheckCircle2 className="h-3 w-3" /> Ekli
+                              </span>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => handleQuickAddTemplateClass(tpl)}
+                                className="btn btn-primary text-xs py-1.5 px-3 rounded-xl flex items-center gap-1 shrink-0 whitespace-nowrap"
+                              >
+                                <Plus className="h-3.5 w-3.5" /> Ekle
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+
+                <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+                  <span>Listede aradığınız şube yok mu?</span>
+                  <button
+                    type="button"
+                    onClick={() => setClassModalMode('custom')}
+                    className="text-indigo-400 hover:underline font-semibold"
+                  >
+                    Özel İsimle Tanımlayın →
+                  </button>
+                </div>
               </div>
-            </form>
+            )}
+
+            {/* MODE 2: Custom Class Name Creation */}
+            {classModalMode === 'custom' && (
+              <form onSubmit={handleAddClass} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Özel Sınıf / Şube Adı *</label>
+                  <input
+                    required
+                    type="text"
+                    placeholder="ör. 8-VIP, 11-DİL-1 veya 12-ÖZEL-SAY"
+                    value={newClassName}
+                    onChange={e => setNewClassName(e.target.value)}
+                    className="input-field py-2 text-xs rounded-xl"
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1">Standart listede bulunmayan kurumunuza has şubeler için serbest metin girebilirsiniz.</p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Sınıf Seviyesi / Kademesi *</label>
+                  <select
+                    value={newGradeLevel}
+                    onChange={e => setNewGradeLevel(Number(e.target.value))}
+                    className="input-field py-2 text-xs rounded-xl bg-slate-900"
+                  >
+                    <option value={8}>8. Sınıf (LGS)</option>
+                    <option value={9}>9. Sınıf</option>
+                    <option value={10}>10. Sınıf</option>
+                    <option value={11}>11. Sınıf</option>
+                    <option value={12}>12. Sınıf & Mezun (YKS / TYT / AYT)</option>
+                  </select>
+                </div>
+
+                <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAddClass(false);
+                      setNewClassName('');
+                    }}
+                    className="btn btn-secondary text-xs rounded-xl py-2 px-4"
+                  >
+                    İptal
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary text-xs rounded-xl py-2 px-5 flex items-center gap-1.5 shadow-lg shadow-indigo-600/30"
+                  >
+                    <Plus className="h-4 w-4" /> Özel Sınıfı Kaydet
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

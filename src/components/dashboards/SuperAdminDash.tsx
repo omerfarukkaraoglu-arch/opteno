@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Building2, Users, FileText, CheckCircle, Plus, Search, MapPin, Phone, Mail, ChevronRight, Settings, UserPlus, Shield, Trash2, Eye, Calendar, Sparkles, Download, Upload, FileSpreadsheet, CheckCircle2, GraduationCap } from 'lucide-react';
+import { Building2, Users, FileText, CheckCircle, Plus, Search, MapPin, Phone, Mail, ChevronRight, Settings, UserPlus, Shield, Trash2, Eye, Calendar, Sparkles, Download, Upload, FileSpreadsheet, CheckCircle2, GraduationCap, RotateCcw, BookOpen, Layers } from 'lucide-react';
 import { storageService } from '../../services/storageService';
 import { studentExcelService } from '../../services/studentExcelService';
 import { pdfService } from '../../services/pdfService';
-import { Institution, Student, Exam, User } from '../../types';
+import { Institution, Student, Exam, User, GlobalClassTemplate } from '../../types';
 import { PersonnelManagement } from '../management/PersonnelManagement';
 import { SiteSettings } from '../management/SiteSettings';
 import { StudentCumulativeReport } from '../results/StudentCumulativeReport';
@@ -15,11 +15,18 @@ interface SuperAdminDashProps {
 }
 
 export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onNavigateToTab }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'INSTITUTIONS' | 'PERSONNEL' | 'STUDENTS' | 'EXAMS' | 'SITE_SETTINGS'>('INSTITUTIONS');
+  const [activeSubTab, setActiveSubTab] = useState<'INSTITUTIONS' | 'PERSONNEL' | 'GLOBAL_CLASSES' | 'STUDENTS' | 'EXAMS' | 'SITE_SETTINGS'>('INSTITUTIONS');
 
   const [institutions, setInstitutions] = useState<Institution[]>(storageService.getInstitutions());
   const [students, setStudents] = useState<Student[]>(storageService.getStudents());
   const [exams, setExams] = useState<Exam[]>(storageService.getExams());
+  const [globalClasses, setGlobalClasses] = useState<GlobalClassTemplate[]>(storageService.getGlobalClasses());
+  const [globalGradeFilter, setGlobalGradeFilter] = useState<number | 'ALL'>('ALL');
+  const [globalClassSearch, setGlobalClassSearch] = useState('');
+  const [showAddGlobalClassModal, setShowAddGlobalClassModal] = useState(false);
+  const [newGlobalName, setNewGlobalName] = useState('');
+  const [newGlobalGrade, setNewGlobalGrade] = useState<number>(8);
+  const [newGlobalDesc, setNewGlobalDesc] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStudentInstId, setSelectedStudentInstId] = useState<string>('ALL');
   const [studentSearchTerm, setStudentSearchTerm] = useState<string>('');
@@ -88,6 +95,46 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
     setInstitutions(storageService.getInstitutions());
     setStudents(storageService.getStudents());
     setExams(storageService.getExams());
+    setGlobalClasses(storageService.getGlobalClasses());
+  };
+
+  const handleAddGlobalClass = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = newGlobalName.trim();
+    if (!trimmed) return;
+
+    if (globalClasses.some(g => g.name.toLowerCase() === trimmed.toLowerCase())) {
+      alert(`"${trimmed}" isimli standart sınıf havuzda zaten mevcut!`);
+      return;
+    }
+
+    const newTemplate: GlobalClassTemplate = {
+      id: `gcls-${Date.now()}`,
+      name: trimmed,
+      gradeLevel: newGlobalGrade,
+      description: newGlobalDesc.trim() || undefined,
+      createdAt: new Date().toISOString()
+    };
+
+    storageService.addGlobalClass(newTemplate);
+    setGlobalClasses(storageService.getGlobalClasses());
+    setShowAddGlobalClassModal(false);
+    setNewGlobalName('');
+    setNewGlobalDesc('');
+  };
+
+  const handleDeleteGlobalClass = (id: string, name: string) => {
+    if (window.confirm(`"${name}" sınıf şablonunu sistem havuzundan kaldırmak istediğinize emin misiniz?`)) {
+      storageService.deleteGlobalClass(id);
+      setGlobalClasses(storageService.getGlobalClasses());
+    }
+  };
+
+  const handleResetGlobalClasses = () => {
+    if (window.confirm('Sistem sınıf havuzunu MEB/ÖSYM standart sınıflarına sıfırlamak istediğinize emin misiniz?')) {
+      storageService.resetGlobalClassesToDefault();
+      setGlobalClasses(storageService.getGlobalClasses());
+    }
   };
 
   const totalStudentsCount = institutions.reduce((sum, i) => sum + i.studentCount, 0);
@@ -242,6 +289,18 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
             }`}
           >
             <Shield className="h-4 w-4 text-amber-400" /> Kurum Personelleri & Girişler
+          </motion.button>
+
+          <motion.button
+            whileTap={{ scale: 0.96 }}
+            onClick={() => setActiveSubTab('GLOBAL_CLASSES')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+              activeSubTab === 'GLOBAL_CLASSES' 
+                ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-[0_6px_14px_rgba(79,70,229,0.4),inset_0_2px_4px_rgba(255,255,255,0.35),inset_0_-2px_4px_rgba(0,0,0,0.2)]' 
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <GraduationCap className="h-4 w-4 text-amber-400" /> Sistem Sınıf Havuzu ({globalClasses.length})
           </motion.button>
 
           <motion.button
@@ -690,6 +749,159 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* SUB-TAB: GLOBAL CLASSES MANAGEMENT */}
+      {activeSubTab === 'GLOBAL_CLASSES' && (
+        <div className="space-y-6">
+          {/* Header Card */}
+          <div className="clay-panel p-6 rounded-3xl border border-indigo-500/20 relative overflow-hidden">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    Merkezi Sistem Şablonları
+                  </span>
+                  <span className="text-xs text-slate-400">• Toplam {globalClasses.length} Standart Sınıf</span>
+                </div>
+                <h3 className="font-display text-xl font-bold text-white flex items-center gap-2">
+                  <GraduationCap className="h-6 w-6 text-amber-400" /> Standart Sınıf & Şube Havuzu
+                </h3>
+                <p className="text-xs text-slate-300 mt-1 max-w-2xl leading-relaxed">
+                  Kurum yöneticilerinin şube açarken doğrudan seçebilecekleri merkezi sınıf ve şube şablonlarını buradan yönetebilirsiniz. Buraya eklediğiniz her sınıf, tüm kurum adminlerinin sınıf ekleme ekranında otomatik olarak listelenir.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2.5">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.96 }}
+                  onClick={handleResetGlobalClasses}
+                  className="btn btn-secondary text-xs py-2.5 px-3.5 flex items-center gap-1.5 text-slate-300 border-slate-700 hover:border-amber-500/50 rounded-xl"
+                  title="MEB / ÖSYM Standart sınıflarına geri döndür"
+                >
+                  <RotateCcw className="h-3.5 w-3.5 text-amber-400" /> Varsayılanları Yükle
+                </motion.button>
+
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.96 }}
+                  onClick={() => setShowAddGlobalClassModal(true)}
+                  className="btn btn-primary text-xs py-2.5 px-4 flex items-center gap-2 rounded-xl shadow-lg shadow-indigo-600/30"
+                >
+                  <Plus className="h-4 w-4" /> Yeni Standart Sınıf Ekle
+                </motion.button>
+              </div>
+            </div>
+
+            {/* Level Filters & Search */}
+            <div className="mt-6 pt-5 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {[
+                  { label: 'Tümü', value: 'ALL' },
+                  { label: '8. Sınıf (LGS)', value: 8 },
+                  { label: '9. Sınıf', value: 9 },
+                  { label: '10. Sınıf', value: 10 },
+                  { label: '11. Sınıf', value: 11 },
+                  { label: '12. Sınıf & Mezun (YKS)', value: 12 }
+                ].map(tab => (
+                  <button
+                    key={String(tab.value)}
+                    type="button"
+                    onClick={() => setGlobalGradeFilter(tab.value as any)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                      globalGradeFilter === tab.value
+                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30'
+                        : 'bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800'
+                    }`}
+                  >
+                    {tab.label}
+                    <span className="ml-1.5 text-[10px] opacity-70">
+                      ({tab.value === 'ALL' ? globalClasses.length : globalClasses.filter(g => g.gradeLevel === tab.value).length})
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Sınıf adı veya açıklama ara..."
+                  value={globalClassSearch}
+                  onChange={(e) => setGlobalClassSearch(e.target.value)}
+                  className="input-field pl-9 py-1.5 text-xs rounded-xl w-56 bg-slate-950/60"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Classes Cards Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {globalClasses
+              .filter(g => globalGradeFilter === 'ALL' || g.gradeLevel === globalGradeFilter)
+              .filter(g => !globalClassSearch || g.name.toLowerCase().includes(globalClassSearch.toLowerCase()) || (g.description && g.description.toLowerCase().includes(globalClassSearch.toLowerCase())))
+              .map(cls => (
+                <motion.div
+                  key={cls.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="clay-card p-4 rounded-2xl border border-slate-800 hover:border-indigo-500/40 transition-all flex flex-col justify-between group"
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold tracking-wide uppercase ${
+                        cls.gradeLevel === 8 ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
+                        cls.gradeLevel === 12 ? 'bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/30' :
+                        cls.gradeLevel === 11 ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' :
+                        'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                      }`}>
+                        {cls.gradeLevel}. Sınıf {cls.gradeLevel === 8 ? 'LGS' : cls.gradeLevel === 12 ? 'YKS' : 'Kademesi'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteGlobalClass(cls.id, cls.name)}
+                        className="text-slate-500 hover:text-rose-400 p-1 rounded-lg transition-colors opacity-70 group-hover:opacity-100"
+                        title="Havuzdan Kaldır"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    <div>
+                      <h4 className="font-display text-lg font-black text-white tracking-tight">{cls.name}</h4>
+                      {cls.description && (
+                        <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-2">{cls.description}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="pt-3 mt-3 border-t border-slate-800/80 flex items-center justify-between text-[10px] text-slate-500">
+                    <span className="font-mono">ID: {cls.id}</span>
+                    <span className="text-emerald-400 flex items-center gap-1 font-semibold">
+                      <CheckCircle2 className="h-3 w-3" /> Aktif Standart
+                    </span>
+                  </div>
+                </motion.div>
+              ))}
+          </div>
+
+          {globalClasses.length === 0 && (
+            <div className="clay-panel p-12 text-center rounded-3xl border border-slate-800 space-y-3">
+              <GraduationCap className="h-12 w-12 text-slate-600 mx-auto" />
+              <h4 className="font-display text-base font-bold text-white">Standart Sınıf Bulunamadı</h4>
+              <p className="text-xs text-slate-400 max-w-md mx-auto">
+                Henüz sistemde tanımlı bir standart sınıf bulunmamaktadır. MEB ve ÖSYM sınıflarını otomatik yüklemek için "Varsayılanları Yükle" butonunu kullanabilirsiniz.
+              </p>
+              <button
+                onClick={handleResetGlobalClasses}
+                className="btn btn-primary text-xs py-2 px-4 inline-flex items-center gap-1.5"
+              >
+                <RotateCcw className="h-3.5 w-3.5" /> Varsayılan Sınıfları Yükle
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -1158,6 +1370,103 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
           </div>
         </div>
       )}
+
+      {/* Modal: Add Global Standard Class */}
+      <AnimatePresence>
+        {showAddGlobalClassModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowAddGlobalClassModal(false)}
+              className="fixed inset-0 bg-slate-950/80 backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.94, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+              className="glass-panel relative z-10 max-w-md w-full p-6 sm:p-7 rounded-3xl border border-indigo-500/30 bg-slate-900/95 shadow-2xl space-y-4"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-3 rounded-2xl bg-indigo-500/15 border border-indigo-500/25 shrink-0 text-indigo-400">
+                  <GraduationCap className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="font-display text-lg font-bold text-white">Yeni Standart Sınıf Ekle</h3>
+                  <p className="text-xs text-slate-400">Tüm kurumların seçebileceği merkezi şube şablonu</p>
+                </div>
+              </div>
+
+              <form onSubmit={handleAddGlobalClass} className="space-y-4 pt-2">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    Sınıf / Şube Adı *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={newGlobalName}
+                    onChange={(e) => setNewGlobalName(e.target.value)}
+                    placeholder="ör. 8-E, 11-DİL, 12-SAY-3 veya Mezun Sayısal"
+                    className="input-field text-xs rounded-xl"
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1">Kurum adminleri sınıf açarken bu ismi doğrudan liste üzerinden seçecektir.</p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    Sınıf Kademesi / Düzeyi *
+                  </label>
+                  <select
+                    value={newGlobalGrade}
+                    onChange={(e) => setNewGlobalGrade(Number(e.target.value))}
+                    className="input-field text-xs rounded-xl bg-slate-900"
+                  >
+                    <option value={8}>8. Sınıf (LGS)</option>
+                    <option value={9}>9. Sınıf</option>
+                    <option value={10}>10. Sınıf</option>
+                    <option value={11}>11. Sınıf</option>
+                    <option value={12}>12. Sınıf & Mezun (YKS / TYT / AYT)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    Açıklama (İsteğe Bağlı)
+                  </label>
+                  <input
+                    type="text"
+                    value={newGlobalDesc}
+                    onChange={(e) => setNewGlobalDesc(e.target.value)}
+                    placeholder="ör. YKS Eşit Ağırlık Şubesi"
+                    className="input-field text-xs rounded-xl"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-800">
+                  <motion.button
+                    whileTap={{ scale: 0.96 }}
+                    type="button"
+                    onClick={() => setShowAddGlobalClassModal(false)}
+                    className="btn btn-secondary text-xs rounded-xl py-2.5 px-4 cursor-pointer"
+                  >
+                    İptal
+                  </motion.button>
+                  <motion.button
+                    whileTap={{ scale: 0.96 }}
+                    type="submit"
+                    className="btn btn-primary text-xs rounded-xl py-2.5 px-5 flex items-center gap-1.5 cursor-pointer shadow-lg shadow-indigo-600/30"
+                  >
+                    <Plus className="h-4 w-4" /> Standart Sınıfı Ekle
+                  </motion.button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
