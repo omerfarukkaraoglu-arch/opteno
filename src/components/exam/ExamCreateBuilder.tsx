@@ -753,10 +753,11 @@ const getSampleOutcomesForSubject = (name: string, count: number): string[] => {
               ))}
 
               <button
+                type="button"
                 onClick={() => handleAddSubject()}
-                className="w-full py-3 rounded-xl border border-dashed border-slate-700 hover:border-indigo-500 text-slate-400 hover:text-indigo-400 text-xs font-bold flex items-center justify-center gap-2 transition-all bg-slate-900/30"
+                className="w-full py-3.5 rounded-2xl border-2 border-dashed border-indigo-300 hover:border-indigo-500 dark:border-indigo-500/40 dark:hover:border-indigo-400 text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 text-xs font-bold flex items-center justify-center gap-2 transition-all bg-indigo-50/60 hover:bg-indigo-100/80 dark:bg-indigo-950/20 dark:hover:bg-indigo-900/30 shadow-xs cursor-pointer group"
               >
-                <Plus className="h-4 w-4" /> Yeni Ders Ekle
+                <Plus className="h-4 w-4 transition-transform group-hover:scale-110" /> Yeni Ders Ekle
               </button>
             </div>
 
