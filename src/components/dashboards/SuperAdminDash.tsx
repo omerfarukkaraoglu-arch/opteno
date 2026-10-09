@@ -1519,7 +1519,7 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               transition={{ type: 'spring', damping: 26, stiffness: 340 }}
-              className="glass-panel relative z-10 max-w-2xl w-full p-6 sm:p-7 rounded-3xl border-slate-700/80 space-y-4 shadow-2xl bg-slate-900/90 max-h-[90vh] overflow-y-auto"
+              className="glass-panel relative z-10 max-w-2xl w-full p-4 sm:p-6 rounded-2xl sm:rounded-3xl border-slate-700/80 space-y-4 shadow-2xl bg-slate-900/90 max-h-[90vh] overflow-y-auto"
             >
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                 <div className="flex items-center gap-3">
@@ -1547,14 +1547,14 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
               </div>
 
               {/* Institution Logo Management in Details Modal */}
-              <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-wrap items-center justify-between gap-3">
+              <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
                 <div>
                   <h4 className="text-xs font-bold text-slate-200">Kurum Resmi Logosu</h4>
                   <p className="text-[11px] text-slate-400">Sınav derece listeleri ve öğrenci karnesi PDF çıktılarında kullanılır.</p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <label className="btn btn-primary text-xs py-1.5 px-3 flex items-center gap-1.5 cursor-pointer rounded-xl">
-                    <Upload className="h-3.5 w-3.5" />
+                <div className="flex items-center gap-2 shrink-0">
+                  <label className="btn btn-primary text-xs py-1.5 px-3 flex-1 sm:flex-initial flex items-center justify-center gap-1.5 cursor-pointer rounded-xl">
+                    <Upload className="h-3.5 w-3.5 shrink-0" />
                     <span>{selectedInstDetails.logoUrl ? 'Logoyu Güncelle' : 'Logo Yükle'}</span>
                     <input
                       type="file"
@@ -1585,10 +1585,10 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                         setSelectedInstDetails(updated);
                         reloadData();
                       }}
-                      className="btn btn-secondary text-xs py-1.5 px-2.5 text-rose-400 hover:text-rose-300 border-rose-500/30 flex items-center gap-1 rounded-xl"
+                      className="btn btn-secondary text-xs py-1.5 px-2.5 text-rose-400 hover:text-rose-300 border-rose-500/30 flex items-center justify-center gap-1 rounded-xl shrink-0"
                       title="Logoyu Kaldır"
                     >
-                      <Trash2 className="h-3.5 w-3.5" /> Kaldır
+                      <Trash2 className="h-3.5 w-3.5 shrink-0" /> <span>Kaldır</span>
                     </motion.button>
                   )}
                 </div>
@@ -1633,24 +1633,26 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                 ) : (
                   <div className="space-y-2">
                     {storageService.getUsersByInstitution(selectedInstDetails.id).map(p => (
-                      <div key={p.id} className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 flex items-center justify-between text-xs">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-white">{p.name}</span>
-                            <span className="badge badge-primary text-[10px]">{p.role === 'INSTITUTION_ADMIN' ? 'Kurum Yöneticisi' : 'Öğretmen'}</span>
+                      <div key={p.id} className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 text-xs">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            {p.name && <span className="font-bold text-white truncate">{p.name}</span>}
+                            <span className="badge badge-primary text-[10px] shrink-0">{p.role === 'INSTITUTION_ADMIN' ? 'Kurum Yöneticisi' : 'Öğretmen'}</span>
                           </div>
-                          <div className="text-[11px] text-slate-400 font-mono mt-1">
-                            Kullanıcı Adı: <strong className="text-amber-300">{p.username || p.email}</strong> &nbsp;|&nbsp; Şifre: <strong className="text-emerald-400">{p.password || '******'}</strong>
+                          <div className="text-[11px] text-slate-400 font-mono mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+                            <span className="break-all">Kullanıcı Adı: <strong className="text-amber-300">{p.username || p.email}</strong></span>
+                            <span className="hidden sm:inline text-slate-600">|</span>
+                            <span className="break-all">Şifre: <strong className="text-emerald-400">{p.password || '******'}</strong></span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-800/80 shrink-0">
                           <button
                             type="button"
                             onClick={() => copyCredentials(p.username || '', p.password || '', selectedInstDetails.name)}
-                            className="btn btn-secondary text-[11px] py-1.5 px-2.5 flex items-center gap-1 rounded-xl"
+                            className="btn btn-secondary text-[11px] py-1.5 px-3 flex-1 sm:flex-initial flex items-center justify-center gap-1.5 rounded-xl whitespace-nowrap"
                             title="Giriş Bilgilerini Kopyala"
                           >
-                            <Copy className="h-3 w-3 text-indigo-400" /> Kopyala
+                            <Copy className="h-3 w-3 text-indigo-400 shrink-0" /> <span>Kopyala</span>
                           </button>
                           <button
                             type="button"
@@ -1659,10 +1661,10 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                               setEditingAdminUsername(p.username || '');
                               setEditingAdminPassword(p.password || '');
                             }}
-                            className="btn btn-primary text-[11px] py-1.5 px-2.5 flex items-center gap-1 rounded-xl"
+                            className="btn btn-primary text-[11px] py-1.5 px-3 flex-1 sm:flex-initial flex items-center justify-center gap-1.5 rounded-xl whitespace-nowrap"
                             title="Şifreyi Değiştir"
                           >
-                            <Key className="h-3 w-3" /> Şifre Düzenle
+                            <Key className="h-3 w-3 shrink-0" /> <span>Şifre Düzenle</span>
                           </button>
                         </div>
                       </div>
@@ -1672,16 +1674,16 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
               </div>
 
               {/* Delete Institution Footer Action */}
-              <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
+              <div className="pt-4 border-t border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
                 <span className="text-[11px] text-slate-500">Bu işlem kurumu ve bağlı tüm kayıtları buluttan kalıcı olarak siler.</span>
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.96 }}
                   type="button"
                   onClick={() => handleDeleteInstitution(selectedInstDetails)}
-                  className="btn btn-secondary text-xs py-2 px-3 text-red-400 hover:bg-red-500/20 border-red-500/30 flex items-center gap-1.5 cursor-pointer rounded-xl"
+                  className="btn btn-secondary text-xs py-2 px-3.5 text-red-400 hover:bg-red-500/20 border-red-500/30 flex items-center justify-center gap-1.5 cursor-pointer rounded-xl w-full sm:w-auto shrink-0"
                 >
-                  <Trash2 className="h-4 w-4" /> Kurumu Tamamen Sil
+                  <Trash2 className="h-4 w-4 shrink-0" /> <span>Kurumu Tamamen Sil</span>
                 </motion.button>
               </div>
             </motion.div>
