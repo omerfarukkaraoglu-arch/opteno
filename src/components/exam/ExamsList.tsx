@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Plus, Calendar, Printer, Camera, Trash2, Layers, Search, Sparkles, CheckCircle2, ChevronRight, User as UserIcon } from 'lucide-react';
+import { FileText, Plus, Calendar, Printer, Camera, Trash2, Layers, Search, Sparkles, CheckCircle2, ChevronRight, User as UserIcon, Shield, Building2, Lock } from 'lucide-react';
 import { Exam, User } from '../../types';
 import { storageService } from '../../services/storageService';
 
@@ -20,11 +20,15 @@ export const ExamsList: React.FC<ExamsListProps> = ({
   onNavigateToScan,
   onNavigateToResults
 }) => {
-  const [exams, setExams] = useState<Exam[]>(storageService.getExams());
+  const activeUser = currentUser || storageService.getCurrentUser();
+  const [exams, setExams] = useState<Exam[]>(() => {
+    return storageService.getExams(activeUser.role === 'SUPER_ADMIN' ? undefined : activeUser.institutionId);
+  });
   const [searchTerm, setSearchTerm] = useState<string>('');
 
   const reloadExams = () => {
-    setExams(storageService.getExams());
+    const user = currentUser || storageService.getCurrentUser();
+    setExams(storageService.getExams(user.role === 'SUPER_ADMIN' ? undefined : user.institutionId));
   };
 
   useEffect(() => {
@@ -34,12 +38,20 @@ export const ExamsList: React.FC<ExamsListProps> = ({
     };
     window.addEventListener('opticok-data-updated', handleUpdate);
     return () => window.removeEventListener('opticok-data-updated', handleUpdate);
-  }, []);
+  }, [currentUser]);
 
   const handleDeleteExam = (examId: string, title: string) => {
+    const user = currentUser || storageService.getCurrentUser();
+    const targetExam = exams.find(e => e.id === examId);
+    if (targetExam && !storageService.canDeleteExam(targetExam, user)) {
+      alert('Bu sınav Sistem Yöneticisi tarafından oluşturulmuş merkezi bir sınavdır. Kurumlar sistem sınavlarını silemez; sadece optik basımı yapabilir, optik okuyabilir ve sonuçlarını inceleyebilir.');
+      return;
+    }
     if (window.confirm(`"${title}" sınavını silmek istediğinize emin misiniz?`)) {
-      storageService.deleteExam(examId);
-      reloadExams();
+      const deleted = storageService.deleteExam(examId, user);
+      if (deleted) {
+        reloadExams();
+      }
     }
   };
 
@@ -106,6 +118,8 @@ export const ExamsList: React.FC<ExamsListProps> = ({
           {filteredExams.map((exam) => {
             const examResults = storageService.getResults(exam.id);
             const isHighlighted = exam.id === highlightedExamId;
+            const isSystemExam = exam.isSystemExam === true || exam.createdByRole === 'SUPER_ADMIN' || exam.institutionId === 'ALL' || exam.institutionId === 'SYSTEM';
+            const canDelete = storageService.canDeleteExam(exam, activeUser);
 
             return (
               <div
@@ -143,6 +157,15 @@ export const ExamsList: React.FC<ExamsListProps> = ({
                     )}
                     {exam.hasBookletTypes && (
                       <span className="badge badge-warning text-[10px] font-bold">A/B Kitapçıklı</span>
+                    )}
+                    {isSystemExam ? (
+                      <span className="badge badge-primary text-[10px] font-bold flex items-center gap-1 shadow-sm">
+                        <Shield className="h-3 w-3 text-indigo-300" /> Merkezi Sistem Sınavı
+                      </span>
+                    ) : (
+                      <span className="badge badge-secondary text-[10px] font-medium text-slate-300 flex items-center gap-1">
+                        <Building2 className="h-3 w-3 text-emerald-400" /> Kurum Sınavı
+                      </span>
                     )}
                     <span className="text-xs text-slate-400 font-semibold">{exam.institutionName}</span>
                   </div>
@@ -253,13 +276,23 @@ export const ExamsList: React.FC<ExamsListProps> = ({
                   )}
                 </div>
 
-                <button
-                  onClick={() => handleDeleteExam(exam.id, exam.title)}
-                  className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-colors cursor-pointer shrink-0 ml-auto sm:ml-0"
-                  title="Sınavı Sil"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                {canDelete ? (
+                  <button
+                    onClick={() => handleDeleteExam(exam.id, exam.title)}
+                    className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-colors cursor-pointer shrink-0 ml-auto sm:ml-0"
+                    title="Sınavı Sil"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                ) : (
+                  <div
+                    className="p-1.5 px-2.5 text-slate-400 bg-slate-900/80 rounded-xl shrink-0 ml-auto sm:ml-0 flex items-center gap-1.5 text-[11px] border border-slate-800"
+                    title="Bu sınav Sistem Yöneticisi tarafından oluşturulmuştur. Kurumlar sistem sınavlarını silemez; sadece optik basabilir, okuyabilir ve sonuçlarını görebilir."
+                  >
+                    <Shield className="h-3.5 w-3.5 text-indigo-400 shrink-0" />
+                    <span className="text-[10px] font-semibold text-slate-400">Merkezi Sınav (Korumalı)</span>
+                  </div>
+                )}
               </div>
             </div>
           );

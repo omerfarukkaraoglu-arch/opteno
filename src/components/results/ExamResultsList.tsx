@@ -72,7 +72,7 @@ export const ExamResultsList: React.FC<ExamResultsListProps> = ({ initialExamId 
   const [selectedStudentFilter, setSelectedStudentFilter] = useState<string>('ALL');
   const [isExporting, setIsExporting] = useState(false);
 
-  const [, setSyncTick] = useState(0);
+  const [syncTick, setSyncTick] = useState(0);
 
   useEffect(() => {
     if (initialExamId && exams.some(e => e.id === initialExamId)) {
@@ -89,7 +89,9 @@ export const ExamResultsList: React.FC<ExamResultsListProps> = ({ initialExamId 
   }, []);
 
   const selectedExam = exams.find(e => e.id === selectedExamId);
-  const rawResults = storageService.getResults(selectedExamId);
+  const rawResults = useMemo(() => {
+    return storageService.getResults(selectedExamId, instId);
+  }, [selectedExamId, instId, syncTick]);
 
   // Rankings and percentiles for every student
   const rankingMap = useMemo(() => calculateStudentRankings(rawResults), [rawResults]);

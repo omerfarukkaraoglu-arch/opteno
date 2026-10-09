@@ -106,6 +106,10 @@ export interface Exam {
   totalExamsScanned: number;
   isStudentSpecific: boolean;
   createdAt: string;
+  createdByRole?: 'SUPER_ADMIN' | 'INSTITUTION_ADMIN' | 'TEACHER';
+  createdByUserId?: string;
+  createdByName?: string;
+  isSystemExam?: boolean; // Sistem Admini (SuperAdmin) tarafından oluşturulmuş merkezi sınav
 }
 
 export interface ScannedAnswer {

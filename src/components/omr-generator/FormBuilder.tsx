@@ -176,13 +176,18 @@ export const FormBuilder: React.FC = () => {
   const handleSaveAndExportPDF = async () => {
     setIsExporting(true);
     try {
-      const inst = institutions.find(i => i.id === selectedInstId) || institutions[0];
+      const currentUser = storageService.getCurrentUser();
+      const isSuperAdmin = currentUser.role === 'SUPER_ADMIN';
+      const isAllInstitutions = selectedInstId === 'ALL';
+      const inst = institutions.find(i => i.id === selectedInstId);
       const examId = `exam-${Date.now()}`;
 
       const newExam: Exam = {
         id: examId,
         institutionId: selectedInstId,
-        institutionName: inst ? inst.name : 'OpticOk Kurumu',
+        institutionName: isAllInstitutions 
+          ? 'Tüm Kurumlar (Merkezi Sınav)' 
+          : (inst ? inst.name : (isSuperAdmin ? 'Merkezi Sistem Sınavı' : 'OpticOk Kurumu')),
         title: examTitle,
         examCode,
         date: new Date().toISOString().split('T')[0],
@@ -193,7 +198,11 @@ export const FormBuilder: React.FC = () => {
         totalQuestions,
         totalExamsScanned: 0,
         isStudentSpecific,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        createdByRole: currentUser.role,
+        createdByUserId: currentUser.id,
+        createdByName: currentUser.name,
+        isSystemExam: isSuperAdmin
       };
 
       // Save to Storage
@@ -322,6 +331,9 @@ export const FormBuilder: React.FC = () => {
                     onChange={(e) => setSelectedInstId(e.target.value)}
                     className="select-field text-xs"
                   >
+                    {currentUser.role === 'SUPER_ADMIN' && (
+                      <option value="ALL">🌐 Tüm Kurumlar (Merkezi Ortak Sınav)</option>
+                    )}
                     {institutions.map(inst => (
                       <option key={inst.id} value={inst.id}>{inst.name} ({inst.city})</option>
                     ))}

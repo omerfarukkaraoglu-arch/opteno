@@ -449,14 +449,18 @@ const getSampleOutcomesForSubject = (name: string, count: number): string[] => {
       return;
     }
 
-    const inst = institutions.find(i => i.id === selectedInstId) || institutions[0];
+    const isSuperAdmin = activeUser.role === 'SUPER_ADMIN';
+    const isAllInstitutions = selectedInstId === 'ALL';
+    const inst = institutions.find(i => i.id === selectedInstId);
     const generatedCode = examCode.trim() || `EXAM-${Math.floor(100 + Math.random() * 900)}`;
     const examId = `exam-${Date.now()}`;
 
     const newExam: Exam = {
       id: examId,
       institutionId: selectedInstId,
-      institutionName: inst ? inst.name : 'OpticOk Kurumu',
+      institutionName: isAllInstitutions 
+        ? 'Tüm Kurumlar (Merkezi Sınav)' 
+        : (inst ? inst.name : (isSuperAdmin ? 'Merkezi Sistem Sınavı' : 'OpticOk Kurumu')),
       title: examTitle.trim(),
       examCode: generatedCode,
       date: new Date().toISOString().split('T')[0],
@@ -468,7 +472,11 @@ const getSampleOutcomesForSubject = (name: string, count: number): string[] => {
       totalQuestions,
       totalExamsScanned: 0,
       isStudentSpecific,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      createdByRole: activeUser.role,
+      createdByUserId: activeUser.id,
+      createdByName: activeUser.name,
+      isSystemExam: isSuperAdmin
     };
 
     storageService.addExam(newExam);
@@ -580,6 +588,7 @@ const getSampleOutcomesForSubject = (name: string, count: number): string[] => {
                     onChange={(e) => setSelectedInstId(e.target.value)}
                     className="select-field text-xs"
                   >
+                    <option value="ALL">🌐 Tüm Kurumlar (Merkezi Ortak Sınav)</option>
                     {institutions.map(inst => (
                       <option key={inst.id} value={inst.id}>{inst.name} ({inst.city})</option>
                     ))}

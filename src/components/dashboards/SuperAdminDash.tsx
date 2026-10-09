@@ -417,7 +417,7 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
     const newExam: Exam = {
       id: `exam-${Date.now()}`,
       institutionId: examInstId,
-      institutionName: targetInst?.name || 'Genel Sınav',
+      institutionName: examInstId === 'ALL' ? 'Tüm Kurumlar (Merkezi Sınav)' : (targetInst?.name || 'Merkezi Sistem Sınavı'),
       title: examTitle,
       examCode: examCode || `EXAM-${Math.floor(100 + Math.random() * 900)}`,
       date: examDate,
@@ -425,6 +425,10 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
       totalExamsScanned: 0,
       isStudentSpecific: true,
       createdAt: new Date().toISOString().split('T')[0],
+      createdByRole: 'SUPER_ADMIN',
+      createdByUserId: currentUser?.id || 'user-admin',
+      createdByName: currentUser?.name || 'Sistem Yöneticisi',
+      isSystemExam: true,
       subjects: [
         {
           id: `sbj-${Date.now()}-1`,

@@ -213,7 +213,12 @@ export const syncWithServer = async () => {
       return;
     }
 
-    const serverExams: Exam[] = serverData.exams || [];
+    const serverExams: Exam[] = (serverData.exams || []).map((e: Exam) => ({
+      ...e,
+      isSystemExam: e.isSystemExam !== undefined
+        ? e.isSystemExam
+        : (e.createdByRole === 'SUPER_ADMIN' || e.institutionId === 'ALL' || e.institutionId === 'SYSTEM')
+    }));
     const serverResults: ScanResult[] = serverData.results || [];
     const serverStudents: Student[] = serverData.students || [];
     const serverClasses: SchoolClass[] = serverData.classes || [];
@@ -673,16 +678,53 @@ export const storageService = {
   // Exams
   getExams: (institutionId?: string): Exam[] => {
     const list = getItem<Exam[]>(KEYS.EXAMS, initialExams);
-    return institutionId ? list.filter(e => e.institutionId === institutionId) : list;
+    if (!institutionId) return list;
+    return list.filter(e => 
+      e.institutionId === institutionId || 
+      e.isSystemExam === true || 
+      e.createdByRole === 'SUPER_ADMIN' ||
+      e.institutionId === 'ALL' ||
+      e.institutionId === 'SYSTEM'
+    );
   },
   getExamById: (examId: string): Exam | undefined => {
     const list = getItem<Exam[]>(KEYS.EXAMS, initialExams);
     return list.find(e => e.id === examId);
   },
+  canDeleteExam: (exam: Exam, userOverride?: User): boolean => {
+    const currentUser = userOverride || storageService.getCurrentUser();
+    if (!currentUser) return false;
+    // Super Admin has master authority to delete any exam
+    if (currentUser.role === 'SUPER_ADMIN') return true;
+
+    // System exams (created by Super Admin or marked as system exam) CANNOT be deleted by institutions
+    const isSystemExam = exam.isSystemExam === true || 
+      exam.createdByRole === 'SUPER_ADMIN' || 
+      exam.institutionId === 'ALL' || 
+      exam.institutionId === 'SYSTEM';
+
+    if (isSystemExam) return false;
+
+    // Institutions can only delete their own institution's exams
+    return !!(currentUser.institutionId && exam.institutionId === currentUser.institutionId);
+  },
   addExam: (exam: Exam) => {
     const list = getItem<Exam[]>(KEYS.EXAMS, initialExams);
-    const filtered = list.filter(e => e.id !== exam.id);
-    filtered.unshift(exam);
+    const currentUser = storageService.getCurrentUser();
+    const isSuperAdmin = currentUser.role === 'SUPER_ADMIN';
+
+    const enhancedExam: Exam = {
+      ...exam,
+      createdByRole: exam.createdByRole || currentUser.role,
+      createdByUserId: exam.createdByUserId || currentUser.id,
+      createdByName: exam.createdByName || currentUser.name,
+      isSystemExam: exam.isSystemExam !== undefined 
+        ? exam.isSystemExam 
+        : (isSuperAdmin || exam.createdByRole === 'SUPER_ADMIN' || exam.institutionId === 'ALL' || exam.institutionId === 'SYSTEM')
+    };
+
+    const filtered = list.filter(e => e.id !== enhancedExam.id);
+    filtered.unshift(enhancedExam);
     setItem(KEYS.EXAMS, filtered);
     pushToServer();
     window.dispatchEvent(new CustomEvent('opticok-data-updated'));
@@ -693,18 +735,35 @@ export const storageService = {
     pushToServer();
     window.dispatchEvent(new CustomEvent('opticok-data-updated'));
   },
-  deleteExam: (examId: string) => {
+  deleteExam: (examId: string, userOverride?: User): boolean => {
+    const currentUser = userOverride || storageService.getCurrentUser();
+    const exam = storageService.getExamById(examId);
+    if (!exam) return false;
+
+    if (!storageService.canDeleteExam(exam, currentUser)) {
+      console.warn(`[Security] Unauthorized delete attempt by ${currentUser.name} (${currentUser.role}) on exam ${exam.title} (${exam.id})`);
+      alert('Bu sınav Sistem Yöneticisi (Merkezi) tarafından oluşturulmuştur. Kurumlar sistem sınavlarını silemez; sadece optik form basabilir, optik okuyabilir ve sonuçlarını inceleyebilir.');
+      return false;
+    }
+
     const list = getItem<Exam[]>(KEYS.EXAMS, initialExams).filter(e => e.id !== examId);
     setItem(KEYS.EXAMS, list);
     pushToServer();
     window.dispatchEvent(new CustomEvent('opticok-data-updated'));
+    return true;
   },
 
   // Scan Results
   getAllScanResults: (): ScanResult[] => getItem<ScanResult[]>(KEYS.RESULTS, initialScanResults),
-  getResults: (examId?: string): ScanResult[] => {
-    const list = getItem<ScanResult[]>(KEYS.RESULTS, initialScanResults);
-    return examId ? list.filter(r => r.examId === examId) : list;
+  getResults: (examId?: string, institutionId?: string): ScanResult[] => {
+    let list = getItem<ScanResult[]>(KEYS.RESULTS, initialScanResults);
+    if (examId) {
+      list = list.filter(r => r.examId === examId);
+    }
+    if (institutionId) {
+      list = list.filter(r => r.institutionId === institutionId);
+    }
+    return list;
   },
   saveScanResult: (result: ScanResult) => {
     const list = getItem<ScanResult[]>(KEYS.RESULTS, initialScanResults);
