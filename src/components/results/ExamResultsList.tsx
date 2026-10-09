@@ -351,50 +351,50 @@ export const ExamResultsList: React.FC<ExamResultsListProps> = ({ initialExamId 
                 )}
 
                 {/* Leaderboard Table */}
-                <div className="overflow-x-auto rounded-xl border border-slate-700">
-                  <table className="w-full text-left text-xs whitespace-nowrap text-slate-300">
-                    <thead className="uppercase bg-slate-800 text-slate-400 font-bold">
+                <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+                  <table className="w-full text-left text-xs whitespace-nowrap text-slate-700 dark:text-slate-300">
+                    <thead className="uppercase bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold border-b border-slate-200 dark:border-slate-700">
                       <tr>
                         <th className="px-3 py-3 text-center w-12">Kurum Sıra</th>
                         <th className="px-4 py-3">Öğrenci Bilgisi</th>
                         <th className="px-3 py-3 text-center">Sınıf & Derece</th>
                         {selectedExam.subjects.map(s => (
-                          <th key={s.id} className="px-3 py-3 text-center border-l border-slate-700/50">
+                          <th key={s.id} className="px-3 py-3 text-center border-l border-slate-200 dark:border-slate-700/50">
                             {s.name} <br/><span className="text-[9px] font-normal">({s.questionCount} Soru)</span>
                           </th>
                         ))}
-                        <th className="px-3 py-3 text-center border-l border-slate-700/50 text-indigo-300">Top. Net</th>
-                        <th className="px-3 py-3 text-right text-emerald-400">Puan</th>
+                        <th className="px-3 py-3 text-center border-l border-slate-200 dark:border-slate-700/50 text-indigo-600 dark:text-indigo-300">Top. Net</th>
+                        <th className="px-3 py-3 text-right text-emerald-600 dark:text-emerald-400">Puan</th>
                         <th className="px-3 py-3 text-center">İşlemler</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-700/50">
+                    <tbody className="divide-y divide-slate-200 dark:divide-slate-700/50">
                       {filteredResults.map((res, index) => {
                         const rankInfo = rankingMap.get(res.id);
                         const instRank = rankInfo ? rankInfo.institutionRank : index + 1;
                         return (
                           <tr
                             key={res.id}
-                            className="hover:bg-slate-800/60 transition-colors cursor-pointer"
+                            className="hover:bg-slate-100/70 dark:hover:bg-slate-800/60 transition-colors cursor-pointer"
                             onClick={() => setSelectedStudentResult(res)}
                           >
                             <td className="px-3 py-3 text-center font-display font-bold">
-                              {instRank === 1 ? <span className="text-amber-400">🥇 1</span> :
-                               instRank === 2 ? <span className="text-slate-300">🥈 2</span> :
+                              {instRank === 1 ? <span className="text-amber-500 dark:text-amber-400">🥇 1</span> :
+                               instRank === 2 ? <span className="text-slate-600 dark:text-slate-300">🥈 2</span> :
                                instRank === 3 ? <span className="text-amber-700">🥉 3</span> : instRank}
                             </td>
                             <td className="px-4 py-3">
                               <div className="flex items-center gap-1.5">
-                                <p className="font-bold text-white text-sm">{res.studentName}</p>
+                                <p className="font-bold text-slate-900 dark:text-white text-sm">{res.studentName}</p>
                                 {res.bookletType && (
                                   <span className={`px-1.5 py-0.2 rounded text-[9.5px] font-bold ${
-                                    res.bookletType === 'A' ? 'bg-indigo-500/20 text-indigo-300' : 'bg-fuchsia-500/20 text-fuchsia-300'
+                                    res.bookletType === 'A' ? 'bg-indigo-500/20 text-indigo-600 dark:text-indigo-300' : 'bg-fuchsia-500/20 text-fuchsia-600 dark:text-fuchsia-300'
                                   }`}>
                                     {res.bookletType}
                                   </span>
                                 )}
                               </div>
-                              <p className="text-[10px] text-slate-400">No: {res.studentNo}</p>
+                              <p className="text-[10px] text-slate-500 dark:text-slate-400">No: {res.studentNo}</p>
                             </td>
                             <td className="px-3 py-3 text-center">
                               <span className="badge badge-primary">{res.className}</span>

@@ -461,8 +461,8 @@ export const StudentCumulativeReport: React.FC<StudentCumulativeReportProps> = (
                 {currentStudent.firstName.charAt(0)}{currentStudent.lastName.charAt(0)}
               </div>
               <div className="overflow-hidden leading-tight">
-                <div className="font-bold text-xs text-white truncate">{currentStudent.firstName} {currentStudent.lastName}</div>
-                <div className="text-[10px] text-slate-400 mt-0.5 truncate">
+                <div className="font-bold text-xs text-slate-900 dark:text-white truncate">{currentStudent.firstName} {currentStudent.lastName}</div>
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
                   No: {currentStudent.studentNo} • {currentStudent.className}
                   {currentStudent.parentPhone && ` • 📞 ${currentStudent.parentPhone}`}
                 </div>

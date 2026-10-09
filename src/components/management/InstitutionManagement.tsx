@@ -236,28 +236,28 @@ export const InstitutionManagement: React.FC = () => {
   return (
     <div className="mx-auto max-w-6xl px-4 py-4 space-y-6">
       <div className="glass-panel p-6">
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
           <div>
-            <h2 className="font-display text-xl font-bold text-white flex items-center gap-2">
-              <Users className="h-6 w-6 text-indigo-400" /> {currentUser.institutionName || 'Kurum'} Yönetim Paneli
+            <h2 className="font-display text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+              <Users className="h-6 w-6 text-indigo-600 dark:text-indigo-400" /> {currentUser.institutionName || 'Kurum'} Yönetim Paneli
             </h2>
-            <p className="text-xs text-slate-400 mt-1">Okulunuza bağlı yetkili personelleri, sınıfları ve öğrencileri yönetin.</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Okulunuza bağlı yetkili personelleri, sınıfları ve öğrencileri yönetin.</p>
           </div>
 
-          <div className="flex bg-slate-900/80 rounded-xl p-1 border border-slate-700/60 overflow-x-auto">
+          <div className="flex bg-slate-100 dark:bg-slate-900/80 rounded-xl p-1 border border-slate-200 dark:border-slate-700/60 overflow-x-auto">
             <button
               onClick={() => setActiveTab('personnel')}
               className={`px-3 sm:px-4 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 whitespace-nowrap ${
-                activeTab === 'personnel' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                activeTab === 'personnel' ? 'bg-indigo-600 text-white shadow' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              <Shield className="h-4 w-4 text-amber-400" /> Personeller & Girişler
+              <Shield className="h-4 w-4 text-amber-500 dark:text-amber-400" /> Personeller & Girişler
             </button>
 
             <button
               onClick={() => setActiveTab('classes')}
               className={`px-3 sm:px-4 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 whitespace-nowrap ${
-                activeTab === 'classes' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                activeTab === 'classes' ? 'bg-indigo-600 text-white shadow' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               <BookOpen className="h-4 w-4" /> Sınıflar ({classes.length})
@@ -266,7 +266,7 @@ export const InstitutionManagement: React.FC = () => {
             <button
               onClick={() => setActiveTab('students')}
               className={`px-3 sm:px-4 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 whitespace-nowrap ${
-                activeTab === 'students' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                activeTab === 'students' ? 'bg-indigo-600 text-white shadow' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               <Users className="h-4 w-4" /> Öğrenciler ({students.length})
@@ -275,10 +275,10 @@ export const InstitutionManagement: React.FC = () => {
             <button
               onClick={() => setActiveTab('profile')}
               className={`px-3 sm:px-4 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 whitespace-nowrap ${
-                activeTab === 'profile' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                activeTab === 'profile' ? 'bg-indigo-600 text-white shadow' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              <Building2 className="h-4 w-4 text-emerald-400" /> Kurum Profili & Logo
+              <Building2 className="h-4 w-4 text-emerald-500 dark:text-emerald-400" /> Kurum Profili & Logo
             </button>
           </div>
         </div>
@@ -362,12 +362,12 @@ export const InstitutionManagement: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => studentExcelService.downloadSampleTemplate(currentUser.institutionName || 'Kurum')}
-                  className="btn btn-secondary text-xs py-2 px-3 flex items-center justify-center gap-1.5 text-slate-200 border-slate-700 hover:border-emerald-500 flex-1 sm:flex-initial"
+                  className="btn btn-secondary text-xs py-2 px-3 flex items-center justify-center gap-1.5 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 hover:border-emerald-500 flex-1 sm:flex-initial"
                 >
-                  <Download className="h-3.5 w-3.5 text-emerald-400" /> Şablon İndir
+                  <Download className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" /> Şablon İndir
                 </button>
 
-                <label className="btn btn-secondary text-xs py-2 px-3 cursor-pointer flex items-center justify-center gap-1.5 text-emerald-400 border-emerald-500/30 flex-1 sm:flex-initial shrink-0">
+                <label className="btn btn-secondary text-xs py-2 px-3 cursor-pointer flex items-center justify-center gap-1.5 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 flex-1 sm:flex-initial shrink-0">
                   <Upload className="h-3.5 w-3.5" /> Toplu Yükle
                   <input
                     type="file"
@@ -392,9 +392,9 @@ export const InstitutionManagement: React.FC = () => {
               </p>
             )}
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm text-slate-300">
-                <thead className="text-xs uppercase bg-slate-900/60 text-slate-400 border-b border-slate-700">
+            <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+              <table className="w-full text-left text-sm text-slate-700 dark:text-slate-300">
+                <thead className="text-xs uppercase bg-slate-100 dark:bg-slate-900/60 text-slate-600 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700">
                   <tr>
                     <th className="px-4 py-3">Öğrenci No</th>
                     <th className="px-4 py-3">Adı Soyadı</th>
@@ -402,16 +402,16 @@ export const InstitutionManagement: React.FC = () => {
                     <th className="px-4 py-3 text-right">İşlemler</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800">
+                <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                   {filteredStudents.map(student => (
-                    <tr key={student.id} className="hover:bg-slate-800/40 transition-colors text-xs">
-                      <td className="px-4 py-3 font-mono font-bold text-indigo-400">{student.studentNo}</td>
-                      <td className="px-4 py-3 font-semibold text-white">{student.firstName} {student.lastName}</td>
+                    <tr key={student.id} className="hover:bg-slate-100/70 dark:hover:bg-slate-800/40 transition-colors text-xs">
+                      <td className="px-4 py-3 font-mono font-bold text-indigo-600 dark:text-indigo-400">{student.studentNo}</td>
+                      <td className="px-4 py-3 font-semibold text-slate-900 dark:text-white">{student.firstName} {student.lastName}</td>
                       <td className="px-4 py-3"><span className="badge badge-primary">{student.className}</span></td>
                       <td className="px-4 py-3 text-right whitespace-nowrap">
                         <button
                           onClick={() => setCumulativeStudentId(student.id)}
-                          className="text-indigo-400 hover:text-indigo-300 p-1 mr-2 transition-colors cursor-pointer inline-flex items-center gap-1"
+                          className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 p-1 mr-2 transition-colors cursor-pointer inline-flex items-center gap-1"
                           title="Çoklu Deneme Gelişim Karnesi"
                         >
                           <GraduationCap className="h-4 w-4" />
@@ -419,7 +419,7 @@ export const InstitutionManagement: React.FC = () => {
                         </button>
                         <button
                           onClick={() => handleDeleteStudent(student.id)}
-                          className="text-slate-400 hover:text-rose-400 p-1 transition-colors cursor-pointer"
+                          className="text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 p-1 transition-colors cursor-pointer"
                           title="Sil"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -429,7 +429,7 @@ export const InstitutionManagement: React.FC = () => {
                   ))}
                   {filteredStudents.length === 0 && (
                     <tr>
-                      <td colSpan={4} className="px-4 py-8 text-center text-slate-500 italic text-xs">Kayıtlı öğrenci bulunamadı.</td>
+                      <td colSpan={4} className="px-4 py-8 text-center text-slate-400 dark:text-slate-500 italic text-xs">Kayıtlı öğrenci bulunamadı.</td>
                     </tr>
                   )}
                 </tbody>

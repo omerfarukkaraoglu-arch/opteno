@@ -868,9 +868,9 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                   )}
                 </div>
 
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs text-slate-300">
-                    <thead className="bg-slate-900/80 text-slate-400 uppercase font-semibold">
+                <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+                  <table className="w-full text-left text-xs text-slate-700 dark:text-slate-300">
+                    <thead className="bg-slate-100 dark:bg-slate-900/80 text-slate-600 dark:text-slate-400 uppercase font-semibold border-b border-slate-200 dark:border-slate-700">
                       <tr>
                         <th className="p-3">Öğrenci No</th>
                         <th className="p-3">Ad Soyad</th>
@@ -879,19 +879,19 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                         <th className="p-3 text-right">İşlemler</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-800">
+                    <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                       {filteredStudents.map(s => {
                         const inst = institutions.find(i => i.id === s.institutionId);
                         return (
-                          <tr key={s.id} className="hover:bg-slate-900/40">
-                            <td className="p-3 font-mono font-bold text-indigo-400">{s.studentNo}</td>
-                            <td className="p-3 font-semibold text-white">{s.firstName} {s.lastName}</td>
+                          <tr key={s.id} className="hover:bg-slate-100/70 dark:hover:bg-slate-900/40 transition-colors">
+                            <td className="p-3 font-mono font-bold text-indigo-600 dark:text-indigo-400">{s.studentNo}</td>
+                            <td className="p-3 font-semibold text-slate-900 dark:text-white">{s.firstName} {s.lastName}</td>
                             <td className="p-3"><span className="badge badge-primary">{s.className}</span></td>
-                            <td className="p-3 text-slate-400 font-semibold">{inst?.name || 'Bilinmiyor'}</td>
+                            <td className="p-3 text-slate-600 dark:text-slate-400 font-semibold">{inst?.name || 'Bilinmiyor'}</td>
                             <td className="p-3 text-right whitespace-nowrap">
                               <button
                                 onClick={() => setSelectedCumulativeStudentId(s.id)}
-                                className="text-indigo-400 hover:text-indigo-300 p-1 mr-2 transition-colors cursor-pointer inline-flex items-center gap-1"
+                                className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 p-1 mr-2 transition-colors cursor-pointer inline-flex items-center gap-1"
                                 title="Çoklu Deneme Gelişim Karnesi"
                               >
                                 <GraduationCap className="h-4 w-4" />
@@ -904,7 +904,7 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                                     setStudents(storageService.getStudents());
                                   }
                                 }}
-                                className="text-red-400 hover:text-red-300 p-1 cursor-pointer"
+                                className="text-rose-500 hover:text-rose-600 dark:text-red-400 dark:hover:text-red-300 p-1 cursor-pointer transition-colors"
                                 title="Öğrenciyi Sil"
                               >
                                 <Trash2 className="h-4 w-4" />
