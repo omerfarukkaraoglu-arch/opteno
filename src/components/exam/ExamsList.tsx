@@ -126,8 +126,8 @@ export const ExamsList: React.FC<ExamsListProps> = ({
                 key={exam.id}
                 className={`glass-card p-5 rounded-2xl border transition-all flex flex-col justify-between space-y-4 ${
                   isHighlighted
-                    ? 'border-emerald-500 shadow-xl shadow-emerald-500/20 ring-2 ring-emerald-500/40 bg-slate-900/90'
-                    : 'border-slate-800 hover:border-indigo-500/50'
+                    ? 'border-emerald-500 shadow-xl shadow-emerald-500/20 ring-2 ring-emerald-500/40 bg-white/95 dark:bg-slate-900/90'
+                    : 'border-slate-200 dark:border-slate-800 hover:border-indigo-500/50'
                 }`}
               >
                 <div>
@@ -142,12 +142,12 @@ export const ExamsList: React.FC<ExamsListProps> = ({
                         </span>
                       )}
                     </div>
-                    <span className="text-xs text-slate-400 flex items-center gap-1">
+                    <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
                       <Calendar className="h-3.5 w-3.5" /> {exam.date}
                     </span>
                   </div>
 
-                  <h3 className="font-display font-bold text-base text-white leading-snug">
+                  <h3 className="font-display font-bold text-base text-slate-900 dark:text-white leading-snug">
                     {exam.title}
                   </h3>
                   
@@ -160,40 +160,40 @@ export const ExamsList: React.FC<ExamsListProps> = ({
                     )}
                     {isSystemExam ? (
                       <span className="badge badge-primary text-[10px] font-bold flex items-center gap-1 shadow-sm">
-                        <Shield className="h-3 w-3 text-indigo-300" /> Merkezi Sistem Sınavı
+                        <Shield className="h-3 w-3 text-indigo-500 dark:text-indigo-300" /> Merkezi Sistem Sınavı
                       </span>
                     ) : (
-                      <span className="badge badge-secondary text-[10px] font-medium text-slate-300 flex items-center gap-1">
-                        <Building2 className="h-3 w-3 text-emerald-400" /> Kurum Sınavı
+                      <span className="badge badge-secondary text-[10px] font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                        <Building2 className="h-3 w-3 text-emerald-500 dark:text-emerald-400" /> Kurum Sınavı
                       </span>
                     )}
-                    <span className="text-xs text-slate-400 font-semibold">{exam.institutionName}</span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold">{exam.institutionName}</span>
                   </div>
 
                   {/* Exam Breakdown Badges */}
-                  <div className="mt-4 p-3 rounded-xl bg-slate-900/80 border border-slate-800/80 grid grid-cols-3 gap-2 text-center text-xs">
+                  <div className="mt-4 p-3 rounded-xl bg-slate-50/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800/80 grid grid-cols-3 gap-2 text-center text-xs">
                     <div>
-                      <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Soru</div>
-                      <div className="font-bold text-white text-sm">{exam.totalQuestions}</div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Soru</div>
+                      <div className="font-bold text-slate-900 dark:text-white text-sm">{exam.totalQuestions}</div>
                     </div>
                     <div>
-                      <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Ders</div>
-                      <div className="font-bold text-indigo-400 text-sm">{exam.subjects.length}</div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Ders</div>
+                      <div className="font-bold text-indigo-600 dark:text-indigo-400 text-sm">{exam.subjects.length}</div>
                     </div>
                     <div>
-                      <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Okunan</div>
-                      <div className="font-bold text-emerald-400 text-sm">{examResults.length}</div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Okunan</div>
+                      <div className="font-bold text-emerald-600 dark:text-emerald-400 text-sm">{examResults.length}</div>
                     </div>
                   </div>
 
                   {/* Progress Bar */}
                   {examResults.length > 0 && (
-                    <div className="mt-2.5 px-3 py-2 rounded-xl bg-slate-950/60 border border-slate-800/70 space-y-1.5">
+                    <div className="mt-2.5 px-3 py-2 rounded-xl bg-slate-100/70 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/70 space-y-1.5">
                       <div className="flex items-center justify-between text-[11px]">
-                        <span className="text-slate-400">Tarama İlerlemesi:</span>
-                        <span className="font-bold text-emerald-400">{examResults.length} Kağıt Hazır</span>
+                        <span className="text-slate-500 dark:text-slate-400">Tarama İlerlemesi:</span>
+                        <span className="font-bold text-emerald-600 dark:text-emerald-400">{examResults.length} Kağıt Hazır</span>
                       </div>
-                      <div className="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                      <div className="w-full h-1.5 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
                         <div
                           className="h-full rounded-full bg-gradient-to-r from-indigo-500 via-teal-400 to-emerald-400 transition-all duration-500"
                           style={{ width: `${Math.min(100, Math.max(15, examResults.length * 6))}%` }}
@@ -204,9 +204,9 @@ export const ExamsList: React.FC<ExamsListProps> = ({
 
                   {/* Scanned Student Results Drawer inside Exam Card */}
                   {examResults.length > 0 && (
-                    <div className="mt-3 p-3 rounded-xl bg-slate-950/70 border border-slate-800/90 space-y-2">
+                    <div className="mt-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800/90 space-y-2">
                       <div className="flex items-center justify-between text-xs font-bold">
-                        <span className="flex items-center gap-1.5 text-emerald-400">
+                        <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
                           <CheckCircle2 className="h-3.5 w-3.5" />
                           Okunan Öğrenci Kağıtları ({examResults.length})
                         </span>
@@ -214,7 +214,7 @@ export const ExamsList: React.FC<ExamsListProps> = ({
                           <button
                             type="button"
                             onClick={() => onNavigateToResults(exam.id)}
-                            className="text-[11px] text-indigo-400 hover:text-indigo-300 font-semibold cursor-pointer underline flex items-center gap-0.5"
+                            className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 font-semibold cursor-pointer underline flex items-center gap-0.5"
                           >
                             Tüm Sıralama →
                           </button>
@@ -225,15 +225,15 @@ export const ExamsList: React.FC<ExamsListProps> = ({
                           <div
                             key={res.id}
                             onClick={() => onNavigateToResults && onNavigateToResults(exam.id)}
-                            className="p-2 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 flex items-center justify-between text-xs cursor-pointer transition-colors"
+                            className="p-2 rounded-lg bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs cursor-pointer transition-colors"
                           >
                             <div className="flex items-center gap-2">
-                              <span className="font-bold text-white">{res.studentName}</span>
-                              <span className="text-[10px] text-slate-400">({res.className} - No: {res.studentNo})</span>
+                              <span className="font-bold text-slate-900 dark:text-white">{res.studentName}</span>
+                              <span className="text-[10px] text-slate-500 dark:text-slate-400">({res.className} - No: {res.studentNo})</span>
                             </div>
                             <div className="flex items-center gap-2 font-mono font-bold">
-                              <span className="text-emerald-400">{res.totalNet} Net</span>
-                              <span className="text-slate-300">({res.totalScore} Puan)</span>
+                              <span className="text-emerald-600 dark:text-emerald-400">{res.totalNet} Net</span>
+                              <span className="text-slate-600 dark:text-slate-300">({res.totalScore} Puan)</span>
                             </div>
                           </div>
                         ))}
@@ -243,7 +243,7 @@ export const ExamsList: React.FC<ExamsListProps> = ({
                 </div>
 
               {/* Action Buttons */}
-              <div className="pt-3 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-2">
+              <div className="pt-3 border-t border-slate-200 dark:border-slate-800/80 flex flex-wrap items-center justify-between gap-2">
                 <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
                   {onNavigateToResults && (
                     <button
