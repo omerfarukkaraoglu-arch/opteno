@@ -34,54 +34,7 @@ export const ExamCreateBuilder: React.FC<ExamCreateBuilderProps> = ({
   const [hasBookletTypes, setHasBookletTypes] = useState<boolean>(false);
   const [activeBookletTab, setActiveBookletTab] = useState<'A' | 'B'>('A');
 
-const getSampleOutcomesForSubject = (name: string, count: number): string[] => {
-  const lower = name.toLowerCase();
-  let pool = [
-    'Temel Bilgi ve Kavrama', 'Problem Çözme', 'Analiz ve Çıkarım', 'Yorumlama Becerisi',
-    'Kavramsal İlişkilendirme', 'Uygulama Becerisi'
-  ];
-  if (lower.includes('türkçe') || lower.includes('edebiyat')) {
-    pool = [
-      'Sözcükte Anlam', 'Cümlede Anlam', 'Paragrafta Anlam', 'Paragrafta Yapı ve Ana Düşünce',
-      'Fiilimsiler', 'Cümlenin Ögeleri', 'Yazım Kuralları', 'Noktalama İşaretleri',
-      'Metin Türleri', 'Sözel Mantık ve Muhakeme'
-    ];
-  } else if (lower.includes('matematik') || lower.includes('geometri')) {
-    pool = [
-      'Çarpanlar ve Katlar', 'Üslü İfadeler', 'Kareköklü İfadeler', 'Veri Analizi',
-      'Basit Olayların Olasılığı', 'Cebirsel İfadeler ve Özdeşlikler', 'Doğrusal Denklemler', 'Eğim ve Doğru Grafikleri',
-      'Eşitsizlikler', 'Üçgenler ve Pisagor Bağıntısı'
-    ];
-  } else if (lower.includes('fen') || lower.includes('fizik') || lower.includes('kimya') || lower.includes('biyoloji')) {
-    pool = [
-      'Mevsimlerin Oluşumu', 'İklim ve Hava Hareketleri', 'DNA ve Genetik Kod', 'Kalıtım ve Çaprazlama',
-      'Mutasyon ve Modifikasyon', 'Basınç (Katı ve Sıvı)', 'Periyodik Sistem', 'Fiziksel ve Kimyasal Değişimler',
-      'Asitler ve Bazlar', 'Basit Makineler'
-    ];
-  } else if (lower.includes('tarih') || lower.includes('inkılap') || lower.includes('sosyal')) {
-    pool = [
-      'Bir Kahraman Doğuyor', 'Milli Uyanış: Bağımsızlık Yolunda Adımlar', 'Milli Bir Destan: Ya İstiklal Ya Ölüm',
-      'Atatürkçülük ve Çağdaşlaşan Türkiye', 'Demokratikleşme Çabaları', 'Dış Politika'
-    ];
-  } else if (lower.includes('ingilizce') || lower.includes('yabancı dil')) {
-    pool = [
-      'Friendship', 'Teen Life', 'In The Kitchen', 'On The Phone', 'The Internet',
-      'Adventures', 'Tourism', 'Chores', 'Science'
-    ];
-  } else if (lower.includes('din')) {
-    pool = [
-      'Kader İnancı', 'Zekat ve Sadaka', 'Din ve Hayat', 'Hz. Muhammed’in Örnekliği', 'Kur’an-ı Kerim ve Özellikleri'
-    ];
-  }
-
-  const outcomes: string[] = [];
-  for (let i = 0; i < count; i++) {
-    outcomes.push(pool[i % pool.length]);
-  }
-  return outcomes;
-};
-
-  // Step 2: Subjects & Question Counts
+  // Step 2: Subjects & Question Counts (Kazanımlar varsayılan olarak boştur; kullanıcı isterse girer veya Excel'den yükler)
   const [subjects, setSubjects] = useState<SubjectConfig[]>([
     {
       id: 'sbj-1',
@@ -89,7 +42,7 @@ const getSampleOutcomesForSubject = (name: string, count: number): string[] => {
       questionCount: 20,
       optionCount: 4,
       correctAnswers: Array(20).fill('A'),
-      learningOutcomes: getSampleOutcomesForSubject('Türkçe', 20)
+      learningOutcomes: undefined
     },
     {
       id: 'sbj-2',
@@ -97,7 +50,7 @@ const getSampleOutcomesForSubject = (name: string, count: number): string[] => {
       questionCount: 20,
       optionCount: 4,
       correctAnswers: Array(20).fill('B'),
-      learningOutcomes: getSampleOutcomesForSubject('Matematik', 20)
+      learningOutcomes: undefined
     },
     {
       id: 'sbj-3',
@@ -105,7 +58,7 @@ const getSampleOutcomesForSubject = (name: string, count: number): string[] => {
       questionCount: 20,
       optionCount: 4,
       correctAnswers: Array(20).fill('C'),
-      learningOutcomes: getSampleOutcomesForSubject('Fen Bilimleri', 20)
+      learningOutcomes: undefined
     }
   ]);
 
@@ -129,7 +82,7 @@ const getSampleOutcomesForSubject = (name: string, count: number): string[] => {
       questionCount: 15,
       optionCount: defaultOptionCount,
       correctAnswers: Array(15).fill('A'),
-      learningOutcomes: getSampleOutcomesForSubject(name, 15)
+      learningOutcomes: undefined
     };
     setSubjects([...subjects, newSubject]);
   };
@@ -157,16 +110,17 @@ const getSampleOutcomesForSubject = (name: string, count: number): string[] => {
         }
         updated.correctAnswers = currentAns;
 
-        const currentOutcomes = [...(s.learningOutcomes || [])];
-        const samplePool = getSampleOutcomesForSubject(s.name, qCount);
-        if (currentOutcomes.length < qCount) {
-          while (currentOutcomes.length < qCount) {
-            currentOutcomes.push(samplePool[currentOutcomes.length] || '');
+        if (s.learningOutcomes) {
+          const currentOutcomes = [...s.learningOutcomes];
+          if (currentOutcomes.length < qCount) {
+            while (currentOutcomes.length < qCount) {
+              currentOutcomes.push('');
+            }
+          } else {
+            currentOutcomes.length = qCount;
           }
-        } else {
-          currentOutcomes.length = qCount;
+          updated.learningOutcomes = currentOutcomes;
         }
-        updated.learningOutcomes = currentOutcomes;
       }
       return updated;
     }));
@@ -240,13 +194,10 @@ const getSampleOutcomesForSubject = (name: string, count: number): string[] => {
       correctAnswers: s.correctAnswers.map(() => options[Math.floor(Math.random() * options.length)]),
       correctAnswersB: hasBookletTypes
         ? s.correctAnswers.map(() => options[Math.floor(Math.random() * options.length)])
-        : undefined,
-      learningOutcomes: s.learningOutcomes && s.learningOutcomes.length === s.questionCount
-        ? s.learningOutcomes
-        : getSampleOutcomesForSubject(s.name, s.questionCount)
+        : undefined
     }));
     setSubjects(updatedSubjects);
-    setPasteSuccessMsg('Rastgele demo cevap anahtarı ve örnek kazanımlar başarıyla üretildi!');
+    setPasteSuccessMsg('Rastgele cevap anahtarı üretildi!');
     setTimeout(() => setPasteSuccessMsg(null), 3000);
   };
 
@@ -260,7 +211,7 @@ const getSampleOutcomesForSubject = (name: string, count: number): string[] => {
 
     if (subjects.length > 0) {
       subjects.forEach((sbj) => {
-        const outcomes = sbj.learningOutcomes || getSampleOutcomesForSubject(sbj.name, sbj.questionCount);
+        const outcomes = sbj.learningOutcomes || [];
         for (let i = 0; i < sbj.questionCount; i++) {
           const optA = sbj.correctAnswers[i] || sampleOptions[i % (sbj.optionCount || 4)];
           const optB = sbj.correctAnswersB?.[i] || sampleOptions[(i + 1) % (sbj.optionCount || 4)];
@@ -273,12 +224,11 @@ const getSampleOutcomesForSubject = (name: string, count: number): string[] => {
         }
       });
     } else {
-      const turkceOutcomes = getSampleOutcomesForSubject('Türkçe', 20);
       for (let i = 1; i <= 20; i++) {
         if (hasBookletTypes) {
-          rows.push(['Türkçe', i, sampleOptions[(i - 1) % 4], sampleOptions[i % 4], turkceOutcomes[i - 1]]);
+          rows.push(['Türkçe', i, sampleOptions[(i - 1) % 4], sampleOptions[i % 4], '']);
         } else {
-          rows.push(['Türkçe', i, sampleOptions[(i - 1) % 4], turkceOutcomes[i - 1]]);
+          rows.push(['Türkçe', i, sampleOptions[(i - 1) % 4], '']);
         }
       }
     }
@@ -455,6 +405,16 @@ const getSampleOutcomesForSubject = (name: string, count: number): string[] => {
     const generatedCode = examCode.trim() || `EXAM-${Math.floor(100 + Math.random() * 900)}`;
     const examId = `exam-${Date.now()}`;
 
+    const sanitizedSubjects = subjects.map(s => {
+      const hasAnyOutcome = Boolean(s.learningOutcomes && s.learningOutcomes.some(o => o && o.trim().length > 0));
+      return {
+        ...s,
+        learningOutcomes: hasAnyOutcome 
+          ? (s.learningOutcomes || []).map(o => (o ? o.trim() : ''))
+          : undefined
+      };
+    });
+
     const newExam: Exam = {
       id: examId,
       institutionId: selectedInstId,
@@ -468,7 +428,7 @@ const getSampleOutcomesForSubject = (name: string, count: number): string[] => {
       netPenaltyRatio,
       defaultOptionCount,
       hasBookletTypes,
-      subjects,
+      subjects: sanitizedSubjects,
       totalQuestions,
       totalExamsScanned: 0,
       isStudentSpecific,
@@ -789,7 +749,9 @@ const getSampleOutcomesForSubject = (name: string, count: number): string[] => {
                 <h2 className="font-display text-lg font-bold text-white flex items-center gap-2">
                   <KeyRound className="h-5 w-5 text-indigo-400" /> 3. Cevap Anahtarı ve Sınavı Kaydetme
                 </h2>
-                <p className="text-xs text-slate-400 mt-1">Cevap anahtarını metin yapıştırarak veya matristen seçip sınavı kaydedin.</p>
+                <p className="text-xs text-slate-400 mt-1">
+                  Cevap anahtarını belirleyin. Kazanım/konu alanları isteğe bağlıdır; doldurulmazsa sınav kazanımsız olarak değerlendirilir.
+                </p>
               </div>
 
               <button
@@ -965,9 +927,9 @@ const getSampleOutcomesForSubject = (name: string, count: number): string[] => {
                               type="text"
                               value={outcomeVal}
                               onChange={(e) => handleOutcomeChange(sbj.id, qIdx, e.target.value)}
-                              placeholder="Kazanım / Konu..."
+                              placeholder="Kazanım / Konu (İsteğe bağlı)..."
                               className="w-full text-[10.5px] px-2 py-1 bg-slate-900 border border-slate-800 hover:border-slate-700 focus:border-indigo-500 rounded-lg text-slate-200 placeholder:text-slate-600 transition-all"
-                              title={`Soru ${qIdx + 1} Kazanımı / Konusu`}
+                              title={`Soru ${qIdx + 1} Kazanımı / Konusu (İsteğe Bağlı)`}
                             />
                           </div>
                         );

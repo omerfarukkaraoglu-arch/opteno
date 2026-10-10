@@ -730,7 +730,7 @@ export const ExamResultsList: React.FC<ExamResultsListProps> = ({ initialExamId 
                       {aggregateOutcomes.length === 0 && (
                         <tr>
                           <td colSpan={6} className="px-4 py-8 text-center text-slate-500 italic">
-                            Bu sınavda henüz kazanım tanımlanmamış veya okuma sonucu bulunmuyor.
+                            Bu sınavda kazanım tanımlanmamıştır. (Sınav kazanımsız olarak değerlendirilmiştir)
                           </td>
                         </tr>
                       )}
