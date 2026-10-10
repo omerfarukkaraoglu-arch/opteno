@@ -84,6 +84,23 @@ const setItem = <T>(key: string, value: T): void => {
     localStorage.setItem(key, JSON.stringify(value));
   } catch (e) {
     console.error(`Error saving ${key} to storage:`, e);
+    // If quota exceeded, clean up old legacy images and retry
+    if (key === KEYS.RESULTS && Array.isArray(value)) {
+      try {
+        const cleaned = (value as any[]).map(item => {
+          if (item && item.rawImageBase64) {
+            const copy = { ...item };
+            delete copy.rawImageBase64;
+            return copy;
+          }
+          return item;
+        });
+        localStorage.setItem(key, JSON.stringify(cleaned));
+        console.warn('Successfully saved results after stripping image payloads');
+      } catch (retryErr) {
+        console.error('Retry saving results also failed:', retryErr);
+      }
+    }
   }
 };
 
@@ -116,31 +133,13 @@ let isPushing = false;
 let syncStarted = false;
 let lastLocalWriteTime = 0;
 
-// Push entire application state to Firebase Cloud Database
+// Push system configuration, exams, students, and institutions to Firebase
+// IMPORTANT: Does NOT push results array, so scan results are NEVER overwritten or wiped out in bulk!
 export const pushToServer = async () => {
+  if (isPushing) return;
   isPushing = true;
   lastLocalWriteTime = Date.now();
   try {
-    // Safely merge cloud results first so we never overwrite cloud results with stale local results
-    let cloudResults: ScanResult[] = [];
-    try {
-      const crRes = await fetch(`${FIREBASE_DB_URL}/results.json`);
-      if (crRes.ok) {
-        const crData = await crRes.json();
-        if (Array.isArray(crData)) cloudResults = crData.filter(Boolean);
-        else if (crData && typeof crData === 'object') cloudResults = (Object.values(crData) as ScanResult[]).filter(Boolean);
-      }
-    } catch {
-      // offline fallback
-    }
-
-    const localResults = getItem<ScanResult[]>(KEYS.RESULTS, initialScanResults);
-    const rMap = new Map<string, ScanResult>();
-    cloudResults.forEach(r => { if (r && r.id) rMap.set(r.id, r); });
-    localResults.forEach(r => { if (r && r.id) rMap.set(r.id, r); });
-    const results = Array.from(rMap.values());
-    setItem(KEYS.RESULTS, results);
-
     const exams = getItem<Exam[]>(KEYS.EXAMS, initialExams);
     const students = getItem<Student[]>(KEYS.STUDENTS, initialStudents);
     const classes = getItem<SchoolClass[]>(KEYS.CLASSES, initialClasses);
@@ -151,10 +150,9 @@ export const pushToServer = async () => {
     const siteSettings = getItem<SiteSettings>(KEYS.SITE_SETTINGS, initialSiteSettings);
 
     const res = await fetch(`${FIREBASE_DB_URL}.json`, {
-      method: 'PUT',
+      method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        results,
         exams,
         students,
         classes,
@@ -166,7 +164,7 @@ export const pushToServer = async () => {
       })
     });
     if (!res.ok) {
-      console.error('Firebase push returned non-OK status:', res.status);
+      console.error('Firebase PATCH returned non-OK status:', res.status);
     }
   } catch (err) {
     console.error('Firebase push failed:', err);
@@ -209,10 +207,14 @@ export const pushInstitutionsToServer = async (instsToPush?: Institution[]) => {
 // Atomic Single Scan Result Cloud Push (Prevents race conditions & avoids full database overwrite)
 export const pushSingleResultToServer = async (result: ScanResult) => {
   try {
-    const res = await fetch(`${FIREBASE_DB_URL}/results/${encodeURIComponent(result.id)}.json`, {
+    const resultToPush = { ...result };
+    if (resultToPush.rawImageBase64) {
+      delete resultToPush.rawImageBase64;
+    }
+    const res = await fetch(`${FIREBASE_DB_URL}/results/${encodeURIComponent(resultToPush.id)}.json`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(result)
+      body: JSON.stringify(resultToPush)
     });
     if (!res.ok) {
       console.warn('Single result push returned non-OK status:', res.status);
@@ -281,6 +283,7 @@ export const syncWithServer = async () => {
     // 1. Load server results
     serverResultsRawList.forEach(sr => {
       if (sr && sr.id) {
+        if (sr.rawImageBase64) delete sr.rawImageBase64;
         resultMap.set(sr.id, sr);
       }
     });
@@ -289,6 +292,7 @@ export const syncWithServer = async () => {
     const missingInCloud: ScanResult[] = [];
     localResults.forEach(lr => {
       if (!lr || !lr.id) return;
+      if (lr.rawImageBase64) delete lr.rawImageBase64;
       if (!resultMap.has(lr.id)) {
         resultMap.set(lr.id, lr);
         missingInCloud.push(lr);
@@ -848,64 +852,89 @@ export const storageService = {
       const studentMap = new Map<string, Student>();
       students.forEach(s => studentMap.set(s.id, s));
 
+      const exam = examId ? storageService.getExamById(examId) : undefined;
+      const isExamOwnedByInstitution = Boolean(exam && exam.institutionId === institutionId);
+
       list = list.filter(r => {
-        // 1. Sonucun kurumu doğrudan eşleşiyorsa
+        // 1. Eğer sınav zaten doğrudan bu kurumun kendi sınavıysa tüm okumalar kurumundur
+        if (isExamOwnedByInstitution) return true;
+
+        // 2. Sonucun kurumu doğrudan eşleşiyorsa
         if (r.institutionId === institutionId) return true;
-        // 2. Sonuç merkezi/genel işaretlenmişse ama öğrencinin kayıtlı kurumu buysa
+
+        // 3. Sonuç merkezi/genel işaretlenmişse ama öğrencinin kayıtlı kurumu buysa
         if (r.studentId) {
           const st = studentMap.get(r.studentId);
           if (st && st.institutionId === institutionId) return true;
         }
+
+        // 4. Kurum atanmamışsa veya varsayılan kalmışsa kurum adminine göster
+        if (!r.institutionId || r.institutionId === 'inst-1' || r.institutionId === 'ALL' || r.institutionId === 'SYSTEM') {
+          return true;
+        }
+
         return false;
       });
     }
     return list;
   },
   saveScanResult: (result: ScanResult) => {
-    // 1. Kurum ID Güvencesi: Eğer sonuçta kurum yoksa veya 'ALL'/'SYSTEM' ise okuyan personelin kurumunu ata
+    // 1. Kurum ID Güvencesi: Eğer sonuçta kurum yoksa veya 'ALL'/'SYSTEM'/'inst-1' ise okuyan personelin kurumunu ata
     const currentUser = storageService.getCurrentUser();
-    if (currentUser && currentUser.institutionId && (!result.institutionId || result.institutionId === 'ALL' || result.institutionId === 'SYSTEM')) {
+    if (currentUser && currentUser.institutionId && (!result.institutionId || result.institutionId === 'ALL' || result.institutionId === 'SYSTEM' || result.institutionId === 'inst-1')) {
       result.institutionId = currentUser.institutionId;
+    }
+
+    // 2. Fotoğraf Yükünü Temizle (LocalStorage kotasını koru, JSON boyutunu ~1.5 KB'a indir)
+    const resultToSave: ScanResult = { ...result };
+    if (resultToSave.rawImageBase64) {
+      delete resultToSave.rawImageBase64;
     }
 
     const list = getItem<ScanResult[]>(KEYS.RESULTS, initialScanResults);
 
-    // 2. Güvenli Eşleşme Kontrolü:
-    // Sadece AYNI ID'ye sahipse VEYA (aynı sınavda + aynı kurumda + aynı öğrenci numarasına sahip geçerli kayıtlı bir öğrenciyse) güncelle!
-    // Jenerik veya geçici isimlerde ASLA üzerine yazma, her zaman yeni kayıt ekle!
-    const isGenericStudent = !result.studentNo || result.studentNo === '101' || result.studentId?.startsWith('std-opt-');
-    
+    // 3. Güvenli Eşleşme Kontrolü:
+    // Sadece AYNI ID'ye sahipse (örneğin doğrulama penceresinde şık değiştirilip tekrar kaydedilmişse)
+    // VEYA gerçekten sistemde kayıtlı bir öğrencinin aynı sınavdaki önceki sonucunu güncellemek isteniyorsa:
+    const registeredStudents = storageService.getStudents();
+    const isRealRegisteredStudent = Boolean(
+      resultToSave.studentId &&
+      !resultToSave.studentId.startsWith('std-opt-') &&
+      !resultToSave.studentId.startsWith('std-generic') &&
+      registeredStudents.some(s => s.id === resultToSave.studentId)
+    );
+
     let existingIndex = -1;
-    if (!isGenericStudent) {
+    if (isRealRegisteredStudent) {
       existingIndex = list.findIndex(r => 
-        r.id === result.id || (
-          r.examId === result.examId && 
-          r.studentNo === result.studentNo && 
-          (r.institutionId === result.institutionId || !r.institutionId || result.institutionId === 'inst-1')
+        r.id === resultToSave.id || (
+          r.examId === resultToSave.examId && 
+          r.studentId === resultToSave.studentId
         )
       );
     } else {
-      existingIndex = list.findIndex(r => r.id === result.id);
+      // Jenerik veya geçici isimlerde ASLA başka bir kağıdın üzerine yazma!
+      existingIndex = list.findIndex(r => r.id === resultToSave.id);
     }
 
     if (existingIndex >= 0) {
-      list[existingIndex] = result;
+      list[existingIndex] = resultToSave;
     } else {
-      list.unshift(result);
+      list.unshift(resultToSave);
     }
     setItem(KEYS.RESULTS, list);
 
     const exams = storageService.getExams();
-    const exam = exams.find(e => e.id === result.examId);
+    const exam = exams.find(e => e.id === resultToSave.examId);
     if (exam) {
-      exam.totalExamsScanned = list.filter(r => r.examId === result.examId).length;
+      exam.totalExamsScanned = list.filter(r => r.examId === resultToSave.examId).length;
       setItem(KEYS.EXAMS, exams);
     }
 
-    // 3. ATOMİK BULUT KAYDI:
+    // 4. ATOMİK BULUT KAYDI:
     // Doğrudan Firebase'e tekil sonuç olarak gönder (PUT /results/{id}.json)
     // Bu sayede hiçbir cihaz diğerinin sonucunu EZEMEZ!
-    pushSingleResultToServer(result);
+    pushSingleResultToServer(resultToSave);
 
     window.dispatchEvent(new CustomEvent('opticok-data-updated'));
   },

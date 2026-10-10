@@ -229,7 +229,7 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({ onScanComplete }) 
 
   // STAGE 1: Real-Time QR Code Reader Interval
   useEffect(() => {
-    if (!isCameraActive || scanStage !== 'STEP1_QR' || lastResult || isVerifyModalOpen) return;
+    if (!isCameraActive || scanStage !== 'STEP1_QR' || isProcessing || isVerifyModalOpen) return;
 
     const interval = setInterval(() => {
       if (!videoRef.current || !canvasRef.current || isProcessing) return;
@@ -294,7 +294,7 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({ onScanComplete }) 
     }, 200);
 
     return () => clearInterval(interval);
-  }, [isCameraActive, scanStage, isProcessing, lastResult, isVerifyModalOpen]);
+  }, [isCameraActive, scanStage, isProcessing, isVerifyModalOpen]);
 
   const alignmentLockCountRef = useRef<number>(0);
   const isAutoScanningRef = useRef<boolean>(false);
@@ -561,7 +561,7 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({ onScanComplete }) 
     if (!pendingResult) return;
 
     storageService.saveScanResult(pendingResult);
-    setLastResult(pendingResult);
+    setLastResult(null);
     setSessionScannedCount(prev => prev + 1);
     setIsVerifyModalOpen(false);
     const savedResult = pendingResult;

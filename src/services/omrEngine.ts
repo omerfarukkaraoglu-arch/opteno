@@ -135,7 +135,9 @@ export const omrEngine = {
     const currentUser = storageService.getCurrentUser();
     const effectiveInstId = (currentUser && currentUser.institutionId) 
       ? currentUser.institutionId 
-      : (exam.institutionId !== 'ALL' && exam.institutionId !== 'SYSTEM' ? exam.institutionId : undefined);
+      : (qrData?.instId && qrData.instId !== 'ALL' && qrData.instId !== 'SYSTEM'
+          ? qrData.instId
+          : (exam.institutionId !== 'ALL' && exam.institutionId !== 'SYSTEM' ? exam.institutionId : undefined));
 
     const instStudents = storageService.getStudents(effectiveInstId);
     const globalStudents = storageService.getStudents();
@@ -147,7 +149,7 @@ export const omrEngine = {
       student = instStudents.find(s => s.studentNo === qrData.studentNo) || globalStudents.find(s => s.studentNo === qrData.studentNo);
     }
     if (!student && (qrData?.studentName || qrData?.studentNo)) {
-      const finalInst = effectiveInstId || exam.institutionId || 'inst-1';
+      const finalInst = effectiveInstId || (qrData?.instId && qrData.instId !== 'ALL' && qrData.instId !== 'SYSTEM' ? qrData.instId : exam.institutionId) || 'inst-1';
       student = {
         id: qrData.studentId || `std-${qrData.studentNo || Date.now()}`,
         institutionId: finalInst,
@@ -161,14 +163,16 @@ export const omrEngine = {
     }
 
     if (!student) {
-      const scanCount = storageService.getResults(exam.id).length + 1;
-      const finalInst = effectiveInstId || exam.institutionId || 'inst-1';
+      const existingResults = storageService.getAllScanResults().filter(r => r.examId === exam.id);
+      const uniqueSuffix = Math.floor(1000 + Math.random() * 9000);
+      const scanCount = existingResults.length + 1;
+      const finalInst = effectiveInstId || (qrData?.instId && qrData.instId !== 'ALL' && qrData.instId !== 'SYSTEM' ? qrData.instId : exam.institutionId) || 'inst-1';
       student = {
-        id: `std-opt-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        id: `std-opt-${Date.now()}-${uniqueSuffix}`,
         institutionId: finalInst,
         classId: 'cls-101',
         className: 'Genel',
-        studentNo: String(100 + scanCount),
+        studentNo: `${scanCount}-${uniqueSuffix}`,
         firstName: 'Öğrenci',
         lastName: `#${scanCount}`
       };
@@ -456,7 +460,27 @@ export const omrEngine = {
 
     const finalResultInstId = (currentUser && currentUser.institutionId)
       ? currentUser.institutionId
-      : (student.institutionId || (exam.institutionId !== 'ALL' && exam.institutionId !== 'SYSTEM' ? exam.institutionId : 'inst-1'));
+      : (qrData?.instId && qrData.instId !== 'ALL' && qrData.instId !== 'SYSTEM'
+          ? qrData.instId
+          : (student.institutionId || (exam.institutionId !== 'ALL' && exam.institutionId !== 'SYSTEM' ? exam.institutionId : 'inst-1')));
+
+    // Generate optimized lightweight preview thumbnail (max 480px width, JPEG 0.5)
+    // to prevent browser localStorage quota exceeded and Firebase payload timeouts
+    let previewThumbnail = '';
+    try {
+      const thumbCanvas = document.createElement('canvas');
+      const thumbWidth = Math.min(480, canvas.width);
+      const thumbHeight = Math.round((thumbWidth / canvas.width) * canvas.height);
+      thumbCanvas.width = thumbWidth;
+      thumbCanvas.height = thumbHeight;
+      const thumbCtx = thumbCanvas.getContext('2d');
+      if (thumbCtx) {
+        thumbCtx.drawImage(canvas, 0, 0, thumbWidth, thumbHeight);
+        previewThumbnail = thumbCanvas.toDataURL('image/jpeg', 0.5);
+      }
+    } catch {
+      // fallback without blocking scan
+    }
 
     const resultData: ScanResult = {
       id: `scan-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
@@ -477,7 +501,7 @@ export const omrEngine = {
       subjectResults,
       answers,
       outcomeAnalyses,
-      rawImageBase64: canvas.toDataURL('image/jpeg', 0.85)
+      rawImageBase64: previewThumbnail
     };
 
     return {
