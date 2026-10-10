@@ -178,19 +178,19 @@ export const ExamResultsList: React.FC<ExamResultsListProps> = ({ initialExamId 
   return (
     <div className="mx-auto max-w-6xl px-2 sm:px-4 py-4 space-y-6">
       <div className="glass-panel p-4 sm:p-6">
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
           <div>
-            <h1 className="font-display text-xl font-bold text-white flex items-center gap-2">
-              <Trophy className="h-6 w-6 text-amber-400" /> Sınav Sonuçları & Derece Listesi
+            <h1 className="font-display text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <Trophy className="h-6 w-6 text-amber-500 dark:text-amber-400" /> Sınav Sonuçları & Derece Listesi
             </h1>
-            <p className="text-xs text-slate-400 mt-1">Okunan optik form puanları, net analizi ve derece sıralaması</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Okunan optik form puanları, net analizi ve derece sıralaması</p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
             <select
               value={selectedExamId}
               onChange={(e) => setSelectedExamId(e.target.value)}
-              className="input-field text-xs py-2 w-60 font-semibold text-indigo-300 bg-slate-900"
+              className="input-field text-xs py-2 w-60 font-semibold text-indigo-600 dark:text-indigo-300 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700"
             >
               {exams.map(ex => (
                 <option key={ex.id} value={ex.id}>{ex.title} ({ex.examCode})</option>
@@ -210,48 +210,48 @@ export const ExamResultsList: React.FC<ExamResultsListProps> = ({ initialExamId 
         </div>
 
         {!selectedExam ? (
-          <p className="text-slate-400 italic text-center py-8 text-xs">Lütfen sonuçlarını incelemek istediğiniz sınavı seçin.</p>
+          <p className="text-slate-500 dark:text-slate-400 italic text-center py-8 text-xs">Lütfen sonuçlarını incelemek istediğiniz sınavı seçin.</p>
         ) : (
           <div className="space-y-6">
             {/* Exam Summary Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="glass-card p-4 rounded-xl border border-indigo-500/30 bg-indigo-900/10 text-center">
-                <p className="text-[10px] uppercase font-bold text-slate-400 mb-1">Katılım / Okunan</p>
-                <p className="text-2xl font-display font-extrabold text-white">{rawResults.length} Öğrenci</p>
+              <div className="glass-card p-4 rounded-xl border border-indigo-500/20 dark:border-indigo-500/30 bg-indigo-50/50 dark:bg-indigo-900/10 text-center">
+                <p className="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400 mb-1">Katılım / Okunan</p>
+                <p className="text-2xl font-display font-extrabold text-slate-900 dark:text-white">{rawResults.length} Öğrenci</p>
               </div>
-              <div className="glass-card p-4 rounded-xl border border-emerald-500/30 bg-emerald-900/10 text-center">
-                <p className="text-[10px] uppercase font-bold text-slate-400 mb-1">Ortalama Puan</p>
-                <p className="text-2xl font-display font-extrabold text-emerald-400">
+              <div className="glass-card p-4 rounded-xl border border-emerald-500/20 dark:border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-900/10 text-center">
+                <p className="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400 mb-1">Ortalama Puan</p>
+                <p className="text-2xl font-display font-extrabold text-emerald-600 dark:text-emerald-400">
                   {rawResults.length > 0 ? (rawResults.reduce((s, r) => s + r.totalScore, 0) / rawResults.length).toFixed(1) : 0}
                 </p>
               </div>
-              <div className="glass-card p-4 rounded-xl border border-amber-500/30 bg-amber-900/10 text-center">
-                <p className="text-[10px] uppercase font-bold text-slate-400 mb-1">Ortalama Net</p>
-                <p className="text-2xl font-display font-extrabold text-amber-400">
+              <div className="glass-card p-4 rounded-xl border border-amber-500/20 dark:border-amber-500/30 bg-amber-50/50 dark:bg-amber-900/10 text-center">
+                <p className="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400 mb-1">Ortalama Net</p>
+                <p className="text-2xl font-display font-extrabold text-amber-600 dark:text-amber-400">
                   {rawResults.length > 0 ? (rawResults.reduce((s, r) => s + r.totalNet, 0) / rawResults.length).toFixed(2) : 0}
                 </p>
               </div>
-              <div className="glass-card p-4 rounded-xl border border-fuchsia-500/30 bg-fuchsia-900/10 text-center">
-                <p className="text-[10px] uppercase font-bold text-slate-400 mb-1">Net Kuralı</p>
-                <p className="text-base font-display font-bold text-fuchsia-300 mt-1">
+              <div className="glass-card p-4 rounded-xl border border-fuchsia-500/20 dark:border-fuchsia-500/30 bg-fuchsia-50/50 dark:bg-fuchsia-900/10 text-center">
+                <p className="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400 mb-1">Net Kuralı</p>
+                <p className="text-base font-display font-bold text-fuchsia-600 dark:text-fuchsia-300 mt-1">
                   {selectedExam.netPenaltyRatio ? `${selectedExam.netPenaltyRatio} Y = 1 D` : 'Yanlış Götürmez'}
                 </p>
               </div>
             </div>
 
             {/* Navigation Tabs Bar */}
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
-              <div className="flex flex-wrap items-center gap-1.5 bg-slate-900/90 p-1 rounded-xl border border-slate-800">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
+              <div className="flex flex-wrap items-center gap-1.5 bg-slate-100 dark:bg-slate-900/90 p-1 rounded-xl border border-slate-200 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setActiveTab('leaderboard')}
                   className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
                     activeTab === 'leaderboard'
                       ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                      : 'text-slate-400 hover:text-white'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
-                  <Trophy className="h-3.5 w-3.5 text-amber-400" /> Derece Sıralaması
+                  <Trophy className="h-3.5 w-3.5 text-amber-500 dark:text-amber-400" /> Derece Sıralaması
                 </button>
                 <button
                   type="button"
@@ -259,10 +259,10 @@ export const ExamResultsList: React.FC<ExamResultsListProps> = ({ initialExamId 
                   className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
                     activeTab === 'question_analysis'
                       ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                      : 'text-slate-400 hover:text-white'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
-                  <BarChart3 className="h-3.5 w-3.5 text-indigo-400" /> Soru & Çeldirici Analizi
+                  <BarChart3 className="h-3.5 w-3.5 text-indigo-500 dark:text-indigo-400" /> Soru & Çeldirici Analizi
                 </button>
                 <button
                   type="button"
@@ -270,10 +270,10 @@ export const ExamResultsList: React.FC<ExamResultsListProps> = ({ initialExamId 
                   className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
                     activeTab === 'outcomes_report'
                       ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                      : 'text-slate-400 hover:text-white'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
-                  <Target className="h-3.5 w-3.5 text-emerald-400" /> Sınıf & Kurum Kazanım Raporu
+                  <Target className="h-3.5 w-3.5 text-emerald-500 dark:text-emerald-400" /> Sınıf & Kurum Kazanım Raporu
                 </button>
                 <button
                   type="button"
@@ -281,21 +281,21 @@ export const ExamResultsList: React.FC<ExamResultsListProps> = ({ initialExamId 
                   className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
                     activeTab === 'cumulative_report'
                       ? 'bg-gradient-to-r from-indigo-600 to-fuchsia-600 text-white shadow-md shadow-indigo-600/30'
-                      : 'text-slate-400 hover:text-white'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
-                  <GraduationCap className="h-3.5 w-3.5 text-cyan-400" /> Öğrenci Gelişim & Çoklu Karne
+                  <GraduationCap className="h-3.5 w-3.5 text-cyan-500 dark:text-cyan-400" /> Öğrenci Gelişim & Çoklu Karne
                 </button>
               </div>
 
               {/* Class Filter Selector (For Question & Outcome Analysis) */}
               {(activeTab === 'question_analysis' || activeTab === 'outcomes_report') && (
                 <div className="flex items-center gap-2 text-xs">
-                  <span className="text-slate-400 font-semibold">Sınıf Filtresi:</span>
+                  <span className="text-slate-500 dark:text-slate-400 font-semibold">Sınıf Filtresi:</span>
                   <select
                     value={analysisClassFilter}
                     onChange={(e) => setAnalysisClassFilter(e.target.value)}
-                    className="input-field text-xs py-1 px-3 bg-slate-900 text-indigo-300 font-semibold"
+                    className="input-field text-xs py-1 px-3 bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-300 font-semibold border border-slate-200 dark:border-slate-700"
                   >
                     <option value="ALL">Tüm Sınıflar / Genel Kurum</option>
                     {availableClasses.map(cls => (
@@ -310,7 +310,7 @@ export const ExamResultsList: React.FC<ExamResultsListProps> = ({ initialExamId 
             {activeTab === 'leaderboard' && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-slate-200 text-sm">Derece ve Başarı Sıralaması</h3>
+                  <h3 className="font-semibold text-slate-800 dark:text-slate-200 text-sm">Derece ve Başarı Sıralaması</h3>
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
                     <input
@@ -318,7 +318,7 @@ export const ExamResultsList: React.FC<ExamResultsListProps> = ({ initialExamId 
                       placeholder="Öğrenci veya Sınıf Ara..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="input-field pl-9 text-xs py-1.5 w-56"
+                      className="input-field pl-9 text-xs py-1.5 w-56 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200"
                     />
                   </div>
                 </div>
@@ -326,25 +326,25 @@ export const ExamResultsList: React.FC<ExamResultsListProps> = ({ initialExamId 
                 {/* Executive Summary Cards */}
                 {filteredResults.length > 0 && (
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 text-center">
-                      <span className="text-[10.5px] text-slate-400 font-semibold block uppercase tracking-wider">Mevcut Katılım</span>
-                      <span className="text-lg font-bold text-white">{filteredResults.length} Öğrenci</span>
+                    <div className="p-3 rounded-xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-sm text-center">
+                      <span className="text-[10.5px] text-slate-500 dark:text-slate-400 font-semibold block uppercase tracking-wider">Mevcut Katılım</span>
+                      <span className="text-lg font-bold text-slate-900 dark:text-white">{filteredResults.length} Öğrenci</span>
                     </div>
-                    <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 text-center">
-                      <span className="text-[10.5px] text-slate-400 font-semibold block uppercase tracking-wider">Ortalama Net</span>
-                      <span className="text-lg font-bold text-emerald-400">
+                    <div className="p-3 rounded-xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-sm text-center">
+                      <span className="text-[10.5px] text-slate-500 dark:text-slate-400 font-semibold block uppercase tracking-wider">Ortalama Net</span>
+                      <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
                         {(filteredResults.reduce((acc, r) => acc + r.totalNet, 0) / filteredResults.length).toFixed(2)} Net
                       </span>
                     </div>
-                    <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 text-center">
-                      <span className="text-[10.5px] text-slate-400 font-semibold block uppercase tracking-wider">Ortalama Puan</span>
-                      <span className="text-lg font-bold text-indigo-400">
+                    <div className="p-3 rounded-xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-sm text-center">
+                      <span className="text-[10.5px] text-slate-500 dark:text-slate-400 font-semibold block uppercase tracking-wider">Ortalama Puan</span>
+                      <span className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
                         {(filteredResults.reduce((acc, r) => acc + r.totalScore, 0) / filteredResults.length).toFixed(1)} Puan
                       </span>
                     </div>
-                    <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 text-center">
-                      <span className="text-[10.5px] text-slate-400 font-semibold block uppercase tracking-wider">En Yüksek Puan</span>
-                      <span className="text-lg font-bold text-amber-400">
+                    <div className="p-3 rounded-xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-sm text-center">
+                      <span className="text-[10.5px] text-slate-500 dark:text-slate-400 font-semibold block uppercase tracking-wider">En Yüksek Puan</span>
+                      <span className="text-lg font-bold text-amber-600 dark:text-amber-400">
                         {Math.max(...filteredResults.map(r => r.totalScore)).toFixed(1)} Puan
                       </span>
                     </div>
@@ -410,13 +410,13 @@ export const ExamResultsList: React.FC<ExamResultsListProps> = ({ initialExamId 
                             {selectedExam.subjects.map(s => {
                               const subRes = res.subjectResults.find(sr => sr.subjectName === s.name);
                               return (
-                                <td key={s.id} className="px-3 py-3 text-center border-l border-slate-700/50">
+                                <td key={s.id} className="px-3 py-3 text-center border-l border-slate-200 dark:border-slate-700/50">
                                   {subRes ? (
                                     <div>
-                                      <span className="font-bold text-slate-200">{subRes.netCount}</span>
+                                      <span className="font-bold text-slate-800 dark:text-slate-200">{subRes.netCount}</span>
                                       <div className="flex justify-center gap-1 text-[9px] mt-0.5">
-                                        <span className="text-emerald-400">{subRes.correctCount}D</span>
-                                        <span className="text-rose-400">{subRes.wrongCount}Y</span>
+                                        <span className="text-emerald-600 dark:text-emerald-400">{subRes.correctCount}D</span>
+                                        <span className="text-rose-600 dark:text-rose-400">{subRes.wrongCount}Y</span>
                                       </div>
                                     </div>
                                   ) : '-'}
@@ -424,10 +424,10 @@ export const ExamResultsList: React.FC<ExamResultsListProps> = ({ initialExamId 
                               );
                             })}
 
-                            <td className="px-3 py-3 text-center border-l border-slate-700/50 font-display font-bold text-indigo-300 text-sm">
+                            <td className="px-3 py-3 text-center border-l border-slate-200 dark:border-slate-700/50 font-display font-bold text-indigo-600 dark:text-indigo-300 text-sm">
                               {res.totalNet}
                             </td>
-                            <td className="px-3 py-3 text-right font-display font-extrabold text-emerald-400 text-base">
+                            <td className="px-3 py-3 text-right font-display font-extrabold text-emerald-600 dark:text-emerald-400 text-base">
                               {res.totalScore.toFixed(1)}
                             </td>
                             <td className="px-3 py-3 text-center" onClick={(e) => e.stopPropagation()}>
@@ -435,7 +435,7 @@ export const ExamResultsList: React.FC<ExamResultsListProps> = ({ initialExamId 
                                 <button
                                   type="button"
                                   onClick={() => setSelectedStudentResult(res)}
-                                  className="btn btn-secondary py-1 px-2 text-[11px] flex items-center gap-1 text-indigo-300"
+                                  className="btn btn-secondary py-1 px-2 text-[11px] flex items-center gap-1 text-indigo-600 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-900/50"
                                   title="Karneyi İncele"
                                 >
                                   <Eye className="h-3.5 w-3.5" /> İncele
@@ -443,7 +443,7 @@ export const ExamResultsList: React.FC<ExamResultsListProps> = ({ initialExamId 
                                 <button
                                   type="button"
                                   onClick={() => handleShareWhatsApp(res)}
-                                  className="p-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/40 transition-colors"
+                                  className="p-1.5 rounded-lg bg-emerald-600/10 dark:bg-emerald-600/20 hover:bg-emerald-600/20 dark:hover:bg-emerald-600/30 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 dark:border-emerald-500/40 transition-colors"
                                   title="WhatsApp ile Veliye Gönder"
                                 >
                                   <MessageSquare className="h-3.5 w-3.5" />
@@ -463,12 +463,12 @@ export const ExamResultsList: React.FC<ExamResultsListProps> = ({ initialExamId 
                     </tbody>
 
                     {filteredResults.length > 0 && (
-                      <tfoot className="bg-slate-900/90 font-bold border-t-2 border-indigo-500/40 text-slate-100">
+                      <tfoot className="bg-slate-100 dark:bg-slate-900/90 font-bold border-t-2 border-indigo-500/40 text-slate-800 dark:text-slate-100">
                         <tr>
-                          <td className="px-3 py-3 text-center text-indigo-400">ORT.</td>
+                          <td className="px-3 py-3 text-center text-indigo-600 dark:text-indigo-400">ORT.</td>
                           <td className="px-4 py-3">
-                            <span className="font-extrabold text-white text-xs">GENEL ORTALAMA</span>
-                            <span className="text-[10px] text-slate-400 block font-normal">{filteredResults.length} Öğrenci Ortalaması</span>
+                            <span className="font-extrabold text-slate-900 dark:text-white text-xs">GENEL ORTALAMA</span>
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-normal">{filteredResults.length} Öğrenci Ortalaması</span>
                           </td>
                           <td className="px-3 py-3 text-center text-slate-400">-</td>
                           {selectedExam.subjects.map(s => {
@@ -478,15 +478,15 @@ export const ExamResultsList: React.FC<ExamResultsListProps> = ({ initialExamId 
                             }, 0);
                             const avgNet = (sumNet / filteredResults.length).toFixed(2);
                             return (
-                              <td key={s.id} className="px-3 py-3 text-center border-l border-slate-700/50 text-indigo-300 font-mono text-xs">
+                              <td key={s.id} className="px-3 py-3 text-center border-l border-slate-200 dark:border-slate-700/50 text-indigo-600 dark:text-indigo-300 font-mono text-xs">
                                 {avgNet}
                               </td>
                             );
                           })}
-                          <td className="px-3 py-3 text-center border-l border-slate-700/50 text-emerald-400 font-mono text-sm">
+                          <td className="px-3 py-3 text-center border-l border-slate-200 dark:border-slate-700/50 text-emerald-600 dark:text-emerald-400 font-mono text-sm">
                             {(filteredResults.reduce((acc, r) => acc + r.totalNet, 0) / filteredResults.length).toFixed(2)}
                           </td>
-                          <td className="px-3 py-3 text-right text-indigo-400 font-mono text-sm">
+                          <td className="px-3 py-3 text-right text-indigo-600 dark:text-indigo-400 font-mono text-sm">
                             {(filteredResults.reduce((acc, r) => acc + r.totalScore, 0) / filteredResults.length).toFixed(1)}
                           </td>
                           <td className="px-3 py-3 text-center">-</td>
