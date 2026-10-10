@@ -42,6 +42,8 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
   const [studentSearchTerm, setStudentSearchTerm] = useState<string>('');
   const [studentImportSuccessMsg, setStudentImportSuccessMsg] = useState<string | null>(null);
   const [selectedCumulativeStudentId, setSelectedCumulativeStudentId] = useState<string | null>(null);
+  const [examSearchTerm, setExamSearchTerm] = useState('');
+  const [examInstFilter, setExamInstFilter] = useState<string>('ALL');
 
   // Single Student Creation State for Super Admin
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
@@ -948,72 +950,146 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {exams.map(e => (
-              <div key={e.id} className="clay-card p-5 rounded-2xl border border-slate-700/60 flex flex-col justify-between overflow-hidden shadow-sm">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="badge badge-primary text-[10px]">{e.examCode}</span>
-                    <span className="text-xs text-slate-400 flex items-center gap-1">
-                      <Calendar className="h-3.5 w-3.5" /> {e.date}
-                    </span>
-                  </div>
+          {/* Sınav Filtreleme ve Arama Çubuğu */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+              <input
+                type="text"
+                value={examSearchTerm}
+                onChange={(e) => setExamSearchTerm(e.target.value)}
+                placeholder="Sınav adı, kodu veya kurum ile ara..."
+                className="input-field pl-10 text-xs py-2.5 w-full bg-slate-900/80 border-slate-700/80 text-white placeholder-slate-500 rounded-xl"
+              />
+              {examSearchTerm && (
+                <button
+                  onClick={() => setExamSearchTerm('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
 
-                  <h3 className="font-display font-bold text-base text-white">{e.title}</h3>
-                  <p className="text-xs text-indigo-400 mt-1 font-semibold">{e.institutionName}</p>
-
-                  <div className="mt-3 flex flex-wrap items-center gap-3 sm:gap-4 text-xs text-slate-300">
-                    <div><strong>{e.totalQuestions}</strong> Soru</div>
-                    <div><strong>{e.subjects.length}</strong> Ders</div>
-                    <div><strong>{e.totalExamsScanned || 0}</strong> Okunan Optik</div>
-                  </div>
-                </div>
-
-                <div className="mt-4 pt-3.5 border-t border-slate-700/60 flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
-                    <button
-                      onClick={async () => {
-                        const studentsList = storageService.getStudents(e.institutionId);
-                        const pdf = await pdfService.generateOMRPDF(e, studentsList, 'A4');
-                        pdf.save(`${e.examCode}_Optik_Form_A4.pdf`);
-                      }}
-                      className="btn btn-secondary py-1.5 px-3 text-[11px] font-bold flex items-center justify-center gap-1.5 text-indigo-300 border-indigo-500/30 flex-1 sm:flex-initial rounded-xl whitespace-nowrap min-w-[85px]"
-                      title="1 Sayfada 1 Tam Boy Optik Form"
-                    >
-                      <Download className="h-3.5 w-3.5 shrink-0" />
-                      <span>A4 İndir</span>
-                    </button>
-                    <button
-                      onClick={async () => {
-                        const studentsList = storageService.getStudents(e.institutionId);
-                        const pdf = await pdfService.generateOMRPDF(e, studentsList, 'A5');
-                        pdf.save(`${e.examCode}_Optik_Form_A5_Tasarruf.pdf`);
-                      }}
-                      className="btn btn-secondary py-1.5 px-3 text-[11px] font-bold flex items-center justify-center gap-1.5 text-emerald-400 border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 flex-1 sm:flex-initial rounded-xl whitespace-nowrap min-w-[85px]"
-                      title="1 Sayfada Altlı Üstlü 2 Optik Form (A5 Kesimli, %50 Kağıt Tasarrufu)"
-                    >
-                      <Download className="h-3.5 w-3.5 shrink-0" />
-                      <span>A5 İndir (2'li)</span>
-                    </button>
-                  </div>
-
-                  <button
-                    onClick={() => {
-                      if (window.confirm(`"${e.title}" sınavını silmek istiyor musunuz?`)) {
-                        storageService.deleteExam(e.id);
-                        setExams(storageService.getExams());
-                      }
-                    }}
-                    className="p-2 rounded-xl text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 transition-all flex items-center gap-1 text-xs shrink-0 cursor-pointer ml-auto sm:ml-0"
-                    title="Sınavı Sil"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    <span className="hidden sm:inline">Sil</span>
-                  </button>
-                </div>
-              </div>
-            ))}
+            <div className="relative sm:w-72">
+              <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+              <select
+                value={examInstFilter}
+                onChange={(e) => setExamInstFilter(e.target.value)}
+                className="input-field pl-9 text-xs py-2.5 w-full bg-slate-900/80 border-slate-700/80 text-white font-medium cursor-pointer rounded-xl"
+              >
+                <option value="ALL">🏢 Tüm Kurumlar ({exams.length} Sınav)</option>
+                <option value="SYSTEM">🛡️ Sadece Merkezi Sistem</option>
+                {institutions.map(inst => {
+                  const count = exams.filter(e => e.institutionId === inst.id).length;
+                  return (
+                    <option key={inst.id} value={inst.id}>
+                      🏫 {inst.name} ({count} Sınav)
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
           </div>
+
+          {(() => {
+            const filteredDashExams = exams.filter(e => {
+              const isSys = e.isSystemExam === true || e.createdByRole === 'SUPER_ADMIN' || e.institutionId === 'ALL' || e.institutionId === 'SYSTEM';
+              if (examInstFilter === 'SYSTEM' && !isSys) return false;
+              if (examInstFilter !== 'ALL' && examInstFilter !== 'SYSTEM' && e.institutionId !== examInstFilter) return false;
+              if (examSearchTerm) {
+                const term = examSearchTerm.toLowerCase();
+                return e.title.toLowerCase().includes(term) || e.examCode.toLowerCase().includes(term) || (e.institutionName && e.institutionName.toLowerCase().includes(term));
+              }
+              return true;
+            });
+
+            if (filteredDashExams.length === 0) {
+              return (
+                <div className="p-10 text-center text-slate-400 bg-slate-800/40 rounded-2xl border border-slate-700/40 space-y-2">
+                  <FileText className="h-8 w-8 text-slate-500 mx-auto" />
+                  <p className="text-xs font-semibold">Filtrelere uygun sınav bulunamadı.</p>
+                  {(examSearchTerm || examInstFilter !== 'ALL') && (
+                    <button
+                      onClick={() => { setExamSearchTerm(''); setExamInstFilter('ALL'); }}
+                      className="text-xs text-indigo-400 hover:underline inline-block mt-1"
+                    >
+                      Filtreleri Temizle
+                    </button>
+                  )}
+                </div>
+              );
+            }
+
+            return (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredDashExams.map(e => (
+                  <div key={e.id} className="clay-card p-5 rounded-2xl border border-slate-700/60 flex flex-col justify-between overflow-hidden shadow-sm">
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="badge badge-primary text-[10px]">{e.examCode}</span>
+                        <span className="text-xs text-slate-400 flex items-center gap-1">
+                          <Calendar className="h-3.5 w-3.5" /> {e.date}
+                        </span>
+                      </div>
+
+                      <h3 className="font-display font-bold text-base text-white">{e.title}</h3>
+                      <p className="text-xs text-indigo-400 mt-1 font-semibold">{e.institutionName}</p>
+
+                      <div className="mt-3 flex flex-wrap items-center gap-3 sm:gap-4 text-xs text-slate-300">
+                        <div><strong>{e.totalQuestions}</strong> Soru</div>
+                        <div><strong>{e.subjects.length}</strong> Ders</div>
+                        <div><strong>{e.totalExamsScanned || 0}</strong> Okunan Optik</div>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 pt-3.5 border-t border-slate-700/60 flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
+                        <button
+                          onClick={async () => {
+                            const studentsList = storageService.getStudents(e.institutionId);
+                            const pdf = await pdfService.generateOMRPDF(e, studentsList, 'A4');
+                            pdf.save(`${e.examCode}_Optik_Form_A4.pdf`);
+                          }}
+                          className="btn btn-secondary py-1.5 px-3 text-[11px] font-bold flex items-center justify-center gap-1.5 text-indigo-300 border-indigo-500/30 flex-1 sm:flex-initial rounded-xl whitespace-nowrap min-w-[85px]"
+                          title="1 Sayfada 1 Tam Boy Optik Form"
+                        >
+                          <Download className="h-3.5 w-3.5 shrink-0" />
+                          <span>A4 İndir</span>
+                        </button>
+                        <button
+                          onClick={async () => {
+                            const studentsList = storageService.getStudents(e.institutionId);
+                            const pdf = await pdfService.generateOMRPDF(e, studentsList, 'A5');
+                            pdf.save(`${e.examCode}_Optik_Form_A5_Tasarruf.pdf`);
+                          }}
+                          className="btn btn-secondary py-1.5 px-3 text-[11px] font-bold flex items-center justify-center gap-1.5 text-emerald-400 border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 flex-1 sm:flex-initial rounded-xl whitespace-nowrap min-w-[85px]"
+                          title="1 Sayfada Altlı Üstlü 2 Optik Form (A5 Kesimli, %50 Kağıt Tasarrufu)"
+                        >
+                          <Download className="h-3.5 w-3.5 shrink-0" />
+                          <span>A5 İndir (2'li)</span>
+                        </button>
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          if (window.confirm(`"${e.title}" sınavını silmek istiyor musunuz?`)) {
+                            storageService.deleteExam(e.id);
+                            setExams(storageService.getExams());
+                          }
+                        }}
+                        className="p-2 rounded-xl text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 transition-all flex items-center gap-1 text-xs shrink-0 cursor-pointer ml-auto sm:ml-0"
+                        title="Sınavı Sil"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span className="hidden sm:inline">Sil</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
         </div>
       )}
 
