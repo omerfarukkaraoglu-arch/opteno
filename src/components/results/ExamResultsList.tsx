@@ -25,7 +25,7 @@ import {
   Percent,
   BookOpen
 } from 'lucide-react';
-import { storageService } from '../../services/storageService';
+import { storageService, syncWithServer } from '../../services/storageService';
 import { Exam, ScanResult } from '../../types';
 import { examExportService, ExportType, ExportFormat } from '../../services/examExportService';
 import { computeOutcomeAnalyses } from '../../services/omrEngine';
@@ -81,6 +81,7 @@ export const ExamResultsList: React.FC<ExamResultsListProps> = ({ initialExamId 
   }, [initialExamId]);
 
   useEffect(() => {
+    syncWithServer();
     const handleSync = () => {
       setSyncTick(t => t + 1);
     };

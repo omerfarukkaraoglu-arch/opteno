@@ -121,7 +121,26 @@ export const pushToServer = async () => {
   isPushing = true;
   lastLocalWriteTime = Date.now();
   try {
-    const results = getItem<ScanResult[]>(KEYS.RESULTS, initialScanResults);
+    // Safely merge cloud results first so we never overwrite cloud results with stale local results
+    let cloudResults: ScanResult[] = [];
+    try {
+      const crRes = await fetch(`${FIREBASE_DB_URL}/results.json`);
+      if (crRes.ok) {
+        const crData = await crRes.json();
+        if (Array.isArray(crData)) cloudResults = crData.filter(Boolean);
+        else if (crData && typeof crData === 'object') cloudResults = (Object.values(crData) as ScanResult[]).filter(Boolean);
+      }
+    } catch {
+      // offline fallback
+    }
+
+    const localResults = getItem<ScanResult[]>(KEYS.RESULTS, initialScanResults);
+    const rMap = new Map<string, ScanResult>();
+    cloudResults.forEach(r => { if (r && r.id) rMap.set(r.id, r); });
+    localResults.forEach(r => { if (r && r.id) rMap.set(r.id, r); });
+    const results = Array.from(rMap.values());
+    setItem(KEYS.RESULTS, results);
+
     const exams = getItem<Exam[]>(KEYS.EXAMS, initialExams);
     const students = getItem<Student[]>(KEYS.STUDENTS, initialStudents);
     const classes = getItem<SchoolClass[]>(KEYS.CLASSES, initialClasses);
@@ -187,6 +206,33 @@ export const pushInstitutionsToServer = async (instsToPush?: Institution[]) => {
   }
 };
 
+// Atomic Single Scan Result Cloud Push (Prevents race conditions & avoids full database overwrite)
+export const pushSingleResultToServer = async (result: ScanResult) => {
+  try {
+    const res = await fetch(`${FIREBASE_DB_URL}/results/${encodeURIComponent(result.id)}.json`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(result)
+    });
+    if (!res.ok) {
+      console.warn('Single result push returned non-OK status:', res.status);
+    }
+  } catch (e) {
+    console.error('Direct push single result to Firebase failed:', e);
+  }
+};
+
+// Atomic Single Scan Result Cloud Delete
+export const deleteSingleResultFromServer = async (resultId: string) => {
+  try {
+    await fetch(`${FIREBASE_DB_URL}/results/${encodeURIComponent(resultId)}.json`, {
+      method: 'DELETE'
+    });
+  } catch (e) {
+    console.error('Direct delete result from Firebase failed:', e);
+  }
+};
+
 // Synchronization with Firebase Cloud Database (Authoritative Single Source of Truth)
 export const syncWithServer = async () => {
   // If pushing or recent local write happened within 3.5 seconds, don't overwrite with stale server cache
@@ -219,7 +265,44 @@ export const syncWithServer = async () => {
         ? e.isSystemExam
         : (e.createdByRole === 'SUPER_ADMIN' || e.institutionId === 'ALL' || e.institutionId === 'SYSTEM')
     }));
-    const serverResults: ScanResult[] = serverData.results || [];
+
+    // Parse serverResults safely whether it is Array or Object/Map:
+    let serverResultsRawList: ScanResult[] = [];
+    if (Array.isArray(serverData.results)) {
+      serverResultsRawList = serverData.results.filter(Boolean);
+    } else if (serverData.results && typeof serverData.results === 'object') {
+      serverResultsRawList = (Object.values(serverData.results) as ScanResult[]).filter(Boolean);
+    }
+
+    // Bidirectional Safe Merge for Scan Results:
+    const localResults = getItem<ScanResult[]>(KEYS.RESULTS, initialScanResults);
+    const resultMap = new Map<string, ScanResult>();
+
+    // 1. Load server results
+    serverResultsRawList.forEach(sr => {
+      if (sr && sr.id) {
+        resultMap.set(sr.id, sr);
+      }
+    });
+
+    // 2. Preserve any local results not yet in cloud, and queue them to sync up
+    const missingInCloud: ScanResult[] = [];
+    localResults.forEach(lr => {
+      if (!lr || !lr.id) return;
+      if (!resultMap.has(lr.id)) {
+        resultMap.set(lr.id, lr);
+        missingInCloud.push(lr);
+      }
+    });
+
+    // Fire-and-forget sync missing results to cloud
+    if (missingInCloud.length > 0) {
+      missingInCloud.forEach(r => pushSingleResultToServer(r));
+    }
+
+    const mergedResults = Array.from(resultMap.values());
+    mergedResults.sort((a, b) => new Date(b.scannedAt || 0).getTime() - new Date(a.scannedAt || 0).getTime());
+
     const serverStudents: Student[] = serverData.students || [];
     const serverClasses: SchoolClass[] = serverData.classes || [];
     const serverGradeLevels: SystemGradeLevel[] = serverData.gradeLevels || [];
@@ -243,7 +326,7 @@ export const syncWithServer = async () => {
     const localUsersRaw = localStorage.getItem(KEYS.USERS) || '[]';
 
     const serverExamsStr = JSON.stringify(serverExams);
-    const serverResultsStr = JSON.stringify(serverResults);
+    const mergedResultsStr = JSON.stringify(mergedResults);
     const serverStudentsStr = JSON.stringify(serverStudents);
     const serverClassesStr = JSON.stringify(serverClasses);
     const serverGradeLevelsStr = JSON.stringify(serverGradeLevels);
@@ -257,8 +340,8 @@ export const syncWithServer = async () => {
       setItem(KEYS.EXAMS, serverExams);
       hasChanged = true;
     }
-    if (localResultsRaw !== serverResultsStr) {
-      setItem(KEYS.RESULTS, serverResults);
+    if (localResultsRaw !== mergedResultsStr) {
+      setItem(KEYS.RESULTS, mergedResults);
       hasChanged = true;
     }
     if (localStudentsRaw !== serverStudentsStr) {
@@ -761,13 +844,50 @@ export const storageService = {
       list = list.filter(r => r.examId === examId);
     }
     if (institutionId) {
-      list = list.filter(r => r.institutionId === institutionId);
+      const students = storageService.getStudents();
+      const studentMap = new Map<string, Student>();
+      students.forEach(s => studentMap.set(s.id, s));
+
+      list = list.filter(r => {
+        // 1. Sonucun kurumu doğrudan eşleşiyorsa
+        if (r.institutionId === institutionId) return true;
+        // 2. Sonuç merkezi/genel işaretlenmişse ama öğrencinin kayıtlı kurumu buysa
+        if (r.studentId) {
+          const st = studentMap.get(r.studentId);
+          if (st && st.institutionId === institutionId) return true;
+        }
+        return false;
+      });
     }
     return list;
   },
   saveScanResult: (result: ScanResult) => {
+    // 1. Kurum ID Güvencesi: Eğer sonuçta kurum yoksa veya 'ALL'/'SYSTEM' ise okuyan personelin kurumunu ata
+    const currentUser = storageService.getCurrentUser();
+    if (currentUser && currentUser.institutionId && (!result.institutionId || result.institutionId === 'ALL' || result.institutionId === 'SYSTEM')) {
+      result.institutionId = currentUser.institutionId;
+    }
+
     const list = getItem<ScanResult[]>(KEYS.RESULTS, initialScanResults);
-    const existingIndex = list.findIndex(r => r.id === result.id || (r.examId === result.examId && r.studentId === result.studentId && result.studentId !== 'std-guest'));
+
+    // 2. Güvenli Eşleşme Kontrolü:
+    // Sadece AYNI ID'ye sahipse VEYA (aynı sınavda + aynı kurumda + aynı öğrenci numarasına sahip geçerli kayıtlı bir öğrenciyse) güncelle!
+    // Jenerik veya geçici isimlerde ASLA üzerine yazma, her zaman yeni kayıt ekle!
+    const isGenericStudent = !result.studentNo || result.studentNo === '101' || result.studentId?.startsWith('std-opt-');
+    
+    let existingIndex = -1;
+    if (!isGenericStudent) {
+      existingIndex = list.findIndex(r => 
+        r.id === result.id || (
+          r.examId === result.examId && 
+          r.studentNo === result.studentNo && 
+          (r.institutionId === result.institutionId || !r.institutionId || result.institutionId === 'inst-1')
+        )
+      );
+    } else {
+      existingIndex = list.findIndex(r => r.id === result.id);
+    }
+
     if (existingIndex >= 0) {
       list[existingIndex] = result;
     } else {
@@ -782,13 +902,20 @@ export const storageService = {
       setItem(KEYS.EXAMS, exams);
     }
 
-    pushToServer();
+    // 3. ATOMİK BULUT KAYDI:
+    // Doğrudan Firebase'e tekil sonuç olarak gönder (PUT /results/{id}.json)
+    // Bu sayede hiçbir cihaz diğerinin sonucunu EZEMEZ!
+    pushSingleResultToServer(result);
+
     window.dispatchEvent(new CustomEvent('opticok-data-updated'));
   },
   deleteScanResult: (resultId: string) => {
     const list = getItem<ScanResult[]>(KEYS.RESULTS, initialScanResults).filter(r => r.id !== resultId);
     setItem(KEYS.RESULTS, list);
-    pushToServer();
+
+    // Atomik bulut silmesi
+    deleteSingleResultFromServer(resultId);
+
     window.dispatchEvent(new CustomEvent('opticok-data-updated'));
   },
 

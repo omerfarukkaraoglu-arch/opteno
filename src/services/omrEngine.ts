@@ -132,18 +132,25 @@ export const omrEngine = {
 
     // Resolve Student from QR code studentId, studentNo or institution
     let student: Student | undefined;
-    const allStudents = storageService.getStudents(exam.institutionId);
+    const currentUser = storageService.getCurrentUser();
+    const effectiveInstId = (currentUser && currentUser.institutionId) 
+      ? currentUser.institutionId 
+      : (exam.institutionId !== 'ALL' && exam.institutionId !== 'SYSTEM' ? exam.institutionId : undefined);
+
+    const instStudents = storageService.getStudents(effectiveInstId);
+    const globalStudents = storageService.getStudents();
 
     if (studentId && studentId !== 'GENERIC') {
-      student = allStudents.find(s => s.id === studentId);
+      student = instStudents.find(s => s.id === studentId) || globalStudents.find(s => s.id === studentId);
     }
     if (!student && qrData?.studentNo) {
-      student = allStudents.find(s => s.studentNo === qrData.studentNo);
+      student = instStudents.find(s => s.studentNo === qrData.studentNo) || globalStudents.find(s => s.studentNo === qrData.studentNo);
     }
     if (!student && (qrData?.studentName || qrData?.studentNo)) {
+      const finalInst = effectiveInstId || exam.institutionId || 'inst-1';
       student = {
         id: qrData.studentId || `std-${qrData.studentNo || Date.now()}`,
-        institutionId: exam.institutionId,
+        institutionId: finalInst,
         classId: 'cls-101',
         className: 'Genel',
         studentNo: qrData.studentNo || '101',
@@ -155,9 +162,10 @@ export const omrEngine = {
 
     if (!student) {
       const scanCount = storageService.getResults(exam.id).length + 1;
+      const finalInst = effectiveInstId || exam.institutionId || 'inst-1';
       student = {
-        id: `std-opt-${Date.now()}-${scanCount}`,
-        institutionId: exam.institutionId,
+        id: `std-opt-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        institutionId: finalInst,
         classId: 'cls-101',
         className: 'Genel',
         studentNo: String(100 + scanCount),
@@ -446,15 +454,19 @@ export const omrEngine = {
 
     const outcomeAnalyses = computeOutcomeAnalyses(exam, answers);
 
+    const finalResultInstId = (currentUser && currentUser.institutionId)
+      ? currentUser.institutionId
+      : (student.institutionId || (exam.institutionId !== 'ALL' && exam.institutionId !== 'SYSTEM' ? exam.institutionId : 'inst-1'));
+
     const resultData: ScanResult = {
-      id: `scan-${Date.now()}`,
+      id: `scan-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       examId: exam.id,
       examTitle: exam.title,
       studentId: student.id,
       studentName: `${student.firstName} ${student.lastName}`,
       studentNo: student.studentNo,
       className: student.className,
-      institutionId: exam.institutionId,
+      institutionId: finalResultInstId,
       scannedAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
       bookletType: (qrData?.bookletType as 'A' | 'B') || 'A',
       totalCorrect,
