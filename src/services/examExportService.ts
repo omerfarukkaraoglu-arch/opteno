@@ -4,6 +4,7 @@ import * as XLSX from 'xlsx';
 import { Exam, ScanResult } from '../types';
 import { storageService } from './storageService';
 import { computeOutcomeAnalyses } from './omrEngine';
+import { applyTurkishFonts } from './turkishFontService';
 
 export type ExportType = 'INSTITUTION_RANKING' | 'CLASS_RANKING' | 'STUDENT_REPORT_CARD';
 export type ExportFormat = 'PDF' | 'EXCEL';
@@ -29,13 +30,7 @@ function getInstitutionInfo(exam: Exam): { name: string; logoUrl?: string } {
 
 function cleanText(text?: string): string {
   if (!text) return '';
-  return text
-    .replace(/Ğ/g, 'G').replace(/ğ/g, 'g')
-    .replace(/Ü/g, 'U').replace(/ü/g, 'u')
-    .replace(/Ş/g, 'S').replace(/ş/g, 's')
-    .replace(/İ/g, 'I').replace(/ı/g, 'i')
-    .replace(/Ö/g, 'O').replace(/ö/g, 'o')
-    .replace(/Ç/g, 'C').replace(/ç/g, 'c');
+  return String(text).trim();
 }
 
 export const examExportService = {
@@ -395,24 +390,42 @@ function drawRankingTablePDF(
   list: ScanResult[],
   title: string,
   subtitle: string,
-  isNameSorted: boolean,
+  isNameSorted: boolean = false,
   rankMap?: Map<string, number>,
   institutionLogo?: string
 ) {
   const studentCount = list.length;
 
-  // 1. Calculate Statistics & Averages
+  // 1. Calculate Statistics & Averages (with Correct and Wrong counts)
   const subAverages = exam.subjects.map(s => {
+    const totalD = list.reduce((sum, r) => {
+      const sub = r.subjectResults?.find(sr => sr.subjectName === s.name);
+      return sum + (sub ? sub.correctCount : 0);
+    }, 0);
+    const totalY = list.reduce((sum, r) => {
+      const sub = r.subjectResults?.find(sr => sr.subjectName === s.name);
+      return sum + (sub ? sub.wrongCount : 0);
+    }, 0);
     const totalNet = list.reduce((sum, r) => {
-      const sub = r.subjectResults.find(sr => sr.subjectName === s.name);
+      const sub = r.subjectResults?.find(sr => sr.subjectName === s.name);
       return sum + (sub ? sub.netCount : 0);
     }, 0);
+
+    const avgD = studentCount > 0 ? parseFloat((totalD / studentCount).toFixed(1)) : 0;
+    const avgY = studentCount > 0 ? parseFloat((totalY / studentCount).toFixed(1)) : 0;
     const avgNet = studentCount > 0 ? parseFloat((totalNet / studentCount).toFixed(2)) : 0;
     const accuracy = (s.questionCount > 0 && studentCount > 0)
       ? Math.round((avgNet / s.questionCount) * 100)
       : 0;
-    return { name: s.name, questionCount: s.questionCount, avgNet, accuracy };
+
+    return { name: s.name, questionCount: s.questionCount, avgD, avgY, avgNet, accuracy };
   });
+
+  const totalDSum = list.reduce((sum, r) => sum + r.totalCorrect, 0);
+  const avgTotalD = studentCount > 0 ? parseFloat((totalDSum / studentCount).toFixed(1)) : 0;
+
+  const totalYSum = list.reduce((sum, r) => sum + r.totalWrong, 0);
+  const avgTotalY = studentCount > 0 ? parseFloat((totalYSum / studentCount).toFixed(1)) : 0;
 
   const totalNetSum = list.reduce((sum, r) => sum + r.totalNet, 0);
   const avgTotalNet = studentCount > 0 ? parseFloat((totalNetSum / studentCount).toFixed(2)) : 0;
@@ -430,15 +443,15 @@ function drawRankingTablePDF(
   doc.setFillColor(15, 23, 42); // Deep Midnight Slate
   doc.rect(12, 10, 4, 13, 'F');
 
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(13);
+  doc.setFont('Roboto', 'bold');
+  doc.setFontSize(12.5);
   doc.setTextColor(15, 23, 42);
-  doc.text(cleanText(title), 18, 15.5);
+  doc.text(title, 18, 15.5);
 
-  doc.setFont('helvetica', 'normal');
+  doc.setFont('Roboto', 'normal');
   doc.setFontSize(8.5);
   doc.setTextColor(100, 116, 139);
-  doc.text(cleanText(subtitle), 18, 21.5);
+  doc.text(subtitle, 18, 21.5);
 
   // Institution Logo at top right if available (Landscape A4: width 297mm)
   if (institutionLogo) {
@@ -451,27 +464,27 @@ function drawRankingTablePDF(
 
   // 3. TABLE 1: KURUMSAL GENEL ORTALAMALAR TABLOSU (SUMMARY KPI TABLE)
   const summaryHeaders = [
-    'DEGERLENDIRME KRITERI',
-    ...exam.subjects.map(s => cleanText(`${s.name} Ort.`)),
+    'DEĞERLENDİRME KRİTERİ',
+    ...exam.subjects.map(s => `${s.name} Ort.`),
     'TOPLAM NET ORT.',
     'ORTALAMA PUAN',
-    'EN YUKSEK / DUSUK'
+    'EN YÜKSEK / DÜŞÜK'
   ];
 
   const summaryRowNet = [
-    'Katilimci / Sinif Ortalamasi (Net)',
-    ...subAverages.map(a => `${a.avgNet} Net`),
-    `${avgTotalNet} Net`,
+    'Katılımcı / Sınıf Ortalaması',
+    ...subAverages.map(a => `${a.avgD}D - ${a.avgY}Y\n${a.avgNet} Net`),
+    `${avgTotalD}D - ${avgTotalY}Y\n${avgTotalNet} Net`,
     `${avgScore} Puan`,
     `${maxScore} / ${minScore}`
   ];
 
   const summaryRowAcc = [
-    'Ders Basari Orani (%)',
+    'Ders Başarı Oranı (%)',
     ...subAverages.map(a => `%${a.accuracy}`),
     `%${overallAccuracy}`,
-    `Mevcut: ${studentCount} Ogrenci`,
-    `500 Uzerinden`
+    `Mevcut: ${studentCount} Öğrenci`,
+    `500 Üzerinden`
   ];
 
   const summaryColStyles: { [key: number]: any } = {
@@ -488,12 +501,12 @@ function drawRankingTablePDF(
 
   autoTable(doc, {
     startY: 26,
-    head: [summaryHeaders.map(cleanText)],
-    body: [summaryRowNet.map(cleanText), summaryRowAcc.map(cleanText)],
+    head: [summaryHeaders],
+    body: [summaryRowNet, summaryRowAcc],
     theme: 'grid',
     styles: {
-      font: 'helvetica',
-      fontSize: 8,
+      font: 'Roboto',
+      fontSize: 7.5,
       cellPadding: { top: 2, bottom: 2, left: 2.5, right: 2.5 },
       valign: 'middle',
       textColor: [15, 23, 42],
@@ -501,6 +514,7 @@ function drawRankingTablePDF(
       lineWidth: 0.2,
     },
     headStyles: {
+      font: 'Roboto',
       fillColor: [30, 41, 59], // Dark Slate Corporate Header
       textColor: [255, 255, 255],
       fontStyle: 'bold',
@@ -525,78 +539,84 @@ function drawRankingTablePDF(
 
   const mainTableStartY = ((doc as any).lastAutoTable?.finalY || 45) + 5;
 
-  // 4. TABLE 2: ANA OGRENCI SIRALAMA LISTESI (MAIN RANKING TABLE)
+  // 4. TABLE 2: ANA ÖĞRENCİ SIRALAMA LİSTESİ (HER DERSİN DOĞRU, YANLIŞ VE NETİ)
   const headers: string[] = [];
   const rows: (string | number)[][] = [];
   const columnStyles: { [key: number]: any } = {};
 
   if (isNameSorted) {
     // İsim Sıralı Liste (A-Z)
-    headers.push('No', 'Ogrenci Adi Soyadi (A-Z)', 'Okul No', 'Sinifi', 'Kurum Sirasi');
-    exam.subjects.forEach(s => headers.push(cleanText(s.name)));
-    headers.push('Top. Net', 'Puan');
+    headers.push('No', 'Öğrenci Adı Soyadı (A-Z)', 'Okul No', 'Sınıfı', 'Kurum Sırası');
+    exam.subjects.forEach(s => headers.push(`${s.name}\n(D - Y | Net)`));
+    headers.push('Top. Net\n(D - Y | Net)', 'Puan');
 
-    columnStyles[0] = { halign: 'center', cellWidth: 14 };
+    columnStyles[0] = { halign: 'center', cellWidth: 12 };
     columnStyles[1] = { halign: 'left', fontStyle: 'bold' };
-    columnStyles[2] = { halign: 'center', cellWidth: 18 };
-    columnStyles[3] = { halign: 'center', cellWidth: 20 };
-    columnStyles[4] = { halign: 'center', fontStyle: 'bold', cellWidth: 22 };
+    columnStyles[2] = { halign: 'center', cellWidth: 16 };
+    columnStyles[3] = { halign: 'center', cellWidth: 16 };
+    columnStyles[4] = { halign: 'center', fontStyle: 'bold', cellWidth: 20 };
 
     let cIdx = 5;
     exam.subjects.forEach(() => {
       columnStyles[cIdx] = { halign: 'center' };
       cIdx++;
     });
-    columnStyles[cIdx] = { halign: 'center', fontStyle: 'bold', cellWidth: 20, textColor: [16, 185, 129] };
-    columnStyles[cIdx + 1] = { halign: 'center', fontStyle: 'bold', cellWidth: 20, textColor: [79, 70, 229] };
+    columnStyles[cIdx] = { halign: 'center', fontStyle: 'bold', textColor: [16, 185, 129] };
+    columnStyles[cIdx + 1] = { halign: 'center', fontStyle: 'bold', textColor: [79, 70, 229] };
 
     list.forEach((r, idx) => {
       const gRank = rankMap?.get(r.id) ?? (idx + 1);
       const row: (string | number)[] = [
         idx + 1,
-        cleanText(r.studentName),
+        r.studentName,
         r.studentNo,
-        cleanText(r.className || '-'),
+        r.className || '-',
         `${gRank}.`
       ];
       exam.subjects.forEach(s => {
-        const sub = r.subjectResults.find(sr => sr.subjectName === s.name);
-        row.push(sub ? sub.netCount : 0);
+        const sub = r.subjectResults?.find(sr => sr.subjectName === s.name);
+        const d = sub ? sub.correctCount : 0;
+        const y = sub ? sub.wrongCount : 0;
+        const net = sub ? sub.netCount : 0;
+        row.push(`${d}D - ${y}Y\n${net} Net`);
       });
-      row.push(r.totalNet, r.totalScore.toFixed(1));
+      row.push(`${r.totalCorrect}D - ${r.totalWrong}Y\n${r.totalNet} Net`, r.totalScore.toFixed(1));
       rows.push(row);
     });
   } else {
     // Net Sıralı Liste
     headers.push('Sıra', 'No', 'Öğrenci Adı Soyadı', 'Sınıfı');
-    exam.subjects.forEach(s => headers.push(cleanText(s.name)));
-    headers.push('Top. Net', 'Puan');
+    exam.subjects.forEach(s => headers.push(`${s.name}\n(D - Y | Net)`));
+    headers.push('Top. Net\n(D - Y | Net)', 'Puan');
 
-    columnStyles[0] = { halign: 'center', fontStyle: 'bold', cellWidth: 14 };
-    columnStyles[1] = { halign: 'center', cellWidth: 18 };
+    columnStyles[0] = { halign: 'center', fontStyle: 'bold', cellWidth: 12 };
+    columnStyles[1] = { halign: 'center', cellWidth: 16 };
     columnStyles[2] = { halign: 'left', fontStyle: 'bold' };
-    columnStyles[3] = { halign: 'center', cellWidth: 20 };
+    columnStyles[3] = { halign: 'center', cellWidth: 16 };
 
     let cIdx = 4;
     exam.subjects.forEach(() => {
       columnStyles[cIdx] = { halign: 'center' };
       cIdx++;
     });
-    columnStyles[cIdx] = { halign: 'center', fontStyle: 'bold', cellWidth: 20, textColor: [16, 185, 129] };
-    columnStyles[cIdx + 1] = { halign: 'center', fontStyle: 'bold', cellWidth: 20, textColor: [79, 70, 229] };
+    columnStyles[cIdx] = { halign: 'center', fontStyle: 'bold', textColor: [16, 185, 129] };
+    columnStyles[cIdx + 1] = { halign: 'center', fontStyle: 'bold', textColor: [79, 70, 229] };
 
     list.forEach((r, idx) => {
       const row: (string | number)[] = [
         idx + 1,
         r.studentNo,
-        cleanText(r.studentName),
-        cleanText(r.className || '-')
+        r.studentName,
+        r.className || '-'
       ];
       exam.subjects.forEach(s => {
-        const sub = r.subjectResults.find(sr => sr.subjectName === s.name);
-        row.push(sub ? sub.netCount : 0);
+        const sub = r.subjectResults?.find(sr => sr.subjectName === s.name);
+        const d = sub ? sub.correctCount : 0;
+        const y = sub ? sub.wrongCount : 0;
+        const net = sub ? sub.netCount : 0;
+        row.push(`${d}D - ${y}Y\n${net} Net`);
       });
-      row.push(r.totalNet, r.totalScore.toFixed(1));
+      row.push(`${r.totalCorrect}D - ${r.totalWrong}Y\n${r.totalNet} Net`, r.totalScore.toFixed(1));
       rows.push(row);
     });
   }
@@ -613,32 +633,33 @@ function drawRankingTablePDF(
   }
   exam.subjects.forEach(s => {
     const subAvg = subAverages.find(sa => sa.name === s.name);
-    bottomAvgRow.push(subAvg ? subAvg.avgNet : 0);
+    bottomAvgRow.push(subAvg ? `${subAvg.avgD}D - ${subAvg.avgY}Y\n${subAvg.avgNet} Net` : '0');
   });
-  bottomAvgRow.push(avgTotalNet, avgScore);
+  bottomAvgRow.push(`${avgTotalD}D - ${avgTotalY}Y\n${avgTotalNet} Net`, avgScore);
   rows.push(bottomAvgRow);
 
   autoTable(doc, {
     startY: mainTableStartY,
-    head: [headers.map(cleanText)],
+    head: [headers],
     body: rows,
     theme: 'grid',
     styles: {
-      font: 'helvetica',
-      fontSize: 8.5,
-      cellPadding: { top: 2.2, bottom: 2.2, left: 2, right: 2 },
+      font: 'Roboto',
+      fontSize: 7.5,
+      cellPadding: { top: 2, bottom: 2, left: 1.8, right: 1.8 },
       valign: 'middle',
       textColor: [30, 41, 59],
       lineColor: [226, 232, 240],
       lineWidth: 0.15,
     },
     headStyles: {
+      font: 'Roboto',
       fillColor: isNameSorted ? [49, 46, 129] : [15, 23, 42], // Deep Navy
       textColor: [255, 255, 255],
       fontStyle: 'bold',
       halign: 'center',
       valign: 'middle',
-      fontSize: 8.5,
+      fontSize: 8,
       lineColor: [15, 23, 42],
       lineWidth: 0.2,
     },
@@ -672,6 +693,8 @@ function exportInstitutionRankingPDF(exam: Exam, results: ScanResult[]) {
     format: 'a4'
   });
 
+  applyTurkishFonts(doc);
+
   const instInfo = getInstitutionInfo(exam);
 
   // Rank lookup for students
@@ -685,7 +708,7 @@ function exportInstitutionRankingPDF(exam: Exam, results: ScanResult[]) {
     exam,
     netSorted,
     `${exam.title} - GENEL KURUM DERECELİ LİSTE (NET SIRALI)`,
-    `Kurum: ${instInfo.name}  |  Tarih: ${exam.date}  |  Toplam Katilim: ${results.length} Ogrenci`,
+    `Kurum: ${instInfo.name}  |  Tarih: ${exam.date}  |  Toplam Katılım: ${results.length} Öğrenci`,
     false,
     rankMap,
     instInfo.logoUrl
@@ -699,7 +722,7 @@ function exportInstitutionRankingPDF(exam: Exam, results: ScanResult[]) {
     exam,
     nameSorted,
     `${exam.title} - GENEL KURUM İSİM SIRALI LİSTE (A - Z)`,
-    `Kurum: ${instInfo.name}  |  Tarih: ${exam.date}  |  Alfabetik Ogrenci Listesi ve Kurum Dereceleri`,
+    `Kurum: ${instInfo.name}  |  Tarih: ${exam.date}  |  Alfabetik Öğrenci Listesi ve Kurum Dereceleri`,
     true,
     rankMap,
     instInfo.logoUrl
@@ -709,11 +732,11 @@ function exportInstitutionRankingPDF(exam: Exam, results: ScanResult[]) {
   const totalPages = doc.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
-    doc.setFont('helvetica', 'normal');
+    doc.setFont('Roboto', 'normal');
     doc.setFontSize(8);
     doc.setTextColor(148, 163, 184);
     doc.text(
-      cleanText(`Sayfa ${i} / ${totalPages}`),
+      `Sayfa ${i} / ${totalPages}`,
       297 / 2,
       204,
       { align: 'center' }
@@ -730,6 +753,8 @@ function exportClassRankingPDF(exam: Exam, results: ScanResult[], allResults: Sc
     unit: 'mm',
     format: 'a4'
   });
+
+  applyTurkishFonts(doc);
 
   const instInfo = getInstitutionInfo(exam);
 
@@ -761,7 +786,7 @@ function exportClassRankingPDF(exam: Exam, results: ScanResult[], allResults: Sc
       exam,
       netSorted,
       `${exam.title} - ${className} SINIFI DERECE LİSTESİ (NET SIRALI)`,
-      `Kurum: ${instInfo.name}  |  Sinif: ${className}  |  Mevcut: ${classResults.length} Ogrenci  |  Tarih: ${exam.date}`,
+      `Kurum: ${instInfo.name}  |  Sınıf: ${className}  |  Mevcut: ${classResults.length} Öğrenci  |  Tarih: ${exam.date}`,
       false,
       rankMap,
       instInfo.logoUrl
@@ -775,7 +800,7 @@ function exportClassRankingPDF(exam: Exam, results: ScanResult[], allResults: Sc
       exam,
       nameSorted,
       `${exam.title} - ${className} SINIFI İSİM SIRALI LİSTE (A - Z)`,
-      `Kurum: ${instInfo.name}  |  Sinif: ${className}  |  Mevcut: ${classResults.length} Ogrenci  |  Alfabetik Liste ve Dereceler`,
+      `Kurum: ${instInfo.name}  |  Sınıf: ${className}  |  Mevcut: ${classResults.length} Öğrenci  |  Alfabetik Liste ve Dereceler`,
       true,
       rankMap,
       instInfo.logoUrl
@@ -786,11 +811,11 @@ function exportClassRankingPDF(exam: Exam, results: ScanResult[], allResults: Sc
   const totalPages = doc.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
-    doc.setFont('helvetica', 'normal');
+    doc.setFont('Roboto', 'normal');
     doc.setFontSize(8);
     doc.setTextColor(148, 163, 184);
     doc.text(
-      cleanText(`Sayfa ${i} / ${totalPages}`),
+      `Sayfa ${i} / ${totalPages}`,
       297 / 2,
       204,
       { align: 'center' }
@@ -808,6 +833,8 @@ function exportStudentReportCardsPDF(exam: Exam, studentResults: ScanResult[], a
     unit: 'mm',
     format: 'a4'
   });
+
+  applyTurkishFonts(doc);
 
   const pageWidth = 210;
   const pageHeight = 297;
@@ -846,50 +873,50 @@ function exportStudentReportCardsPDF(exam: Exam, studentResults: ScanResult[], a
       }
     }
 
-    doc.setFont('helvetica', 'bold');
+    doc.setFont('Roboto', 'bold');
     doc.setFontSize(14);
     doc.setTextColor(30, 41, 59);
-    doc.text(cleanText(instInfo.name || exam.institutionName || 'OPTENO SINAV MERKEZI'), margin + 5, 20);
+    doc.text(instInfo.name || exam.institutionName || 'OPTENO SINAV MERKEZİ', margin + 5, 20);
 
     doc.setFontSize(10);
     doc.setTextColor(79, 70, 229); // Indigo
-    doc.text(cleanText(`${exam.title} - OGRENCI SINAV SONUC BELGESI`), margin + 5, 27);
+    doc.text(`${exam.title} - ÖĞRENCİ SINAV SONUÇ BELGESİ`, margin + 5, 27);
 
-    doc.setFont('helvetica', 'normal');
+    doc.setFont('Roboto', 'normal');
     doc.setFontSize(8.5);
     doc.setTextColor(100, 116, 139);
-    doc.text(cleanText(`Sinav Kodu: ${exam.examCode}  |  Tarih: ${exam.date}`), margin + 5, 34);
+    doc.text(`Sınav Kodu: ${exam.examCode}  |  Tarih: ${exam.date}`, margin + 5, 34);
 
     // Student Info Box
     doc.setFillColor(255, 255, 255);
     doc.setDrawColor(226, 232, 240);
     doc.rect(margin, 42, pageWidth - (margin * 2), 22, 'FD');
 
-    doc.setFont('helvetica', 'bold');
+    doc.setFont('Roboto', 'bold');
     doc.setFontSize(9);
     doc.setTextColor(15, 23, 42);
-    doc.text('Ogrenci Adi Soyadi:', margin + 4, 49);
-    doc.setFont('helvetica', 'normal');
-    doc.text(cleanText(studentRes.studentName), margin + 40, 49);
+    doc.text('Öğrenci Adı Soyadı:', margin + 4, 49);
+    doc.setFont('Roboto', 'normal');
+    doc.text(studentRes.studentName, margin + 40, 49);
 
-    doc.setFont('helvetica', 'bold');
-    doc.text('Ogrenci Numarasi:', margin + 4, 57);
-    doc.setFont('helvetica', 'normal');
-    doc.text(cleanText(studentRes.studentNo), margin + 40, 57);
+    doc.setFont('Roboto', 'bold');
+    doc.text('Öğrenci Numarası:', margin + 4, 57);
+    doc.setFont('Roboto', 'normal');
+    doc.text(studentRes.studentNo, margin + 40, 57);
 
-    doc.setFont('helvetica', 'bold');
-    doc.text('Sinifi / Grubu:', margin + 105, 49);
-    doc.setFont('helvetica', 'normal');
-    doc.text(cleanText(studentRes.className), margin + 135, 49);
+    doc.setFont('Roboto', 'bold');
+    doc.text('Sınıfı / Grubu:', margin + 105, 49);
+    doc.setFont('Roboto', 'normal');
+    doc.text(studentRes.className || '-', margin + 135, 49);
 
-    doc.setFont('helvetica', 'bold');
+    doc.setFont('Roboto', 'bold');
     doc.text('Kurum Derecesi:', margin + 105, 57);
-    doc.setFont('helvetica', 'normal');
+    doc.setFont('Roboto', 'normal');
     doc.text(`${generalRank} / ${allResults.length}`, margin + 135, 57);
 
-    doc.setFont('helvetica', 'bold');
-    doc.text('Sinif Derecesi:', margin + 155, 57);
-    doc.setFont('helvetica', 'normal');
+    doc.setFont('Roboto', 'bold');
+    doc.text('Sınıf Derecesi:', margin + 155, 57);
+    doc.setFont('Roboto', 'normal');
     doc.text(`${classRank} / ${sameClass.length}`, margin + 178, 57);
 
     // KPI Summary Score Cards
@@ -900,11 +927,11 @@ function exportStudentReportCardsPDF(exam: Exam, studentResults: ScanResult[], a
     // 1. Puan
     doc.setFillColor(238, 242, 255);
     doc.rect(margin, kpiY, kpiW, kpiH, 'F');
-    doc.setFont('helvetica', 'normal');
+    doc.setFont('Roboto', 'normal');
     doc.setFontSize(7.5);
     doc.setTextColor(100, 116, 139);
     doc.text('TOPLAM PUAN (500)', margin + (kpiW / 2), kpiY + 6, { align: 'center' });
-    doc.setFont('helvetica', 'bold');
+    doc.setFont('Roboto', 'bold');
     doc.setFontSize(13);
     doc.setTextColor(79, 70, 229);
     doc.text(studentRes.totalScore.toFixed(2), margin + (kpiW / 2), kpiY + 14, { align: 'center' });
@@ -912,11 +939,11 @@ function exportStudentReportCardsPDF(exam: Exam, studentResults: ScanResult[], a
     // 2. Net
     doc.setFillColor(236, 253, 245);
     doc.rect(margin + kpiW + 3, kpiY, kpiW, kpiH, 'F');
-    doc.setFont('helvetica', 'normal');
+    doc.setFont('Roboto', 'normal');
     doc.setFontSize(7.5);
     doc.setTextColor(100, 116, 139);
     doc.text('TOPLAM NET', margin + kpiW + 3 + (kpiW / 2), kpiY + 6, { align: 'center' });
-    doc.setFont('helvetica', 'bold');
+    doc.setFont('Roboto', 'bold');
     doc.setFontSize(13);
     doc.setTextColor(16, 185, 129);
     doc.text(String(studentRes.totalNet), margin + kpiW + 3 + (kpiW / 2), kpiY + 14, { align: 'center' });
@@ -924,11 +951,11 @@ function exportStudentReportCardsPDF(exam: Exam, studentResults: ScanResult[], a
     // 3. Dogru
     doc.setFillColor(240, 253, 244);
     doc.rect(margin + (kpiW * 2) + 6, kpiY, kpiW, kpiH, 'F');
-    doc.setFont('helvetica', 'normal');
+    doc.setFont('Roboto', 'normal');
     doc.setFontSize(7.5);
     doc.setTextColor(100, 116, 139);
-    doc.text('DOGRU / YANLIS', margin + (kpiW * 2) + 6 + (kpiW / 2), kpiY + 6, { align: 'center' });
-    doc.setFont('helvetica', 'bold');
+    doc.text('DOĞRU / YANLIŞ', margin + (kpiW * 2) + 6 + (kpiW / 2), kpiY + 6, { align: 'center' });
+    doc.setFont('Roboto', 'bold');
     doc.setFontSize(11);
     doc.setTextColor(34, 197, 94);
     doc.text(`${studentRes.totalCorrect} D / ${studentRes.totalWrong} Y`, margin + (kpiW * 2) + 6 + (kpiW / 2), kpiY + 14, { align: 'center' });
@@ -936,29 +963,29 @@ function exportStudentReportCardsPDF(exam: Exam, studentResults: ScanResult[], a
     // 4. Bos
     doc.setFillColor(254, 243, 199);
     doc.rect(margin + (kpiW * 3) + 9, kpiY, kpiW, kpiH, 'F');
-    doc.setFont('helvetica', 'normal');
+    doc.setFont('Roboto', 'normal');
     doc.setFontSize(7.5);
     doc.setTextColor(100, 116, 139);
-    doc.text('BOS SAYISI', margin + (kpiW * 3) + 9 + (kpiW / 2), kpiY + 6, { align: 'center' });
-    doc.setFont('helvetica', 'bold');
+    doc.text('BOŞ SAYISI', margin + (kpiW * 3) + 9 + (kpiW / 2), kpiY + 6, { align: 'center' });
+    doc.setFont('Roboto', 'bold');
     doc.setFontSize(13);
     doc.setTextColor(217, 119, 6);
     doc.text(String(studentRes.totalEmpty), margin + (kpiW * 3) + 9 + (kpiW / 2), kpiY + 14, { align: 'center' });
 
     // Section 1: Subject Breakdown Table
-    doc.setFont('helvetica', 'bold');
+    doc.setFont('Roboto', 'bold');
     doc.setFontSize(9.5);
     doc.setTextColor(30, 41, 59);
-    doc.text('DERS BAZLI BASARI ANALIZI', margin, 92);
+    doc.text('DERS BAZLI BAŞARI ANALİZİ', margin, 92);
 
-    const subjectHeaders = ['Ders Adi', 'Soru', 'Dogru', 'Yanlis', 'Bos', 'Net', 'Basari Grafigi (D/Y/B)'];
+    const subjectHeaders = ['Ders Adı', 'Soru', 'Doğru', 'Yanlış', 'Boş', 'Net', 'Başarı Grafiği (D/Y/B)'];
     const subjectRows: (string | number)[][] = exam.subjects.map(s => {
       const sub = studentRes.subjectResults.find(sr => sr.subjectName === s.name);
       const totalQ = s.questionCount || 1;
       const c = sub ? sub.correctCount : 0;
       const pct = Math.round((c / totalQ) * 100);
       return [
-        cleanText(s.name),
+        s.name,
         s.questionCount,
         sub ? sub.correctCount : 0,
         sub ? sub.wrongCount : 0,
@@ -986,7 +1013,7 @@ function exportStudentReportCardsPDF(exam: Exam, studentResults: ScanResult[], a
       body: subjectRows,
       theme: 'grid',
       styles: {
-        font: 'helvetica',
+        font: 'Roboto',
         fontSize: 8,
         cellPadding: { top: 2, bottom: 2, left: 2, right: 2 },
         valign: 'middle',
@@ -1078,21 +1105,21 @@ function exportStudentReportCardsPDF(exam: Exam, studentResults: ScanResult[], a
       : computeOutcomeAnalyses(exam, studentRes.answers);
 
     if (outcomes.length > 0) {
-      doc.setFont('helvetica', 'bold');
+      doc.setFont('Roboto', 'bold');
       doc.setFontSize(9);
       doc.setTextColor(30, 41, 59);
-      doc.text('KAZANIM VE KONU BAZLI BASARI ANALIZI', margin, currentY);
+      doc.text('KAZANIM VE KONU BAZLI BAŞARI ANALİZİ', margin, currentY);
 
-      const outcomeHeaders = ['Ders', 'Kazanim / Konu', 'Soru', 'D / Y / B', 'Basari %', 'Durum'];
+      const outcomeHeaders = ['Ders', 'Kazanım / Konu', 'Soru', 'D / Y / B', 'Başarı %', 'Durum'];
       const outcomeRows = outcomes.map(o => {
-        const statusStr = o.status === 'SUCCESS' ? 'Kavrandi' : o.status === 'WARNING' ? 'Pekistirilmeli' : 'Destek Gerekli';
+        const statusStr = o.status === 'SUCCESS' ? 'Kavrandı' : o.status === 'WARNING' ? 'Pekiştirilmeli' : 'Destek Gerekli';
         return [
-          cleanText(o.subjectName),
-          cleanText(o.outcome),
+          o.subjectName,
+          o.outcome,
           o.totalQuestions,
           `${o.correctCount}D ${o.wrongCount}Y ${o.emptyCount}B`,
           `%${o.successRate}`,
-          cleanText(statusStr)
+          statusStr
         ];
       });
 
@@ -1102,7 +1129,7 @@ function exportStudentReportCardsPDF(exam: Exam, studentResults: ScanResult[], a
         body: outcomeRows,
         theme: 'grid',
         styles: {
-          font: 'helvetica',
+          font: 'Roboto',
           fontSize: 7,
           cellPadding: { top: 1.5, bottom: 1.5, left: 2, right: 2 },
           valign: 'middle',
@@ -1138,14 +1165,14 @@ function exportStudentReportCardsPDF(exam: Exam, studentResults: ScanResult[], a
       if (weakOutcomes.length > 0 && currentY < pageHeight - 35) {
         doc.setFillColor(254, 243, 199);
         doc.rect(margin, currentY, pageWidth - (margin * 2), 10, 'F');
-        doc.setFont('helvetica', 'bold');
+        doc.setFont('Roboto', 'bold');
         doc.setFontSize(7);
         doc.setTextColor(180, 83, 9);
-        doc.text('ONCELIKLI TEKRAR EDILMESI GEREKEN KONULAR:', margin + 3, currentY + 4);
-        doc.setFont('helvetica', 'normal');
+        doc.text('ÖNCELİKLİ TEKRAR EDİLMESİ GEREKEN KONULAR:', margin + 3, currentY + 4);
+        doc.setFont('Roboto', 'normal');
         doc.setFontSize(6.8);
         doc.setTextColor(71, 85, 105);
-        const weakListStr = cleanText(weakOutcomes.map(w => `${w.subjectName} (${w.outcome})`).join(' - '));
+        const weakListStr = weakOutcomes.map(w => `${w.subjectName} (${w.outcome})`).join(' - ');
         const splitWeak = doc.splitTextToSize(weakListStr, pageWidth - (margin * 2) - 6);
         doc.text(splitWeak[0] || '', margin + 3, currentY + 8);
         currentY += 13;
@@ -1154,7 +1181,7 @@ function exportStudentReportCardsPDF(exam: Exam, studentResults: ScanResult[], a
 
     // Section 3: Question Answer Details Grid
     if (currentY < pageHeight - 25) {
-      doc.setFont('helvetica', 'bold');
+      doc.setFont('Roboto', 'bold');
       doc.setFontSize(8.5);
       doc.setTextColor(30, 41, 59);
       doc.text('SORU BAZLI CEVAP DETAYI', margin, currentY);
@@ -1176,7 +1203,7 @@ function exportStudentReportCardsPDF(exam: Exam, studentResults: ScanResult[], a
         const isB = ans.isBlank;
         const statusIcon = isC ? '[D]' : isB ? '[-]' : '[Y]';
 
-        doc.setFont('helvetica', isC ? 'bold' : 'normal');
+        doc.setFont('Roboto', isC ? 'bold' : 'normal');
         doc.setFontSize(6.8);
         if (isC) doc.setTextColor(22, 163, 74);
         else if (isB) doc.setTextColor(148, 163, 184);
@@ -1188,11 +1215,11 @@ function exportStudentReportCardsPDF(exam: Exam, studentResults: ScanResult[], a
     }
 
     // Footer
-    doc.setFont('helvetica', 'italic');
+    doc.setFont('Roboto', 'normal');
     doc.setFontSize(7.5);
     doc.setTextColor(148, 163, 184);
     doc.text(
-      cleanText(`Bu karne Opteno Dijital Sinav Yonetim Sistemi tarafindan ${new Date().toLocaleDateString('tr-TR')} tarihinde uretilmistir.`),
+      `Bu karne Opteno Dijital Sınav Yönetim Sistemi tarafından ${new Date().toLocaleDateString('tr-TR')} tarihinde üretilmiştir.`,
       pageWidth / 2,
       pageHeight - 8,
       { align: 'center' }
