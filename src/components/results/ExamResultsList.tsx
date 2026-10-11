@@ -38,6 +38,7 @@ import {
   QuestionStat,
   AggregateOutcomeStat
 } from '../../services/analyticsService';
+import { Pagination } from '../common/Pagination';
 
 interface ExamResultsListProps {
   initialExamId?: string;
@@ -62,6 +63,17 @@ export const ExamResultsList: React.FC<ExamResultsListProps> = ({ initialExamId 
   const [copiedResultId, setCopiedResultId] = useState<string | null>(null);
 
   const [searchTerm, setSearchTerm] = useState('');
+  const [resultPage, setResultPage] = useState<number>(1);
+  const [resultPageSize, setResultPageSize] = useState<number>(() => {
+    const saved = localStorage.getItem('opteno_results_page_size');
+    return saved ? Number(saved) : 15;
+  });
+
+  const handleResultPageSizeChange = (size: number) => {
+    setResultPageSize(size);
+    localStorage.setItem('opteno_results_page_size', String(size));
+  };
+
   const [selectedStudentResult, setSelectedStudentResult] = useState<ScanResult | null>(null);
 
   // Export Modal States
@@ -124,6 +136,11 @@ export const ExamResultsList: React.FC<ExamResultsListProps> = ({ initialExamId 
     r.className.toLowerCase().includes(searchTerm.toLowerCase()) ||
     r.studentNo.includes(searchTerm)
   );
+
+  const paginatedResults = useMemo(() => {
+    const start = (resultPage - 1) * resultPageSize;
+    return filteredResults.slice(start, start + resultPageSize);
+  }, [filteredResults, resultPage, resultPageSize]);
 
   // WhatsApp Message Composer
   const buildWhatsAppMessage = (res: ScanResult) => {
@@ -189,7 +206,7 @@ export const ExamResultsList: React.FC<ExamResultsListProps> = ({ initialExamId 
           <div className="flex flex-wrap items-center gap-3">
             <select
               value={selectedExamId}
-              onChange={(e) => setSelectedExamId(e.target.value)}
+              onChange={(e) => { setSelectedExamId(e.target.value); setResultPage(1); }}
               className="input-field text-xs py-2 w-60 font-semibold text-indigo-600 dark:text-indigo-300 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700"
             >
               {exams.map(ex => (
@@ -317,7 +334,7 @@ export const ExamResultsList: React.FC<ExamResultsListProps> = ({ initialExamId 
                       type="text"
                       placeholder="Öğrenci veya Sınıf Ara..."
                       value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
+                      onChange={(e) => { setSearchTerm(e.target.value); setResultPage(1); }}
                       className="input-field pl-9 text-xs py-1.5 w-56 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200"
                     />
                   </div>
@@ -370,9 +387,9 @@ export const ExamResultsList: React.FC<ExamResultsListProps> = ({ initialExamId 
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200 dark:divide-slate-700/50">
-                      {filteredResults.map((res, index) => {
+                      {paginatedResults.map((res, index) => {
                         const rankInfo = rankingMap.get(res.id);
-                        const instRank = rankInfo ? rankInfo.institutionRank : index + 1;
+                        const instRank = rankInfo ? rankInfo.institutionRank : ((resultPage - 1) * resultPageSize) + index + 1;
                         return (
                           <tr
                             key={res.id}
@@ -495,6 +512,20 @@ export const ExamResultsList: React.FC<ExamResultsListProps> = ({ initialExamId 
                     )}
                   </table>
                 </div>
+
+                {/* Pagination Controls for Leaderboard */}
+                {filteredResults.length > 0 && (
+                  <Pagination
+                    currentPage={resultPage}
+                    totalItems={filteredResults.length}
+                    pageSize={resultPageSize}
+                    pageSizeOptions={[10, 15, 25, 50, 100]}
+                    onPageChange={setResultPage}
+                    onPageSizeChange={handleResultPageSizeChange}
+                    itemLabel="öğrenci sonucu"
+                    className="pt-2"
+                  />
+                )}
               </div>
             )}
 

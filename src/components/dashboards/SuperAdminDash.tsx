@@ -8,6 +8,8 @@ import { Institution, Student, Exam, User, GlobalClassTemplate, SystemGradeLevel
 import { PersonnelManagement } from '../management/PersonnelManagement';
 import { SiteSettings } from '../management/SiteSettings';
 import { StudentCumulativeReport } from '../results/StudentCumulativeReport';
+import { Pagination } from '../common/Pagination';
+import { ViewModeToggle } from '../common/ViewModeToggle';
 
 interface SuperAdminDashProps {
   currentUser?: User;
@@ -38,6 +40,31 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
   const [newGlobalGrade, setNewGlobalGrade] = useState<number>(5);
   const [newGlobalDesc, setNewGlobalDesc] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [instViewMode, setInstViewMode] = useState<'grid' | 'list'>(() => {
+    return (localStorage.getItem('opteno_inst_view_mode') as 'grid' | 'list') || 'list';
+  });
+  const [instPage, setInstPage] = useState(1);
+  const [instPageSize, setInstPageSize] = useState<number>(() => {
+    const saved = localStorage.getItem('opteno_inst_page_size');
+    return saved ? Number(saved) : 10;
+  });
+
+  const handleInstViewModeChange = (mode: 'grid' | 'list') => {
+    setInstViewMode(mode);
+    localStorage.setItem('opteno_inst_view_mode', mode);
+  };
+
+  const handleInstPageSizeChange = (size: number) => {
+    setInstPageSize(size);
+    localStorage.setItem('opteno_inst_page_size', String(size));
+  };
+
+  const [dashExamViewMode, setDashExamViewMode] = useState<'grid' | 'list'>(() => {
+    return (localStorage.getItem('opteno_dash_exam_view_mode') as 'grid' | 'list') || 'list';
+  });
+  const [dashExamPage, setDashExamPage] = useState(1);
+  const [dashExamPageSize, setDashExamPageSize] = useState<number>(10);
+
   const [selectedStudentInstId, setSelectedStudentInstId] = useState<string>('ALL');
   const [studentSearchTerm, setStudentSearchTerm] = useState<string>('');
   const [studentImportSuccessMsg, setStudentImportSuccessMsg] = useState<string | null>(null);
@@ -456,10 +483,21 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
     setExamCode('');
   };
 
+  const handleInstSearchChange = (val: string) => {
+    setSearchTerm(val);
+    setInstPage(1);
+  };
+
   const filteredInstitutions = institutions.filter(i =>
     i.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    i.city.toLowerCase().includes(searchTerm.toLowerCase())
+    i.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    i.code.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const paginatedInstitutions = React.useMemo(() => {
+    const start = (instPage - 1) * instPageSize;
+    return filteredInstitutions.slice(start, start + instPageSize);
+  }, [filteredInstitutions, instPage, instPageSize]);
 
   return (
     <div className="space-y-6">
@@ -617,128 +655,296 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                 <p className="text-xs text-slate-400">Sisteme tanımlı okul, dershane ve özel kurumların genel yönetimi</p>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <ViewModeToggle mode={instViewMode} onChange={handleInstViewModeChange} />
+
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
                   <input
                     type="text"
-                    placeholder="Kurum veya Şehir Ara..."
+                    placeholder="Kurum, Kod veya Şehir Ara..."
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="input-field pl-10 text-xs py-2 w-60"
+                    onChange={(e) => handleInstSearchChange(e.target.value)}
+                    className="input-field pl-10 text-xs py-2 w-52 sm:w-60"
                   />
+                  {searchTerm && (
+                    <button
+                      type="button"
+                      onClick={() => handleInstSearchChange('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
                 </div>
 
                 <button
                   onClick={() => setShowAddInstModal(true)}
-                  className="btn btn-primary text-xs py-2 flex items-center gap-1.5"
+                  className="btn btn-primary text-xs py-2 flex items-center gap-1.5 whitespace-nowrap"
                 >
                   <Plus className="h-4 w-4" /> Yeni Kurum & Admin Ekle
                 </button>
               </div>
             </div>
 
-            {/* Institutions Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredInstitutions.map((inst) => {
-                const instPersonnel = storageService.getUsersByInstitution(inst.id);
-                const instAdmin = instPersonnel.find(u => u.role === 'INSTITUTION_ADMIN');
-                return (
-                  <div key={inst.id} className="clay-card p-5 rounded-[24px] border border-slate-700/50 flex flex-col justify-between hover:border-indigo-500/40">
-                    <div>
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <span className="badge badge-primary text-[10px]">{inst.code}</span>
-                        <span className="badge badge-success text-[10px]">AKTİF</span>
-                      </div>
-
-                      <div className="flex items-center gap-3">
-                        {inst.logoUrl ? (
-                          <div className="w-10 h-10 rounded-lg bg-white p-1 border border-slate-700 flex items-center justify-center shrink-0 overflow-hidden shadow-sm">
-                            <img src={inst.logoUrl} alt={inst.name} className="max-w-full max-h-full object-contain" />
-                          </div>
-                        ) : (
-                          <div className="w-10 h-10 rounded-lg bg-slate-800 p-2 border border-slate-700 flex items-center justify-center shrink-0 text-slate-400">
-                            <Building2 className="h-5 w-5" />
-                          </div>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-display font-bold text-base text-white truncate">{inst.name}</h3>
-                          {instAdmin ? (
-                            <div className="mt-1.5 flex items-center justify-between gap-1 bg-slate-900/90 px-2 py-1 rounded-xl border border-indigo-500/20">
-                              <div className="text-[11px] font-mono leading-tight truncate">
-                                <span className="text-amber-300 font-bold">👤 {instAdmin.username}</span>
-                                <span className="text-slate-500 mx-1">•</span>
-                                <span className="text-emerald-400 font-bold">🔑 {instAdmin.password}</span>
+            {/* Content Area: Empty State / List View / Grid View */}
+            {filteredInstitutions.length === 0 ? (
+              <div className="p-12 text-center text-slate-400 bg-slate-800/30 rounded-2xl border border-slate-700/40 space-y-2">
+                <Building2 className="h-10 w-10 text-slate-500 mx-auto" />
+                <h3 className="text-sm font-bold text-white">Aranan Kriterlere Uygun Kurum Bulunamadı</h3>
+                <p className="text-xs text-slate-400">Lütfen farklı bir arama terimi deneyin.</p>
+                {searchTerm && (
+                  <button
+                    onClick={() => handleInstSearchChange('')}
+                    className="btn btn-secondary text-xs py-1.5 px-3 mt-2 inline-flex items-center gap-1.5"
+                  >
+                    <X className="h-3.5 w-3.5" /> Aramayı Temizle
+                  </button>
+                )}
+              </div>
+            ) : instViewMode === 'list' ? (
+              /* LIST (TABLE) VIEW */
+              <div className="overflow-x-auto rounded-2xl border border-slate-700/60 bg-slate-900/60 shadow-sm">
+                <table className="w-full text-left text-xs whitespace-nowrap text-slate-300">
+                  <thead className="uppercase bg-slate-800/80 text-slate-400 font-bold border-b border-slate-700/60">
+                    <tr>
+                      <th className="px-4 py-3.5">Kurum Adı & Kod</th>
+                      <th className="px-4 py-3.5">Şehir</th>
+                      <th className="px-4 py-3.5">Yönetici Giriş Bilgileri</th>
+                      <th className="px-4 py-3.5 text-center">Öğrenci / Personel</th>
+                      <th className="px-4 py-3.5">İletişim</th>
+                      <th className="px-4 py-3.5 text-center">Durum</th>
+                      <th className="px-4 py-3.5 text-right">İşlemler</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/60">
+                    {paginatedInstitutions.map((inst) => {
+                      const instPersonnel = storageService.getUsersByInstitution(inst.id);
+                      const instAdmin = instPersonnel.find(u => u.role === 'INSTITUTION_ADMIN');
+                      return (
+                        <tr key={inst.id} className="hover:bg-slate-800/50 transition-colors">
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-3">
+                              {inst.logoUrl ? (
+                                <div className="w-9 h-9 rounded-lg bg-white p-1 border border-slate-700 flex items-center justify-center shrink-0 overflow-hidden shadow-sm">
+                                  <img src={inst.logoUrl} alt={inst.name} className="max-w-full max-h-full object-contain" />
+                                </div>
+                              ) : (
+                                <div className="w-9 h-9 rounded-lg bg-slate-800 p-2 border border-slate-700 flex items-center justify-center shrink-0 text-slate-400">
+                                  <Building2 className="h-4 w-4" />
+                                </div>
+                              )}
+                              <div>
+                                <div className="font-display font-bold text-sm text-white">{inst.name}</div>
+                                <div className="text-[10px] text-slate-400 flex items-center gap-1.5 mt-0.5">
+                                  <span className="badge badge-primary text-[9px] py-0 px-1.5">{inst.code}</span>
+                                  {inst.createdAt && <span>Kayıt: {inst.createdAt}</span>}
+                                </div>
                               </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="flex items-center gap-1.5 text-slate-300">
+                              <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0" /> {inst.city || '-'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            {instAdmin ? (
+                              <div className="flex items-center gap-1.5 bg-slate-950/80 px-2.5 py-1 rounded-xl border border-indigo-500/20 max-w-xs">
+                                <div className="text-[11px] font-mono leading-tight truncate">
+                                  <span className="text-amber-300 font-bold">👤 {instAdmin.username}</span>
+                                  <span className="text-slate-500 mx-1">•</span>
+                                  <span className="text-emerald-400 font-bold">🔑 {instAdmin.password}</span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => copyCredentials(instAdmin.username || '', instAdmin.password || '', inst.name)}
+                                  className="p-1 rounded-md bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 transition-colors shrink-0 cursor-pointer ml-auto"
+                                  title="Giriş Bilgilerini Kopyala"
+                                >
+                                  <Copy className="h-3 w-3" />
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[10.5px] text-rose-400 font-semibold">⚠️ Yönetici Yok</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setNewAdminForInstModal(inst);
+                                    setAssignAdminName(`${inst.name} Yöneticisi`);
+                                    const clean = inst.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+                                    setAssignAdminUsername(`admin_${clean || 'kurum'}`);
+                                    setAssignAdminPassword(`${clean || 'kurum'}123`);
+                                  }}
+                                  className="text-[10.5px] text-indigo-400 hover:text-indigo-300 underline font-bold cursor-pointer"
+                                >
+                                  Yönetici Ata
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span className="font-bold text-white">{inst.studentCount}</span> <span className="text-slate-400 text-[10px]">Öğrenci</span>
+                            <span className="text-slate-500 mx-1.5">/</span>
+                            <span className="font-bold text-indigo-300">{instPersonnel.length}</span> <span className="text-slate-400 text-[10px]">Personel</span>
+                          </td>
+                          <td className="px-4 py-3 text-slate-300">
+                            <div className="space-y-0.5 text-[11px]">
+                              {inst.phone && (
+                                <div className="flex items-center gap-1.5 text-slate-400">
+                                  <Phone className="h-3 w-3 shrink-0" /> {inst.phone}
+                                </div>
+                              )}
+                              {inst.email && (
+                                <div className="flex items-center gap-1.5 text-slate-400">
+                                  <Mail className="h-3 w-3 shrink-0" /> {inst.email}
+                                </div>
+                              )}
+                              {!inst.phone && !inst.email && <span className="text-slate-500">-</span>}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span className="badge badge-success text-[10px]">AKTİF</span>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
                               <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  copyCredentials(instAdmin.username || '', instAdmin.password || '', inst.name);
-                                }}
-                                className="p-1 rounded-md bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 transition-colors shrink-0"
-                                title="Giriş Bilgilerini Kopyala"
+                                onClick={() => setSelectedInstDetails(inst)}
+                                className="btn btn-secondary py-1 px-2.5 text-xs text-indigo-300 flex items-center gap-1 cursor-pointer hover:bg-indigo-500/20"
                               >
-                                <Copy className="h-3 w-3" />
+                                <Eye className="h-3.5 w-3.5" /> Detay
                               </button>
+                              <button
+                                onClick={() => handleDeleteInstitution(inst)}
+                                className="p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-all cursor-pointer border border-red-500/20"
+                                title="Kurumu Sil"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              /* GRID (CARD) VIEW */
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {paginatedInstitutions.map((inst) => {
+                  const instPersonnel = storageService.getUsersByInstitution(inst.id);
+                  const instAdmin = instPersonnel.find(u => u.role === 'INSTITUTION_ADMIN');
+                  return (
+                    <div key={inst.id} className="clay-card p-5 rounded-[24px] border border-slate-700/50 flex flex-col justify-between hover:border-indigo-500/40">
+                      <div>
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <span className="badge badge-primary text-[10px]">{inst.code}</span>
+                          <span className="badge badge-success text-[10px]">AKTİF</span>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          {inst.logoUrl ? (
+                            <div className="w-10 h-10 rounded-lg bg-white p-1 border border-slate-700 flex items-center justify-center shrink-0 overflow-hidden shadow-sm">
+                              <img src={inst.logoUrl} alt={inst.name} className="max-w-full max-h-full object-contain" />
                             </div>
                           ) : (
-                            <div className="mt-1 flex items-center gap-1.5">
-                              <span className="text-[10px] text-rose-400 font-semibold">⚠️ Yönetici Yok</span>
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setNewAdminForInstModal(inst);
-                                  setAssignAdminName(`${inst.name} Yöneticisi`);
-                                  const clean = inst.name.toLowerCase().replace(/[^a-z0-9]/g, '');
-                                  setAssignAdminUsername(`admin_${clean || 'kurum'}`);
-                                  setAssignAdminPassword(`${clean || 'kurum'}123`);
-                                }}
-                                className="text-[10px] text-indigo-400 hover:text-indigo-300 underline font-bold"
-                              >
-                                Yönetici Ata
-                              </button>
+                            <div className="w-10 h-10 rounded-lg bg-slate-800 p-2 border border-slate-700 flex items-center justify-center shrink-0 text-slate-400">
+                              <Building2 className="h-5 w-5" />
                             </div>
                           )}
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-display font-bold text-base text-white truncate">{inst.name}</h3>
+                            {instAdmin ? (
+                              <div className="mt-1.5 flex items-center justify-between gap-1 bg-slate-900/90 px-2 py-1 rounded-xl border border-indigo-500/20">
+                                <div className="text-[11px] font-mono leading-tight truncate">
+                                  <span className="text-amber-300 font-bold">👤 {instAdmin.username}</span>
+                                  <span className="text-slate-500 mx-1">•</span>
+                                  <span className="text-emerald-400 font-bold">🔑 {instAdmin.password}</span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    copyCredentials(instAdmin.username || '', instAdmin.password || '', inst.name);
+                                  }}
+                                  className="p-1 rounded-md bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 transition-colors shrink-0"
+                                  title="Giriş Bilgilerini Kopyala"
+                                >
+                                  <Copy className="h-3 w-3" />
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="mt-1 flex items-center gap-1.5">
+                                <span className="text-[10px] text-rose-400 font-semibold">⚠️ Yönetici Yok</span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setNewAdminForInstModal(inst);
+                                    setAssignAdminName(`${inst.name} Yöneticisi`);
+                                    const clean = inst.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+                                    setAssignAdminUsername(`admin_${clean || 'kurum'}`);
+                                    setAssignAdminPassword(`${clean || 'kurum'}123`);
+                                  }}
+                                  className="text-[10px] text-indigo-400 hover:text-indigo-300 underline font-bold"
+                                >
+                                  Yönetici Ata
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="mt-3 space-y-1.5 text-xs text-slate-300">
+                          <p className="flex items-center gap-2">
+                            <MapPin className="h-3.5 w-3.5 text-slate-400" /> {inst.city}
+                          </p>
+                          <p className="flex items-center gap-2">
+                            <Phone className="h-3.5 w-3.5 text-slate-400" /> {inst.phone}
+                          </p>
+                          <p className="flex items-center gap-2">
+                            <Mail className="h-3.5 w-3.5 text-slate-400" /> {inst.email}
+                          </p>
                         </div>
                       </div>
 
-                      <div className="mt-3 space-y-1.5 text-xs text-slate-300">
-                        <p className="flex items-center gap-2">
-                          <MapPin className="h-3.5 w-3.5 text-slate-400" /> {inst.city}
-                        </p>
-                        <p className="flex items-center gap-2">
-                          <Phone className="h-3.5 w-3.5 text-slate-400" /> {inst.phone}
-                        </p>
-                        <p className="flex items-center gap-2">
-                          <Mail className="h-3.5 w-3.5 text-slate-400" /> {inst.email}
-                        </p>
+                      <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs font-semibold">
+                        <span className="text-slate-400">{inst.studentCount} Öğrenci | {instPersonnel.length} Personel</span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setSelectedInstDetails(inst)}
+                            className="text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer"
+                          >
+                            Detaylar <ChevronRight className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteInstitution(inst)}
+                            className="p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-all cursor-pointer border border-red-500/20"
+                            title="Kurumu Sil"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
                       </div>
                     </div>
+                  );
+                })}
+              </div>
+            )}
 
-                    <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs font-semibold">
-                      <span className="text-slate-400">{inst.studentCount} Öğrenci | {instPersonnel.length} Personel</span>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => setSelectedInstDetails(inst)}
-                          className="text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer"
-                        >
-                          Detaylar <ChevronRight className="h-3.5 w-3.5" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteInstitution(inst)}
-                          className="p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-all cursor-pointer border border-red-500/20"
-                          title="Kurumu Sil"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            {/* Pagination Controls */}
+            <Pagination
+              currentPage={instPage}
+              totalItems={filteredInstitutions.length}
+              pageSize={instPageSize}
+              pageSizeOptions={[10, 15, 25, 50, 100]}
+              onPageChange={setInstPage}
+              onPageSizeChange={handleInstPageSizeChange}
+              itemLabel="kurum"
+              className="mt-6 pt-4 border-t border-slate-700/60"
+            />
           </div>
         </div>
       )}
@@ -942,12 +1148,15 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
               <p className="text-xs text-slate-400">SuperAdmin yetkisiyle istenen kuruma özel optik deneme sınavı açın.</p>
             </div>
 
-            <button
-              onClick={() => setShowAddExamModal(true)}
-              className="btn btn-primary text-xs py-2 flex items-center gap-1.5"
-            >
-              <Plus className="h-4 w-4" /> Yeni Sınav Aç
-            </button>
+            <div className="flex items-center gap-2">
+              <ViewModeToggle mode={dashExamViewMode} onChange={setDashExamViewMode} />
+              <button
+                onClick={() => setShowAddExamModal(true)}
+                className="btn btn-primary text-xs py-2 flex items-center gap-1.5"
+              >
+                <Plus className="h-4 w-4" /> Yeni Sınav Aç
+              </button>
+            </div>
           </div>
 
           {/* Sınav Filtreleme ve Arama Çubuğu */}
@@ -957,13 +1166,13 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
               <input
                 type="text"
                 value={examSearchTerm}
-                onChange={(e) => setExamSearchTerm(e.target.value)}
+                onChange={(e) => { setExamSearchTerm(e.target.value); setDashExamPage(1); }}
                 placeholder="Sınav adı, kodu veya kurum ile ara..."
                 className="input-field pl-10 text-xs py-2.5 w-full bg-slate-900/80 border-slate-700/80 text-white placeholder-slate-500 rounded-xl"
               />
               {examSearchTerm && (
                 <button
-                  onClick={() => setExamSearchTerm('')}
+                  onClick={() => { setExamSearchTerm(''); setDashExamPage(1); }}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
                 >
                   <X className="h-3.5 w-3.5" />
@@ -975,7 +1184,7 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
               <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
               <select
                 value={examInstFilter}
-                onChange={(e) => setExamInstFilter(e.target.value)}
+                onChange={(e) => { setExamInstFilter(e.target.value); setDashExamPage(1); }}
                 className="input-field pl-9 text-xs py-2.5 w-full bg-slate-900/80 border-slate-700/80 text-white font-medium cursor-pointer rounded-xl"
               >
                 <option value="ALL">🏢 Tüm Kurumlar ({exams.length} Sınav)</option>
@@ -1004,6 +1213,8 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
               return true;
             });
 
+            const paginatedDashExams = filteredDashExams.slice((dashExamPage - 1) * dashExamPageSize, dashExamPage * dashExamPageSize);
+
             if (filteredDashExams.length === 0) {
               return (
                 <div className="p-10 text-center text-slate-400 bg-slate-800/40 rounded-2xl border border-slate-700/40 space-y-2">
@@ -1011,7 +1222,7 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                   <p className="text-xs font-semibold">Filtrelere uygun sınav bulunamadı.</p>
                   {(examSearchTerm || examInstFilter !== 'ALL') && (
                     <button
-                      onClick={() => { setExamSearchTerm(''); setExamInstFilter('ALL'); }}
+                      onClick={() => { setExamSearchTerm(''); setExamInstFilter('ALL'); setDashExamPage(1); }}
                       className="text-xs text-indigo-400 hover:underline inline-block mt-1"
                     >
                       Filtreleri Temizle
@@ -1022,71 +1233,172 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
             }
 
             return (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {filteredDashExams.map(e => (
-                  <div key={e.id} className="clay-card p-5 rounded-2xl border border-slate-700/60 flex flex-col justify-between overflow-hidden shadow-sm">
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="badge badge-primary text-[10px]">{e.examCode}</span>
-                        <span className="text-xs text-slate-400 flex items-center gap-1">
-                          <Calendar className="h-3.5 w-3.5" /> {e.date}
-                        </span>
-                      </div>
-
-                      <h3 className="font-display font-bold text-base text-white">{e.title}</h3>
-                      <p className="text-xs text-indigo-400 mt-1 font-semibold">{e.institutionName}</p>
-
-                      <div className="mt-3 flex flex-wrap items-center gap-3 sm:gap-4 text-xs text-slate-300">
-                        <div><strong>{e.totalQuestions}</strong> Soru</div>
-                        <div><strong>{e.subjects.length}</strong> Ders</div>
-                        <div><strong>{e.totalExamsScanned || 0}</strong> Okunan Optik</div>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 pt-3.5 border-t border-slate-700/60 flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
-                        <button
-                          onClick={async () => {
-                            const studentsList = storageService.getStudents(e.institutionId);
-                            const pdf = await pdfService.generateOMRPDF(e, studentsList, 'A4');
-                            pdf.save(`${e.examCode}_Optik_Form_A4.pdf`);
-                          }}
-                          className="btn btn-secondary py-1.5 px-3 text-[11px] font-bold flex items-center justify-center gap-1.5 text-indigo-300 border-indigo-500/30 flex-1 sm:flex-initial rounded-xl whitespace-nowrap min-w-[85px]"
-                          title="1 Sayfada 1 Tam Boy Optik Form"
-                        >
-                          <Download className="h-3.5 w-3.5 shrink-0" />
-                          <span>A4 İndir</span>
-                        </button>
-                        <button
-                          onClick={async () => {
-                            const studentsList = storageService.getStudents(e.institutionId);
-                            const pdf = await pdfService.generateOMRPDF(e, studentsList, 'A5');
-                            pdf.save(`${e.examCode}_Optik_Form_A5_Tasarruf.pdf`);
-                          }}
-                          className="btn btn-secondary py-1.5 px-3 text-[11px] font-bold flex items-center justify-center gap-1.5 text-emerald-400 border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 flex-1 sm:flex-initial rounded-xl whitespace-nowrap min-w-[85px]"
-                          title="1 Sayfada Altlı Üstlü 2 Optik Form (A5 Kesimli, %50 Kağıt Tasarrufu)"
-                        >
-                          <Download className="h-3.5 w-3.5 shrink-0" />
-                          <span>A5 İndir (2'li)</span>
-                        </button>
-                      </div>
-
-                      <button
-                        onClick={() => {
-                          if (window.confirm(`"${e.title}" sınavını silmek istiyor musunuz?`)) {
-                            storageService.deleteExam(e.id);
-                            setExams(storageService.getExams());
-                          }
-                        }}
-                        className="p-2 rounded-xl text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 transition-all flex items-center gap-1 text-xs shrink-0 cursor-pointer ml-auto sm:ml-0"
-                        title="Sınavı Sil"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        <span className="hidden sm:inline">Sil</span>
-                      </button>
-                    </div>
+              <div className="space-y-4">
+                {dashExamViewMode === 'list' ? (
+                  /* LIST / TABLE VIEW FOR DASHBOARD EXAMS */
+                  <div className="overflow-x-auto rounded-2xl border border-slate-700/60 bg-slate-900/60 shadow-sm">
+                    <table className="w-full text-left text-xs whitespace-nowrap text-slate-300">
+                      <thead className="uppercase bg-slate-800/80 text-slate-400 font-bold border-b border-slate-700/60">
+                        <tr>
+                          <th className="px-4 py-3.5">Sınav Kodu & Tarih</th>
+                          <th className="px-4 py-3.5">Sınav Adı</th>
+                          <th className="px-4 py-3.5">Kurum</th>
+                          <th className="px-4 py-3.5 text-center">Soru / Ders</th>
+                          <th className="px-4 py-3.5 text-center">Okunan Optik</th>
+                          <th className="px-4 py-3.5 text-right">İşlemler</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/60">
+                        {paginatedDashExams.map((e) => (
+                          <tr key={e.id} className="hover:bg-slate-800/50 transition-colors">
+                            <td className="px-4 py-3">
+                              <span className="badge badge-primary text-[10px] font-mono">{e.examCode}</span>
+                              <div className="text-[10px] text-slate-400 flex items-center gap-1 mt-1">
+                                <Calendar className="h-3 w-3" /> {e.date}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="font-display font-bold text-sm text-white">{e.title}</div>
+                              <div className="text-[10.5px] text-slate-400 truncate max-w-xs mt-0.5">
+                                {e.subjects.map(s => s.name).join(', ')}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className="font-medium text-slate-200">{e.institutionName}</span>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <span className="font-bold text-white">{e.totalQuestions} Soru</span>
+                              <div className="text-[10px] text-slate-400">{e.subjects.length} Ders</div>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <span className="badge badge-success text-[11px] font-bold">
+                                {e.totalExamsScanned || 0} Adet
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                  onClick={async () => {
+                                    const studentsList = storageService.getStudents(e.institutionId);
+                                    const pdf = await pdfService.generateOMRPDF(e, studentsList, 'A4');
+                                    pdf.save(`${e.examCode}_Optik_Form_A4.pdf`);
+                                  }}
+                                  className="btn btn-secondary py-1 px-2.5 text-xs text-indigo-300 rounded-lg flex items-center gap-1"
+                                  title="1 Sayfada 1 Tam Boy Optik Form"
+                                >
+                                  <Download className="h-3 w-3" /> A4
+                                </button>
+                                <button
+                                  onClick={async () => {
+                                    const studentsList = storageService.getStudents(e.institutionId);
+                                    const pdf = await pdfService.generateOMRPDF(e, studentsList, 'A5');
+                                    pdf.save(`${e.examCode}_Optik_Form_A5_Tasarruf.pdf`);
+                                  }}
+                                  className="btn btn-secondary py-1 px-2.5 text-xs text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/30 rounded-lg flex items-center gap-1"
+                                  title="A5 Kesimli (2'li) Optik Form"
+                                >
+                                  <Download className="h-3 w-3" /> A5
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    if (window.confirm(`"${e.title}" sınavını silmek istiyor musunuz?`)) {
+                                      storageService.deleteExam(e.id);
+                                      setExams(storageService.getExams());
+                                    }
+                                  }}
+                                  className="p-1.5 rounded-lg text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 transition-all cursor-pointer"
+                                  title="Sınavı Sil"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                ))}
+                ) : (
+                  /* GRID VIEW */
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {paginatedDashExams.map(e => (
+                      <div key={e.id} className="clay-card p-5 rounded-2xl border border-slate-700/60 flex flex-col justify-between overflow-hidden shadow-sm">
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="badge badge-primary text-[10px]">{e.examCode}</span>
+                            <span className="text-xs text-slate-400 flex items-center gap-1">
+                              <Calendar className="h-3.5 w-3.5" /> {e.date}
+                            </span>
+                          </div>
+
+                          <h3 className="font-display font-bold text-base text-white">{e.title}</h3>
+                          <p className="text-xs text-indigo-400 mt-1 font-semibold">{e.institutionName}</p>
+
+                          <div className="mt-3 flex flex-wrap items-center gap-3 sm:gap-4 text-xs text-slate-300">
+                            <div><strong>{e.totalQuestions}</strong> Soru</div>
+                            <div><strong>{e.subjects.length}</strong> Ders</div>
+                            <div><strong>{e.totalExamsScanned || 0}</strong> Okunan Optik</div>
+                          </div>
+                        </div>
+
+                        <div className="mt-4 pt-3.5 border-t border-slate-700/60 flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
+                            <button
+                              onClick={async () => {
+                                const studentsList = storageService.getStudents(e.institutionId);
+                                const pdf = await pdfService.generateOMRPDF(e, studentsList, 'A4');
+                                pdf.save(`${e.examCode}_Optik_Form_A4.pdf`);
+                              }}
+                              className="btn btn-secondary py-1.5 px-3 text-[11px] font-bold flex items-center justify-center gap-1.5 text-indigo-300 border-indigo-500/30 flex-1 sm:flex-initial rounded-xl whitespace-nowrap min-w-[85px]"
+                              title="1 Sayfada 1 Tam Boy Optik Form"
+                            >
+                              <Download className="h-3.5 w-3.5 shrink-0" />
+                              <span>A4 İndir</span>
+                            </button>
+                            <button
+                              onClick={async () => {
+                                const studentsList = storageService.getStudents(e.institutionId);
+                                const pdf = await pdfService.generateOMRPDF(e, studentsList, 'A5');
+                                pdf.save(`${e.examCode}_Optik_Form_A5_Tasarruf.pdf`);
+                              }}
+                              className="btn btn-secondary py-1.5 px-3 text-[11px] font-bold flex items-center justify-center gap-1.5 text-emerald-400 border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 flex-1 sm:flex-initial rounded-xl whitespace-nowrap min-w-[85px]"
+                              title="1 Sayfada Altlı Üstlü 2 Optik Form (A5 Kesimli, %50 Kağıt Tasarrufu)"
+                            >
+                              <Download className="h-3.5 w-3.5 shrink-0" />
+                              <span>A5 İndir (2'li)</span>
+                            </button>
+                          </div>
+
+                          <button
+                            onClick={() => {
+                              if (window.confirm(`"${e.title}" sınavını silmek istiyor musunuz?`)) {
+                                storageService.deleteExam(e.id);
+                                setExams(storageService.getExams());
+                              }
+                            }}
+                            className="p-2 rounded-xl text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 transition-all flex items-center gap-1 text-xs shrink-0 cursor-pointer ml-auto sm:ml-0"
+                            title="Sınavı Sil"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            <span className="hidden sm:inline">Sil</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Dashboard Exams Pagination */}
+                <Pagination
+                  currentPage={dashExamPage}
+                  totalItems={filteredDashExams.length}
+                  pageSize={dashExamPageSize}
+                  pageSizeOptions={[10, 15, 25, 50, 100]}
+                  onPageChange={setDashExamPage}
+                  onPageSizeChange={setDashExamPageSize}
+                  itemLabel="sınav"
+                  className="pt-2"
+                />
               </div>
             );
           })()}

@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import { Exam, User, Institution, SystemGradeLevel } from '../../types';
 import { storageService } from '../../services/storageService';
+import { Pagination } from '../common/Pagination';
+import { ViewModeToggle } from '../common/ViewModeToggle';
 
 interface ExamsListProps {
   currentUser?: User;
@@ -40,6 +42,26 @@ export const ExamsList: React.FC<ExamsListProps> = ({
   const [selectedInstId, setSelectedInstId] = useState<string>('ALL');
   const [selectedGradeLevel, setSelectedGradeLevel] = useState<string>('ALL');
   
+  // View Mode & Pagination States
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
+    return (localStorage.getItem('opteno_exams_view_mode') as 'grid' | 'list') || 'list';
+  });
+  const [page, setPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(() => {
+    const saved = localStorage.getItem('opteno_exams_page_size');
+    return saved ? Number(saved) : 10;
+  });
+
+  const handleViewModeChange = (mode: 'grid' | 'list') => {
+    setViewMode(mode);
+    localStorage.setItem('opteno_exams_view_mode', mode);
+  };
+
+  const handlePageSizeChange = (size: number) => {
+    setPageSize(size);
+    localStorage.setItem('opteno_exams_page_size', String(size));
+  };
+
   // Grouping & Collapse States (Default grouped for SuperAdmin to eliminate clutter)
   const [groupByInstitution, setGroupByInstitution] = useState<boolean>(isSuperAdmin);
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
@@ -156,6 +178,11 @@ export const ExamsList: React.FC<ExamsListProps> = ({
     }));
   };
 
+  const paginatedExams = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filteredExams.slice(start, start + pageSize);
+  }, [filteredExams, page, pageSize]);
+
   const hasActiveFilters = searchTerm !== '' || scopeFilter !== 'ALL' || selectedInstId !== 'ALL' || selectedGradeLevel !== 'ALL';
 
   const clearFilters = () => {
@@ -163,6 +190,7 @@ export const ExamsList: React.FC<ExamsListProps> = ({
     setScopeFilter('ALL');
     setSelectedInstId('ALL');
     setSelectedGradeLevel('ALL');
+    setPage(1);
   };
 
   // Render Single Exam Card
@@ -396,11 +424,11 @@ export const ExamsList: React.FC<ExamsListProps> = ({
 
       {/* Control Panel: Scope Tabs + Filters */}
       <div className="glass-panel p-4 space-y-4">
-        {/* Scope Tabs (Tümü / Merkezi Sınavlar / Kurum Sınavları) */}
+        {/* Scope Tabs (Tümü / Merkezi Sınavlar / Kurum Sınavları) & View Mode */}
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800/80 pb-3">
           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
             <button
-              onClick={() => setScopeFilter('ALL')}
+              onClick={() => { setScopeFilter('ALL'); setPage(1); }}
               className={`text-xs py-1.5 px-3 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                 scopeFilter === 'ALL'
                   ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
@@ -414,7 +442,7 @@ export const ExamsList: React.FC<ExamsListProps> = ({
             </button>
 
             <button
-              onClick={() => setScopeFilter('SYSTEM')}
+              onClick={() => { setScopeFilter('SYSTEM'); setPage(1); }}
               className={`text-xs py-1.5 px-3 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                 scopeFilter === 'SYSTEM'
                   ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
@@ -429,7 +457,7 @@ export const ExamsList: React.FC<ExamsListProps> = ({
             </button>
 
             <button
-              onClick={() => setScopeFilter('INSTITUTION')}
+              onClick={() => { setScopeFilter('INSTITUTION'); setPage(1); }}
               className={`text-xs py-1.5 px-3 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                 scopeFilter === 'INSTITUTION'
                   ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
@@ -444,14 +472,18 @@ export const ExamsList: React.FC<ExamsListProps> = ({
             </button>
           </div>
 
-          {hasActiveFilters && (
-            <button
-              onClick={clearFilters}
-              className="text-xs font-semibold text-rose-500 dark:text-rose-400 hover:underline flex items-center gap-1 cursor-pointer"
-            >
-              <X className="h-3.5 w-3.5" /> Filtreleri Temizle
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            <ViewModeToggle mode={viewMode} onChange={handleViewModeChange} />
+
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                className="text-xs font-semibold text-rose-500 dark:text-rose-400 hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <X className="h-3.5 w-3.5" /> Filtreleri Temizle
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Filter Inputs Grid: Search, Institution Dropdown, Grade Level */}
@@ -462,13 +494,13 @@ export const ExamsList: React.FC<ExamsListProps> = ({
             <input
               type="text"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
               placeholder="Sınav adı, kodu veya kurum ile ara..."
               className="input-field pl-10 text-xs py-2.5 w-full bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
             />
             {searchTerm && (
               <button
-                onClick={() => setSearchTerm('')}
+                onClick={() => { setSearchTerm(''); setPage(1); }}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-white"
               >
                 <X className="h-3.5 w-3.5" />
@@ -482,7 +514,7 @@ export const ExamsList: React.FC<ExamsListProps> = ({
               <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
               <select
                 value={selectedInstId}
-                onChange={(e) => setSelectedInstId(e.target.value)}
+                onChange={(e) => { setSelectedInstId(e.target.value); setPage(1); }}
                 className="input-field pl-9 text-xs py-2.5 w-full bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 font-medium cursor-pointer"
               >
                 <option value="ALL">🏢 Tüm Kurumlar ({exams.length} Sınav)</option>
@@ -504,7 +536,7 @@ export const ExamsList: React.FC<ExamsListProps> = ({
             <GraduationCap className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
             <select
               value={selectedGradeLevel}
-              onChange={(e) => setSelectedGradeLevel(e.target.value)}
+              onChange={(e) => { setSelectedGradeLevel(e.target.value); setPage(1); }}
               className="input-field pl-9 text-xs py-2.5 w-full bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 font-medium cursor-pointer"
             >
               <option value="ALL">📚 Tüm Kademeler</option>
@@ -535,7 +567,7 @@ export const ExamsList: React.FC<ExamsListProps> = ({
             </button>
           )}
         </div>
-      ) : groupByInstitution && isSuperAdmin ? (
+      ) : groupByInstitution && isSuperAdmin && viewMode === 'grid' ? (
         /* ACCORDION / GROUPED VIEW BY INSTITUTION */
         <div className="space-y-4">
           {groupedExams.map((group) => {
@@ -590,11 +622,131 @@ export const ExamsList: React.FC<ExamsListProps> = ({
             );
           })}
         </div>
+      ) : viewMode === 'list' ? (
+        /* COMPACT LIST (TABLE) VIEW */
+        <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 shadow-sm">
+          <table className="w-full text-left text-xs whitespace-nowrap text-slate-700 dark:text-slate-300">
+            <thead className="uppercase bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold border-b border-slate-200 dark:border-slate-800">
+              <tr>
+                <th className="px-4 py-3.5">Sınav Kodu & Tarih</th>
+                <th className="px-4 py-3.5">Sınav Adı</th>
+                <th className="px-4 py-3.5">Kurum</th>
+                <th className="px-4 py-3.5 text-center">Kademe & Soru</th>
+                <th className="px-4 py-3.5 text-center">Okunan Optik</th>
+                <th className="px-4 py-3.5 text-right">İşlemler</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              {paginatedExams.map((exam) => {
+                const examResults = storageService.getResults(exam.id);
+                const canDelete = storageService.canDeleteExam(exam, activeUser);
+                return (
+                  <tr key={exam.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1.5">
+                        <span className="badge badge-primary text-[10px] font-mono">{exam.examCode}</span>
+                        {isSystemExam(exam) && (
+                          <span className="badge bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-[9px] font-bold">MERKEZİ</span>
+                        )}
+                      </div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-1">
+                        <Calendar className="h-3 w-3" /> {exam.date}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="font-display font-bold text-sm text-slate-900 dark:text-white">{exam.title}</div>
+                      <div className="text-[10.5px] text-slate-500 dark:text-slate-400 truncate max-w-xs mt-0.5">
+                        {exam.subjects.map(s => s.name).join(', ')}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1.5 font-medium text-slate-800 dark:text-slate-200">
+                        <Building2 className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                        <span className="truncate max-w-[180px]">{exam.institutionName}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <span className="font-bold text-slate-900 dark:text-white">
+                        {exam.gradeLevel ? `${exam.gradeLevel}. Sınıf` : '-'}
+                      </span>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                        {exam.totalQuestions} Soru • {exam.subjects.length} Ders
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <span className="badge badge-success text-[11px] font-bold">
+                        {examResults.length} / {exam.totalExamsScanned || 0} Adet
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex items-center justify-end gap-1.5">
+                        {onNavigateToResults && (
+                          <button
+                            onClick={() => onNavigateToResults(exam.id)}
+                            className="btn btn-secondary text-xs py-1 px-2.5 flex items-center gap-1 text-amber-600 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/10 rounded-lg cursor-pointer"
+                            title="Sonuçlar ve Derece Sıralaması"
+                          >
+                            <Sparkles className="h-3.5 w-3.5" /> Sonuçlar ({examResults.length})
+                          </button>
+                        )}
+                        {onNavigateToOMR && (
+                          <button
+                            onClick={() => onNavigateToOMR(exam.id)}
+                            className="btn btn-primary text-xs py-1 px-2.5 flex items-center gap-1 rounded-lg cursor-pointer"
+                            title="Optik Form Üret"
+                          >
+                            <Printer className="h-3.5 w-3.5" /> Optik Üret
+                          </button>
+                        )}
+                        {onNavigateToScan && (
+                          <button
+                            onClick={onNavigateToScan}
+                            className="btn btn-secondary text-xs py-1 px-2 flex items-center gap-1 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10 rounded-lg cursor-pointer"
+                            title="Optik Oku"
+                          >
+                            <Camera className="h-3.5 w-3.5" /> Oku
+                          </button>
+                        )}
+                        {canDelete ? (
+                          <button
+                            onClick={() => handleDeleteExam(exam.id, exam.title)}
+                            className="p-1.5 text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-red-500/20"
+                            title="Sınavı Sil"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        ) : (
+                          <span title="Merkezi Sınav (Korumalı)" className="p-1 text-slate-400">
+                            <Shield className="h-3.5 w-3.5 text-indigo-400" />
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       ) : (
         /* FLAT GRID VIEW */
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {filteredExams.map(exam => renderExamCard(exam))}
+          {paginatedExams.map(exam => renderExamCard(exam))}
         </div>
+      )}
+
+      {/* Pagination Bar */}
+      {filteredExams.length > 0 && (
+        <Pagination
+          currentPage={page}
+          totalItems={filteredExams.length}
+          pageSize={pageSize}
+          pageSizeOptions={[10, 15, 25, 50, 100]}
+          onPageChange={setPage}
+          onPageSizeChange={handlePageSizeChange}
+          itemLabel="sınav"
+          className="glass-panel p-4 rounded-2xl"
+        />
       )}
     </div>
   );
