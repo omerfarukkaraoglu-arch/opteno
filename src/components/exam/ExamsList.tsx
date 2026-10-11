@@ -19,6 +19,15 @@ interface ExamsListProps {
   onNavigateToResults?: (examId: string) => void;
 }
 
+const formatGradeLevel = (gl?: string | number) => {
+  if (!gl) return '-';
+  const str = String(gl).trim();
+  if (str.toLowerCase().includes('sınıf') || str.toLowerCase().includes('mezun')) {
+    return str;
+  }
+  return `${str}. Sınıf`;
+};
+
 export const ExamsList: React.FC<ExamsListProps> = ({
   currentUser,
   highlightedExamId,
@@ -378,7 +387,7 @@ export const ExamsList: React.FC<ExamsListProps> = ({
   };
 
   return (
-    <div className="mx-auto max-w-6xl px-2 sm:px-4 py-4 space-y-6">
+    <div className="mx-auto max-w-7xl px-2 sm:px-4 py-4 space-y-6">
       {/* Header Bar */}
       <div className="glass-panel p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -623,110 +632,139 @@ export const ExamsList: React.FC<ExamsListProps> = ({
           })}
         </div>
       ) : viewMode === 'list' ? (
-        /* COMPACT LIST (TABLE) VIEW */
-        <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 shadow-sm">
-          <table className="w-full text-left text-xs whitespace-nowrap text-slate-700 dark:text-slate-300">
-            <thead className="uppercase bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold border-b border-slate-200 dark:border-slate-800">
-              <tr>
-                <th className="px-4 py-3.5">Sınav Kodu & Tarih</th>
-                <th className="px-4 py-3.5">Sınav Adı</th>
-                <th className="px-4 py-3.5">Kurum</th>
-                <th className="px-4 py-3.5 text-center">Kademe & Soru</th>
-                <th className="px-4 py-3.5 text-center">Okunan Optik</th>
-                <th className="px-4 py-3.5 text-right">İşlemler</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {paginatedExams.map((exam) => {
-                const examResults = storageService.getResults(exam.id);
-                const canDelete = storageService.canDeleteExam(exam, activeUser);
-                return (
-                  <tr key={exam.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1.5">
-                        <span className="badge badge-primary text-[10px] font-mono">{exam.examCode}</span>
-                        {isSystemExam(exam) && (
-                          <span className="badge bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-[9px] font-bold">MERKEZİ</span>
-                        )}
-                      </div>
-                      <div className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-1">
-                        <Calendar className="h-3 w-3" /> {exam.date}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="font-display font-bold text-sm text-slate-900 dark:text-white">{exam.title}</div>
-                      <div className="text-[10.5px] text-slate-500 dark:text-slate-400 truncate max-w-xs mt-0.5">
-                        {exam.subjects.map(s => s.name).join(', ')}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1.5 font-medium text-slate-800 dark:text-slate-200">
-                        <Building2 className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                        <span className="truncate max-w-[180px]">{exam.institutionName}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <span className="font-bold text-slate-900 dark:text-white">
-                        {exam.gradeLevel ? `${exam.gradeLevel}. Sınıf` : '-'}
-                      </span>
-                      <div className="text-[10px] text-slate-500 dark:text-slate-400">
-                        {exam.totalQuestions} Soru • {exam.subjects.length} Ders
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <span className="badge badge-success text-[11px] font-bold">
-                        {examResults.length} / {exam.totalExamsScanned || 0} Adet
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        {onNavigateToResults && (
-                          <button
-                            onClick={() => onNavigateToResults(exam.id)}
-                            className="btn btn-secondary text-xs py-1 px-2.5 flex items-center gap-1 text-amber-600 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/10 rounded-lg cursor-pointer"
-                            title="Sonuçlar ve Derece Sıralaması"
-                          >
-                            <Sparkles className="h-3.5 w-3.5" /> Sonuçlar ({examResults.length})
-                          </button>
-                        )}
-                        {onNavigateToOMR && (
-                          <button
-                            onClick={() => onNavigateToOMR(exam.id)}
-                            className="btn btn-primary text-xs py-1 px-2.5 flex items-center gap-1 rounded-lg cursor-pointer"
-                            title="Optik Form Üret"
-                          >
-                            <Printer className="h-3.5 w-3.5" /> Optik Üret
-                          </button>
-                        )}
-                        {onNavigateToScan && (
-                          <button
-                            onClick={onNavigateToScan}
-                            className="btn btn-secondary text-xs py-1 px-2 flex items-center gap-1 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10 rounded-lg cursor-pointer"
-                            title="Optik Oku"
-                          >
-                            <Camera className="h-3.5 w-3.5" /> Oku
-                          </button>
-                        )}
-                        {canDelete ? (
-                          <button
-                            onClick={() => handleDeleteExam(exam.id, exam.title)}
-                            className="p-1.5 text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-red-500/20"
-                            title="Sınavı Sil"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        ) : (
-                          <span title="Merkezi Sınav (Korumalı)" className="p-1 text-slate-400">
-                            <Shield className="h-3.5 w-3.5 text-indigo-400" />
+        /* COMPACT LIST (TABLE) VIEW - FITS ON SCREEN WITHOUT HORIZONTAL SCROLL */
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto sm:overflow-x-visible">
+            <table className="w-full text-left text-xs text-slate-700 dark:text-slate-300">
+              <thead className="uppercase bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 font-bold border-b border-slate-200 dark:border-slate-800 text-[11px]">
+                <tr>
+                  <th className="px-3.5 py-3">Sınav Bilgisi</th>
+                  <th className="px-3 py-3 hidden md:table-cell">Kurum</th>
+                  <th className="px-3 py-3 text-center hidden sm:table-cell">Kademe & Soru</th>
+                  <th className="px-3 py-3 text-center">Okunan</th>
+                  <th className="px-3.5 py-3 text-right">İşlemler</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {paginatedExams.map((exam) => {
+                  const examResults = storageService.getResults(exam.id);
+                  const canDelete = storageService.canDeleteExam(exam, activeUser);
+                  return (
+                    <tr key={exam.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                      {/* Sınav Bilgisi (Adı, Kodu, Tarihi, Dersler) */}
+                      <td className="px-3.5 py-3">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="badge badge-primary text-[10px] font-mono shrink-0">{exam.examCode}</span>
+                          {isSystemExam(exam) && (
+                            <span className="badge bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-[9px] font-bold shrink-0">
+                              MERKEZİ
+                            </span>
+                          )}
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1 shrink-0">
+                            <Calendar className="h-3 w-3" /> {exam.date}
                           </span>
+                        </div>
+                        <div className="font-display font-bold text-sm text-slate-900 dark:text-white mt-1 leading-snug">
+                          {exam.title}
+                        </div>
+                        {/* Mobilde Kurum Adı ve Kademe burada gösterilir */}
+                        <div className="flex md:hidden items-center gap-2 mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                          <span className="truncate max-w-[130px] font-medium">{exam.institutionName}</span>
+                          <span>•</span>
+                          <span>{formatGradeLevel(exam.gradeLevel)}</span>
+                        </div>
+                        {exam.subjects && exam.subjects.length > 0 && (
+                          <div className="text-[10.5px] text-slate-500 dark:text-slate-400 truncate max-w-xs lg:max-w-md mt-0.5">
+                            {exam.subjects.map(s => s.name).join(', ')}
+                          </div>
                         )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                      </td>
+
+                      {/* Kurum (Masaüstü) */}
+                      <td className="px-3 py-3 hidden md:table-cell">
+                        <div className="flex items-center gap-1.5 font-medium text-slate-800 dark:text-slate-200 text-xs">
+                          <Building2 className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                          <span className="truncate max-w-[140px] lg:max-w-[190px]" title={exam.institutionName}>
+                            {exam.institutionName}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Kademe & Soru (Tablet/Masaüstü) */}
+                      <td className="px-3 py-3 text-center hidden sm:table-cell whitespace-nowrap">
+                        <span className="font-bold text-slate-900 dark:text-white text-xs block">
+                          {formatGradeLevel(exam.gradeLevel)}
+                        </span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 block mt-0.5">
+                          {exam.totalQuestions} Soru • {exam.subjects.length} Ders
+                        </span>
+                      </td>
+
+                      {/* Okunan Optik */}
+                      <td className="px-3 py-3 text-center whitespace-nowrap">
+                        <span className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-bold ${
+                          examResults.length > 0
+                            ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
+                        }`}>
+                          {examResults.length} {exam.totalExamsScanned ? `/ ${exam.totalExamsScanned}` : ''} Adet
+                        </span>
+                      </td>
+
+                      {/* İşlemler */}
+                      <td className="px-3.5 py-3 text-right">
+                        <div className="flex items-center justify-end gap-1.5 flex-wrap sm:flex-nowrap">
+                          {onNavigateToResults && (
+                            <button
+                              onClick={() => onNavigateToResults(exam.id)}
+                              className="btn btn-secondary text-xs py-1 px-2 flex items-center gap-1 text-amber-600 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/10 rounded-lg cursor-pointer whitespace-nowrap shrink-0"
+                              title="Sonuçlar ve Derece Sıralaması"
+                            >
+                              <Sparkles className="h-3.5 w-3.5 shrink-0" />
+                              <span>Sonuç ({examResults.length})</span>
+                            </button>
+                          )}
+                          {onNavigateToOMR && (
+                            <button
+                              onClick={() => onNavigateToOMR(exam.id)}
+                              className="btn btn-primary text-xs py-1 px-2.5 flex items-center gap-1 rounded-lg cursor-pointer whitespace-nowrap shrink-0"
+                              title="Optik Form Üret"
+                            >
+                              <Printer className="h-3.5 w-3.5 shrink-0" />
+                              <span>Optik</span>
+                            </button>
+                          )}
+                          {onNavigateToScan && (
+                            <button
+                              onClick={onNavigateToScan}
+                              className="btn btn-secondary text-xs py-1 px-2 flex items-center gap-1 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10 rounded-lg cursor-pointer whitespace-nowrap shrink-0"
+                              title="Optik Oku"
+                            >
+                              <Camera className="h-3.5 w-3.5 shrink-0" />
+                              <span>Oku</span>
+                            </button>
+                          )}
+                          {canDelete ? (
+                            <button
+                              onClick={() => handleDeleteExam(exam.id, exam.title)}
+                              className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer shrink-0"
+                              title="Sınavı Sil"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          ) : (
+                            <span title="Merkezi Sınav (Korumalı)" className="p-1 text-slate-400 shrink-0">
+                              <Shield className="h-3.5 w-3.5 text-indigo-400" />
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       ) : (
         /* FLAT GRID VIEW */

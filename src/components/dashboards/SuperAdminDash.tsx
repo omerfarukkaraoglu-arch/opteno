@@ -703,132 +703,134 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                 )}
               </div>
             ) : instViewMode === 'list' ? (
-              /* LIST (TABLE) VIEW */
-              <div className="overflow-x-auto rounded-2xl border border-slate-700/60 bg-slate-900/60 shadow-sm">
-                <table className="w-full text-left text-xs whitespace-nowrap text-slate-300">
-                  <thead className="uppercase bg-slate-800/80 text-slate-400 font-bold border-b border-slate-700/60">
-                    <tr>
-                      <th className="px-4 py-3.5">Kurum Adı & Kod</th>
-                      <th className="px-4 py-3.5">Şehir</th>
-                      <th className="px-4 py-3.5">Yönetici Giriş Bilgileri</th>
-                      <th className="px-4 py-3.5 text-center">Öğrenci / Personel</th>
-                      <th className="px-4 py-3.5">İletişim</th>
-                      <th className="px-4 py-3.5 text-center">Durum</th>
-                      <th className="px-4 py-3.5 text-right">İşlemler</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-800/60">
-                    {paginatedInstitutions.map((inst) => {
-                      const instPersonnel = storageService.getUsersByInstitution(inst.id);
-                      const instAdmin = instPersonnel.find(u => u.role === 'INSTITUTION_ADMIN');
-                      return (
-                        <tr key={inst.id} className="hover:bg-slate-800/50 transition-colors">
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-3">
-                              {inst.logoUrl ? (
-                                <div className="w-9 h-9 rounded-lg bg-white p-1 border border-slate-700 flex items-center justify-center shrink-0 overflow-hidden shadow-sm">
-                                  <img src={inst.logoUrl} alt={inst.name} className="max-w-full max-h-full object-contain" />
+              /* COMPACT LIST (TABLE) VIEW - FITS ON SCREEN WITHOUT HORIZONTAL SCROLL */
+              <div className="rounded-2xl border border-slate-700/60 bg-slate-900/60 shadow-sm overflow-hidden">
+                <div className="overflow-x-auto sm:overflow-x-visible">
+                  <table className="w-full text-left text-xs text-slate-300">
+                    <thead className="uppercase bg-slate-800/80 text-slate-400 font-bold border-b border-slate-700/60 text-[11px]">
+                      <tr>
+                        <th className="px-3.5 py-3">Kurum Adı & Kod</th>
+                        <th className="px-3 py-3 hidden md:table-cell">Şehir & İletişim</th>
+                        <th className="px-3 py-3">Yönetici Giriş Bilgileri</th>
+                        <th className="px-3 py-3 text-center hidden sm:table-cell">Öğrenci / Personel</th>
+                        <th className="px-3 py-3 text-center hidden lg:table-cell">Durum</th>
+                        <th className="px-3.5 py-3 text-right">İşlemler</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/60">
+                      {paginatedInstitutions.map((inst) => {
+                        const instPersonnel = storageService.getUsersByInstitution(inst.id);
+                        const instAdmin = instPersonnel.find(u => u.role === 'INSTITUTION_ADMIN');
+                        return (
+                          <tr key={inst.id} className="hover:bg-slate-800/50 transition-colors">
+                            <td className="px-3.5 py-3">
+                              <div className="flex items-center gap-2.5">
+                                {inst.logoUrl ? (
+                                  <div className="w-8 h-8 rounded-lg bg-white p-0.5 border border-slate-700 flex items-center justify-center shrink-0 overflow-hidden shadow-sm">
+                                    <img src={inst.logoUrl} alt={inst.name} className="max-w-full max-h-full object-contain" />
+                                  </div>
+                                ) : (
+                                  <div className="w-8 h-8 rounded-lg bg-slate-800 p-1.5 border border-slate-700 flex items-center justify-center shrink-0 text-slate-400">
+                                    <Building2 className="h-4 w-4" />
+                                  </div>
+                                )}
+                                <div className="min-w-0">
+                                  <div className="font-display font-bold text-sm text-white truncate max-w-[170px] sm:max-w-xs">{inst.name}</div>
+                                  <div className="text-[10px] text-slate-400 flex items-center gap-1.5 mt-0.5">
+                                    <span className="badge badge-primary text-[9px] py-0 px-1.5 shrink-0">{inst.code}</span>
+                                    <span className="truncate md:hidden">• {inst.city}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+
+                            {/* Şehir & İletişim (Masaüstü) */}
+                            <td className="px-3 py-3 hidden md:table-cell">
+                              <div className="flex items-center gap-1 text-slate-200 font-medium text-xs">
+                                <MapPin className="h-3 w-3 text-slate-400 shrink-0" />
+                                <span>{inst.city || '-'}</span>
+                              </div>
+                              <div className="text-[10px] text-slate-400 truncate max-w-[150px] mt-0.5">
+                                {inst.phone || inst.email || '-'}
+                              </div>
+                            </td>
+
+                            {/* Yönetici Giriş Bilgileri */}
+                            <td className="px-3 py-3">
+                              {instAdmin ? (
+                                <div className="flex items-center gap-1 bg-slate-950/80 px-2 py-1 rounded-xl border border-indigo-500/20 max-w-[200px]">
+                                  <div className="text-[11px] font-mono leading-tight truncate">
+                                    <span className="text-amber-300 font-bold">👤 {instAdmin.username}</span>
+                                    <span className="text-slate-500 mx-1">•</span>
+                                    <span className="text-emerald-400 font-bold">🔑 {instAdmin.password}</span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => copyCredentials(instAdmin.username || '', instAdmin.password || '', inst.name)}
+                                    className="p-1 rounded-md bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 transition-colors shrink-0 cursor-pointer ml-auto"
+                                    title="Giriş Bilgilerini Kopyala"
+                                  >
+                                    <Copy className="h-3 w-3" />
+                                  </button>
                                 </div>
                               ) : (
-                                <div className="w-9 h-9 rounded-lg bg-slate-800 p-2 border border-slate-700 flex items-center justify-center shrink-0 text-slate-400">
-                                  <Building2 className="h-4 w-4" />
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[10px] text-rose-400 font-semibold whitespace-nowrap">⚠️ Yönetici Yok</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setNewAdminForInstModal(inst);
+                                      setAssignAdminName(`${inst.name} Yöneticisi`);
+                                      const clean = inst.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+                                      setAssignAdminUsername(`admin_${clean || 'kurum'}`);
+                                      setAssignAdminPassword(`${clean || 'kurum'}123`);
+                                    }}
+                                    className="text-[10px] text-indigo-400 hover:text-indigo-300 underline font-bold cursor-pointer whitespace-nowrap"
+                                  >
+                                    Ata
+                                  </button>
                                 </div>
                               )}
-                              <div>
-                                <div className="font-display font-bold text-sm text-white">{inst.name}</div>
-                                <div className="text-[10px] text-slate-400 flex items-center gap-1.5 mt-0.5">
-                                  <span className="badge badge-primary text-[9px] py-0 px-1.5">{inst.code}</span>
-                                  {inst.createdAt && <span>Kayıt: {inst.createdAt}</span>}
-                                </div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className="flex items-center gap-1.5 text-slate-300">
-                              <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0" /> {inst.city || '-'}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3">
-                            {instAdmin ? (
-                              <div className="flex items-center gap-1.5 bg-slate-950/80 px-2.5 py-1 rounded-xl border border-indigo-500/20 max-w-xs">
-                                <div className="text-[11px] font-mono leading-tight truncate">
-                                  <span className="text-amber-300 font-bold">👤 {instAdmin.username}</span>
-                                  <span className="text-slate-500 mx-1">•</span>
-                                  <span className="text-emerald-400 font-bold">🔑 {instAdmin.password}</span>
-                                </div>
+                            </td>
+
+                            {/* Öğrenci / Personel (Tablet/Masaüstü) */}
+                            <td className="px-3 py-3 text-center hidden sm:table-cell whitespace-nowrap">
+                              <span className="font-bold text-white text-xs">{inst.studentCount}</span>{' '}
+                              <span className="text-slate-400 text-[10px]">Öğr.</span>
+                              <span className="text-slate-500 mx-1">/</span>
+                              <span className="font-bold text-indigo-300 text-xs">{instPersonnel.length}</span>{' '}
+                              <span className="text-slate-400 text-[10px]">Pers.</span>
+                            </td>
+
+                            {/* Durum */}
+                            <td className="px-3 py-3 text-center hidden lg:table-cell whitespace-nowrap">
+                              <span className="badge badge-success text-[10px]">AKTİF</span>
+                            </td>
+
+                            {/* İşlemler */}
+                            <td className="px-3.5 py-3 text-right">
+                              <div className="flex items-center justify-end gap-1.5">
                                 <button
-                                  type="button"
-                                  onClick={() => copyCredentials(instAdmin.username || '', instAdmin.password || '', inst.name)}
-                                  className="p-1 rounded-md bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 transition-colors shrink-0 cursor-pointer ml-auto"
-                                  title="Giriş Bilgilerini Kopyala"
+                                  onClick={() => setSelectedInstDetails(inst)}
+                                  className="btn btn-secondary py-1 px-2 text-xs text-indigo-300 flex items-center gap-1 cursor-pointer hover:bg-indigo-500/20 whitespace-nowrap"
                                 >
-                                  <Copy className="h-3 w-3" />
+                                  <Eye className="h-3 w-3" /> Detay
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteInstitution(inst)}
+                                  className="p-1 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-all cursor-pointer border border-red-500/20 shrink-0"
+                                  title="Kurumu Sil"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
                                 </button>
                               </div>
-                            ) : (
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-[10.5px] text-rose-400 font-semibold">⚠️ Yönetici Yok</span>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setNewAdminForInstModal(inst);
-                                    setAssignAdminName(`${inst.name} Yöneticisi`);
-                                    const clean = inst.name.toLowerCase().replace(/[^a-z0-9]/g, '');
-                                    setAssignAdminUsername(`admin_${clean || 'kurum'}`);
-                                    setAssignAdminPassword(`${clean || 'kurum'}123`);
-                                  }}
-                                  className="text-[10.5px] text-indigo-400 hover:text-indigo-300 underline font-bold cursor-pointer"
-                                >
-                                  Yönetici Ata
-                                </button>
-                              </div>
-                            )}
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            <span className="font-bold text-white">{inst.studentCount}</span> <span className="text-slate-400 text-[10px]">Öğrenci</span>
-                            <span className="text-slate-500 mx-1.5">/</span>
-                            <span className="font-bold text-indigo-300">{instPersonnel.length}</span> <span className="text-slate-400 text-[10px]">Personel</span>
-                          </td>
-                          <td className="px-4 py-3 text-slate-300">
-                            <div className="space-y-0.5 text-[11px]">
-                              {inst.phone && (
-                                <div className="flex items-center gap-1.5 text-slate-400">
-                                  <Phone className="h-3 w-3 shrink-0" /> {inst.phone}
-                                </div>
-                              )}
-                              {inst.email && (
-                                <div className="flex items-center gap-1.5 text-slate-400">
-                                  <Mail className="h-3 w-3 shrink-0" /> {inst.email}
-                                </div>
-                              )}
-                              {!inst.phone && !inst.email && <span className="text-slate-500">-</span>}
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            <span className="badge badge-success text-[10px]">AKTİF</span>
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            <div className="flex items-center justify-end gap-1.5">
-                              <button
-                                onClick={() => setSelectedInstDetails(inst)}
-                                className="btn btn-secondary py-1 px-2.5 text-xs text-indigo-300 flex items-center gap-1 cursor-pointer hover:bg-indigo-500/20"
-                              >
-                                <Eye className="h-3.5 w-3.5" /> Detay
-                              </button>
-                              <button
-                                onClick={() => handleDeleteInstitution(inst)}
-                                className="p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-all cursor-pointer border border-red-500/20"
-                                title="Kurumu Sil"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             ) : (
               /* GRID (CARD) VIEW */
@@ -1237,45 +1239,48 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                 {dashExamViewMode === 'list' ? (
                   /* LIST / TABLE VIEW FOR DASHBOARD EXAMS */
                   <div className="overflow-x-auto rounded-2xl border border-slate-700/60 bg-slate-900/60 shadow-sm">
-                    <table className="w-full text-left text-xs whitespace-nowrap text-slate-300">
-                      <thead className="uppercase bg-slate-800/80 text-slate-400 font-bold border-b border-slate-700/60">
+                    <table className="w-full text-left text-xs text-slate-300">
+                      <thead className="uppercase bg-slate-800/80 text-slate-400 font-bold border-b border-slate-700/60 text-[11px]">
                         <tr>
-                          <th className="px-4 py-3.5">Sınav Kodu & Tarih</th>
-                          <th className="px-4 py-3.5">Sınav Adı</th>
-                          <th className="px-4 py-3.5">Kurum</th>
-                          <th className="px-4 py-3.5 text-center">Soru / Ders</th>
-                          <th className="px-4 py-3.5 text-center">Okunan Optik</th>
-                          <th className="px-4 py-3.5 text-right">İşlemler</th>
+                          <th className="px-3.5 py-3 whitespace-nowrap">Sınav Kodu & Tarih</th>
+                          <th className="px-3 py-3">Sınav Adı</th>
+                          <th className="px-3 py-3 hidden md:table-cell">Kurum</th>
+                          <th className="px-3 py-3 text-center whitespace-nowrap">Soru / Ders</th>
+                          <th className="px-3 py-3 text-center whitespace-nowrap">Okunan</th>
+                          <th className="px-3.5 py-3 text-right whitespace-nowrap">İşlemler</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-800/60">
                         {paginatedDashExams.map((e) => (
                           <tr key={e.id} className="hover:bg-slate-800/50 transition-colors">
-                            <td className="px-4 py-3">
+                            <td className="px-3.5 py-3 whitespace-nowrap">
                               <span className="badge badge-primary text-[10px] font-mono">{e.examCode}</span>
                               <div className="text-[10px] text-slate-400 flex items-center gap-1 mt-1">
                                 <Calendar className="h-3 w-3" /> {e.date}
                               </div>
                             </td>
-                            <td className="px-4 py-3">
-                              <div className="font-display font-bold text-sm text-white">{e.title}</div>
+                            <td className="px-3 py-3 min-w-0">
+                              <div className="font-display font-bold text-sm text-white truncate max-w-xs">{e.title}</div>
                               <div className="text-[10.5px] text-slate-400 truncate max-w-xs mt-0.5">
                                 {e.subjects.map(s => s.name).join(', ')}
                               </div>
+                              <div className="text-[10px] text-indigo-400 font-medium md:hidden mt-0.5 truncate">
+                                {e.institutionName}
+                              </div>
                             </td>
-                            <td className="px-4 py-3">
-                              <span className="font-medium text-slate-200">{e.institutionName}</span>
+                            <td className="px-3 py-3 hidden md:table-cell">
+                              <span className="font-medium text-slate-200 line-clamp-1">{e.institutionName}</span>
                             </td>
-                            <td className="px-4 py-3 text-center">
+                            <td className="px-3 py-3 text-center whitespace-nowrap">
                               <span className="font-bold text-white">{e.totalQuestions} Soru</span>
                               <div className="text-[10px] text-slate-400">{e.subjects.length} Ders</div>
                             </td>
-                            <td className="px-4 py-3 text-center">
-                              <span className="badge badge-success text-[11px] font-bold">
+                            <td className="px-3 py-3 text-center whitespace-nowrap">
+                              <span className="badge badge-success text-[10px] font-bold">
                                 {e.totalExamsScanned || 0} Adet
                               </span>
                             </td>
-                            <td className="px-4 py-3 text-right">
+                            <td className="px-3.5 py-3 text-right whitespace-nowrap">
                               <div className="flex items-center justify-end gap-1.5">
                                 <button
                                   onClick={async () => {
