@@ -352,10 +352,10 @@ export const ExamsList: React.FC<ExamsListProps> = ({
   return (
     <div className="mx-auto max-w-6xl px-2 sm:px-4 py-4 space-y-6">
       {/* Header Bar */}
-      <div className="glass-panel p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="glass-panel p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <FileText className="h-6 w-6 text-indigo-500 dark:text-indigo-400" /> Sınavlar ve Optik Yönetimi
+          <h1 className="font-display text-xl sm:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-indigo-500 dark:text-indigo-400 shrink-0" /> Sınavlar ve Optik Yönetimi
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             {isSuperAdmin
@@ -364,28 +364,31 @@ export const ExamsList: React.FC<ExamsListProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full sm:w-auto">
           {isSuperAdmin && (
             <button
               onClick={() => setGroupByInstitution(!groupByInstitution)}
-              className={`btn text-xs py-2.5 px-4 font-bold flex items-center gap-2 rounded-xl border transition-all ${
+              className={`btn text-xs py-2 px-2.5 sm:px-4 font-bold flex items-center justify-center gap-1.5 sm:gap-2 rounded-xl border transition-all ${
                 groupByInstitution
                   ? 'bg-indigo-600 text-white border-indigo-500 shadow-md shadow-indigo-600/30'
                   : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800'
               }`}
               title="Sınavları kurum bazında katlanabilir kutular şeklinde gruplandırır"
             >
-              <FolderKanban className="h-4 w-4" />
-              <span>{groupByInstitution ? 'Gruplu Görünüm (Açık)' : 'Kurumlara Göre Grupla'}</span>
+              <FolderKanban className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+              <span className="truncate">{groupByInstitution ? 'Gruplu Görünüm' : 'Kurum Grupla'}</span>
             </button>
           )}
 
           {onNavigateToCreateExam && (
             <button
               onClick={onNavigateToCreateExam}
-              className="btn btn-primary text-xs py-2.5 px-5 font-bold shadow-lg shadow-indigo-600/30 flex items-center gap-2 shrink-0"
+              className={`btn btn-primary text-xs py-2 px-2.5 sm:px-5 font-bold shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-1.5 sm:gap-2 ${
+                !isSuperAdmin ? 'col-span-2 sm:w-auto' : ''
+              }`}
             >
-              <Plus className="h-4 w-4" /> Yeni Sınav Oluştur
+              <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" /> 
+              <span className="truncate">Yeni Sınav Oluştur</span>
             </button>
           )}
         </div>
