@@ -68,11 +68,27 @@ export const initialGlobalClasses: GlobalClassTemplate[] = [
   { id: 'gcls-mezun-ea', name: 'Mezun Eşit Ağırlık', gradeLevel: 13, description: 'Mezun YKS Eşit Ağırlık Grubu' }
 ];
 
-// Helper for local storage
+// High-performance In-Memory Cache to prevent expensive repeated JSON.parse calls on large payloads
+const memoryCache: Record<string, any> = {};
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key && memoryCache[e.key] !== undefined) {
+      delete memoryCache[e.key];
+    }
+  });
+}
+
+// Helper for local storage with in-memory caching
 const getItem = <T>(key: string, fallback: T): T => {
+  if (memoryCache[key] !== undefined) {
+    return memoryCache[key] as T;
+  }
   try {
     const data = localStorage.getItem(key);
-    return data ? JSON.parse(data) : fallback;
+    const parsed = data ? JSON.parse(data) : fallback;
+    memoryCache[key] = parsed;
+    return parsed;
   } catch (e) {
     console.error(`Error reading ${key} from storage:`, e);
     return fallback;
@@ -80,6 +96,7 @@ const getItem = <T>(key: string, fallback: T): T => {
 };
 
 const setItem = <T>(key: string, value: T): void => {
+  memoryCache[key] = value;
   try {
     localStorage.setItem(key, JSON.stringify(value));
   } catch (e) {
@@ -95,6 +112,7 @@ const setItem = <T>(key: string, value: T): void => {
           }
           return item;
         });
+        memoryCache[key] = cleaned;
         localStorage.setItem(key, JSON.stringify(cleaned));
         console.warn('Successfully saved results after stripping image payloads');
       } catch (retryErr) {
@@ -105,6 +123,7 @@ const setItem = <T>(key: string, value: T): void => {
 };
 
 export const resetAllStorage = () => {
+  Object.keys(memoryCache).forEach(k => delete memoryCache[k]);
   localStorage.removeItem(KEYS.INSTITUTIONS);
   localStorage.removeItem(KEYS.CLASSES);
   localStorage.removeItem(KEYS.GRADE_LEVELS);
@@ -235,10 +254,16 @@ export const deleteSingleResultFromServer = async (resultId: string) => {
   }
 };
 
+let lastSyncTime = 0;
+
 // Synchronization with Firebase Cloud Database (Authoritative Single Source of Truth)
-export const syncWithServer = async () => {
+export const syncWithServer = async (force: boolean = false) => {
+  const now = Date.now();
   // If pushing or recent local write happened within 3.5 seconds, don't overwrite with stale server cache
-  if (isSyncing || isPushing || (Date.now() - lastLocalWriteTime < 3500)) return;
+  if (isSyncing || isPushing || (now - lastLocalWriteTime < 3500)) return;
+  // Enforce cooldown unless explicitly forced (minimum 10s cooldown to keep main thread free)
+  if (!force && (now - lastSyncTime < 10000)) return;
+  lastSyncTime = now;
   isSyncing = true;
   try {
     const res = await fetch(`${FIREBASE_DB_URL}.json`);
@@ -454,20 +479,45 @@ export const initStorage = () => {
     setItem(KEYS.SITE_SETTINGS, initialSiteSettings);
   }
 
+  // One-time cleanup: strip any legacy camera image base64 strings from local results to free up memory
+  try {
+    const localRes = getItem<ScanResult[]>(KEYS.RESULTS, []);
+    let cleanedLocal = false;
+    localRes.forEach(r => {
+      if (r && r.rawImageBase64) {
+        delete r.rawImageBase64;
+        cleanedLocal = true;
+      }
+    });
+    if (cleanedLocal) {
+      setItem(KEYS.RESULTS, localRes);
+    }
+  } catch {
+    // Ignore
+  }
+
   // Start two-way real-time sync with Firebase Cloud Database
   if (!syncStarted && typeof window !== 'undefined') {
     syncStarted = true;
-    syncWithServer();
-    setInterval(syncWithServer, 3000);
-    window.addEventListener('focus', syncWithServer);
-    window.addEventListener('online', syncWithServer);
+    syncWithServer(true);
 
-    // Optional SSE listener for instantaneous cloud updates
+    // Background polling: Every 45 seconds (was 3s, which choked the main thread and caused high INP)
+    setInterval(() => syncWithServer(false), 45000);
+    window.addEventListener('focus', () => syncWithServer(false));
+    window.addEventListener('online', () => syncWithServer(true));
+
+    // SSE listener with debounce to avoid continuous CPU loops
+    let sseTimeout: any = null;
+    const triggerDebouncedSync = () => {
+      if (sseTimeout) clearTimeout(sseTimeout);
+      sseTimeout = setTimeout(() => syncWithServer(false), 4000);
+    };
+
     try {
       if (typeof EventSource !== 'undefined') {
         const sse = new EventSource(`${FIREBASE_DB_URL}.json`);
-        sse.addEventListener('put', () => syncWithServer());
-        sse.addEventListener('patch', () => syncWithServer());
+        sse.addEventListener('put', triggerDebouncedSync);
+        sse.addEventListener('patch', triggerDebouncedSync);
       }
     } catch {
       // EventSource fallback handled by interval
