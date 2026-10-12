@@ -330,7 +330,7 @@ export const StudentCumulativeReport: React.FC<StudentCumulativeReportProps> = (
   return (
     <div className="space-y-6">
       {/* Top Header Card */}
-      <div className="clay-panel p-5 sm:p-6 rounded-[28px] border border-slate-700/50 shadow-xl">
+      <div className="clay-panel p-4 sm:p-6 rounded-[24px] sm:rounded-[28px] border border-slate-700/50 shadow-xl overflow-hidden">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="h-12 w-12 rounded-2xl bg-gradient-to-tr from-indigo-600 to-fuchsia-600 text-white flex items-center justify-center font-black text-xl shadow-[0_8px_16px_rgba(79,70,229,0.35),inset_0_2px_4px_rgba(255,255,255,0.4)] shrink-0">
@@ -531,7 +531,7 @@ export const StudentCumulativeReport: React.FC<StudentCumulativeReportProps> = (
           </div>
 
           {/* Date Pickers */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 w-full md:w-auto">
             <input
               type="date"
               value={startDate}
@@ -539,10 +539,10 @@ export const StudentCumulativeReport: React.FC<StudentCumulativeReportProps> = (
                 setStartDate(e.target.value);
                 setDatePreset('CUSTOM');
               }}
-              className="input-field text-xs py-1.5 px-2.5 w-36"
+              className="input-field text-xs py-1.5 px-2 flex-1 min-w-0 sm:w-36 sm:flex-initial"
               title="Başlangıç Tarihi"
             />
-            <span className="text-slate-500 text-xs font-bold">-</span>
+            <span className="text-slate-500 text-xs font-bold shrink-0">-</span>
             <input
               type="date"
               value={endDate}
@@ -550,7 +550,7 @@ export const StudentCumulativeReport: React.FC<StudentCumulativeReportProps> = (
                 setEndDate(e.target.value);
                 setDatePreset('CUSTOM');
               }}
-              className="input-field text-xs py-1.5 px-2.5 w-36"
+              className="input-field text-xs py-1.5 px-2 flex-1 min-w-0 sm:w-36 sm:flex-initial"
               title="Bitiş Tarihi"
             />
           </div>
