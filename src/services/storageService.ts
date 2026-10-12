@@ -13,6 +13,7 @@ const KEYS = {
   STUDENTS: 'opticok_students',
   EXAMS: 'opticok_exams',
   RESULTS: 'opticok_results',
+  DELETED_RESULT_IDS: 'opticok_deleted_result_ids',
   SITE_SETTINGS: 'opticok_site_settings'
 };
 
@@ -134,6 +135,7 @@ export const resetAllStorage = () => {
   localStorage.removeItem(KEYS.USERS);
   localStorage.removeItem(KEYS.CURRENT_USER);
   localStorage.removeItem(KEYS.SITE_SETTINGS);
+  localStorage.removeItem(KEYS.DELETED_RESULT_IDS);
 
   setItem(KEYS.USERS, initialUsers);
   setItem(KEYS.INSTITUTIONS, initialInstitutions);
@@ -301,22 +303,30 @@ export const syncWithServer = async (force: boolean = false) => {
       serverResultsRawList = (Object.values(serverData.results) as ScanResult[]).filter(Boolean);
     }
 
+    // Load deleted result IDs to prevent deleted results from resurrecting
+    const deletedIds = new Set<string>(getItem<string[]>(KEYS.DELETED_RESULT_IDS, []));
+
     // Bidirectional Safe Merge for Scan Results:
     const localResults = getItem<ScanResult[]>(KEYS.RESULTS, initialScanResults);
     const resultMap = new Map<string, ScanResult>();
 
-    // 1. Load server results
+    // 1. Load server results (ignoring any that were deleted locally)
     serverResultsRawList.forEach(sr => {
       if (sr && sr.id) {
+        if (deletedIds.has(sr.id)) {
+          // If server still has it, ensure it's deleted from cloud
+          deleteSingleResultFromServer(sr.id);
+          return;
+        }
         if (sr.rawImageBase64) delete sr.rawImageBase64;
         resultMap.set(sr.id, sr);
       }
     });
 
-    // 2. Preserve any local results not yet in cloud, and queue them to sync up
+    // 2. Preserve any local results not yet in cloud, and queue them to sync up (unless marked as deleted)
     const missingInCloud: ScanResult[] = [];
     localResults.forEach(lr => {
-      if (!lr || !lr.id) return;
+      if (!lr || !lr.id || deletedIds.has(lr.id)) return;
       if (lr.rawImageBase64) delete lr.rawImageBase64;
       if (!resultMap.has(lr.id)) {
         resultMap.set(lr.id, lr);
@@ -989,6 +999,15 @@ export const storageService = {
     window.dispatchEvent(new CustomEvent('opticok-data-updated'));
   },
   deleteScanResult: (resultId: string) => {
+    // 1. Mark ID as deleted to prevent resurrection from cloud or other clients
+    const deletedIds = getItem<string[]>(KEYS.DELETED_RESULT_IDS, []);
+    if (!deletedIds.includes(resultId)) {
+      deletedIds.push(resultId);
+      // Keep list within sensible bounds (last 1000 deleted IDs)
+      if (deletedIds.length > 1000) deletedIds.shift();
+      setItem(KEYS.DELETED_RESULT_IDS, deletedIds);
+    }
+
     const list = getItem<ScanResult[]>(KEYS.RESULTS, initialScanResults);
     const targetResult = list.find(r => r.id === resultId);
     const updatedList = list.filter(r => r.id !== resultId);
