@@ -2,6 +2,7 @@ import { Exam, ScanResult, ScannedAnswer, SubjectResult, Student, OMRQRData, Out
 import { storageService } from './storageService';
 import { qrService } from './qrService';
 import { getExamAnswerBottom } from './pdfService';
+import { calculateTotalExamScore } from './scoreCalculationService';
 
 export interface OMRScanResult {
   success: boolean;
@@ -454,7 +455,7 @@ export const omrEngine = {
       : totalCorrect;
 
     const totalMaxQuestions = exam.totalQuestions || 40;
-    const totalScore = parseFloat(((totalNet / totalMaxQuestions) * 500).toFixed(2));
+    const totalScore = calculateTotalExamScore(exam, subjectResults, totalNet);
 
     const outcomeAnalyses = computeOutcomeAnalyses(exam, answers);
 

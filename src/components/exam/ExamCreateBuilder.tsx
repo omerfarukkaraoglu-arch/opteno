@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { FileText, Plus, Trash2, ChevronRight, ChevronLeft, Sparkles, Layers, Sliders, KeyRound, Copy, CheckCircle2, ArrowRight, Printer, ListOrdered, FileSpreadsheet, Upload, Download } from 'lucide-react';
 import { SubjectConfig, Exam, User } from '../../types';
 import { storageService } from '../../services/storageService';
+import { getDefaultSubjectCoefficient } from '../../services/scoreCalculationService';
 import * as XLSX from 'xlsx';
 
 interface ExamCreateBuilderProps {
@@ -28,6 +29,7 @@ export const ExamCreateBuilder: React.FC<ExamCreateBuilderProps> = ({
   const [examTitle, setExamTitle] = useState<string>('');
   const [examCode, setExamCode] = useState<string>('');
   const [gradeLevel, setGradeLevel] = useState<string>(gradeLevels[0]?.name || '8. Sınıf');
+  const [scoringStandard, setScoringStandard] = useState<'LGS' | 'YKS_TYT' | 'EQUAL_WEIGHT' | 'CUSTOM'>('LGS');
   const [defaultOptionCount, setDefaultOptionCount] = useState<number>(4);
   const [netPenaltyRatio, setNetPenaltyRatio] = useState<number>(3); // 3 for LGS
   const [isStudentSpecific, setIsStudentSpecific] = useState<boolean>(true);
@@ -41,6 +43,7 @@ export const ExamCreateBuilder: React.FC<ExamCreateBuilderProps> = ({
       name: 'Türkçe',
       questionCount: 20,
       optionCount: 4,
+      coefficient: 4.0,
       correctAnswers: Array(20).fill('A'),
       learningOutcomes: undefined
     },
@@ -49,6 +52,7 @@ export const ExamCreateBuilder: React.FC<ExamCreateBuilderProps> = ({
       name: 'Matematik',
       questionCount: 20,
       optionCount: 4,
+      coefficient: 4.0,
       correctAnswers: Array(20).fill('B'),
       learningOutcomes: undefined
     },
@@ -57,6 +61,7 @@ export const ExamCreateBuilder: React.FC<ExamCreateBuilderProps> = ({
       name: 'Fen Bilimleri',
       questionCount: 20,
       optionCount: 4,
+      coefficient: 4.0,
       correctAnswers: Array(20).fill('C'),
       learningOutcomes: undefined
     }
@@ -69,6 +74,58 @@ export const ExamCreateBuilder: React.FC<ExamCreateBuilderProps> = ({
   // Created Exam Result State
   const [createdExam, setCreatedExam] = useState<Exam | null>(null);
 
+  const handleGradeLevelChange = (selectedGradeName: string) => {
+    setGradeLevel(selectedGradeName);
+    const norm = selectedGradeName.toLowerCase();
+    const isLise = norm.includes('lise') || norm.includes('9') || norm.includes('10') || norm.includes('11') || norm.includes('12') || norm.includes('yks') || norm.includes('tyt') || norm.includes('ayt') || norm.includes('mezun');
+
+    if (isLise) {
+      setScoringStandard('YKS_TYT');
+      setDefaultOptionCount(5);
+      setNetPenaltyRatio(4);
+      setSubjects(prev => prev.map(s => ({
+        ...s,
+        optionCount: 5,
+        coefficient: getDefaultSubjectCoefficient(s.name, 'lise')
+      })));
+    } else {
+      setScoringStandard('LGS');
+      setDefaultOptionCount(4);
+      setNetPenaltyRatio(3);
+      setSubjects(prev => prev.map(s => ({
+        ...s,
+        optionCount: 4,
+        coefficient: getDefaultSubjectCoefficient(s.name, 'ortaokul')
+      })));
+    }
+  };
+
+  const handleScoringStandardChange = (standard: 'LGS' | 'YKS_TYT' | 'EQUAL_WEIGHT' | 'CUSTOM') => {
+    setScoringStandard(standard);
+    if (standard === 'LGS') {
+      setDefaultOptionCount(4);
+      setNetPenaltyRatio(3);
+      setSubjects(prev => prev.map(s => ({
+        ...s,
+        optionCount: 4,
+        coefficient: getDefaultSubjectCoefficient(s.name, 'ortaokul')
+      })));
+    } else if (standard === 'YKS_TYT') {
+      setDefaultOptionCount(5);
+      setNetPenaltyRatio(4);
+      setSubjects(prev => prev.map(s => ({
+        ...s,
+        optionCount: 5,
+        coefficient: getDefaultSubjectCoefficient(s.name, 'lise')
+      })));
+    } else if (standard === 'EQUAL_WEIGHT') {
+      setSubjects(prev => prev.map(s => ({
+        ...s,
+        coefficient: 1.0
+      })));
+    }
+  };
+
   const handleDefaultOptionChange = (count: number) => {
     setDefaultOptionCount(count);
     setSubjects(subjects.map(s => ({ ...s, optionCount: count })));
@@ -76,11 +133,15 @@ export const ExamCreateBuilder: React.FC<ExamCreateBuilderProps> = ({
 
   const handleAddSubject = (defaultName = '') => {
     const name = defaultName || `Ders ${subjects.length + 1}`;
+    const targetStandard = scoringStandard === 'YKS_TYT' ? 'lise' : 'ortaokul';
+    const initialCoeff = scoringStandard === 'EQUAL_WEIGHT' ? 1.0 : getDefaultSubjectCoefficient(name, targetStandard);
+
     const newSubject: SubjectConfig = {
       id: `sbj-${Date.now()}-${subjects.length}`,
       name,
       questionCount: 15,
       optionCount: defaultOptionCount,
+      coefficient: initialCoeff,
       correctAnswers: Array(15).fill('A'),
       learningOutcomes: undefined
     };
@@ -428,6 +489,8 @@ export const ExamCreateBuilder: React.FC<ExamCreateBuilderProps> = ({
       netPenaltyRatio,
       defaultOptionCount,
       hasBookletTypes,
+      scoringStandard,
+      baseScore: (scoringStandard === 'LGS' || scoringStandard === 'YKS_TYT') ? 100 : 0,
       subjects: sanitizedSubjects,
       totalQuestions,
       totalExamsScanned: 0,
@@ -530,14 +593,17 @@ export const ExamCreateBuilder: React.FC<ExamCreateBuilderProps> = ({
                 <label className="block text-xs font-semibold text-slate-300 mb-1">Uygulanacağı Sınıf Seviyesi *</label>
                 <select
                   value={gradeLevel}
-                  onChange={(e) => setGradeLevel(e.target.value)}
-                  className="select-field text-xs"
+                  onChange={(e) => handleGradeLevelChange(e.target.value)}
+                  className="select-field text-xs font-bold text-indigo-400"
                 >
                   {gradeLevels.map(gl => (
                     <option key={gl.id} value={gl.name}>{gl.name} ({gl.category})</option>
                   ))}
                   <option value="Tüm Seviyeler">Genel / Tüm Seviyeler</option>
                 </select>
+                <p className="text-[10px] text-slate-400 mt-1">
+                  Seviyeye göre (Ortaokul/Lise) LGS veya YKS katsayıları ve kuralları otomatik ayarlanır.
+                </p>
               </div>
 
               {activeUser.role === 'SUPER_ADMIN' && (
@@ -560,10 +626,24 @@ export const ExamCreateBuilder: React.FC<ExamCreateBuilderProps> = ({
             {/* Exam Rules & Options */}
             <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-4">
               <h3 className="text-xs font-bold text-indigo-300 flex items-center gap-1.5">
-                <Sliders className="h-4 w-4 text-indigo-400" /> Sınav Değerlendirme Kuralları
+                <Sliders className="h-4 w-4 text-indigo-400" /> Sınav Değerlendirme & Katsayı Kuralları
               </h3>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-400 mb-1">Puanlama ve Katsayı Standardı</label>
+                  <select
+                    value={scoringStandard}
+                    onChange={(e) => handleScoringStandardChange(e.target.value as any)}
+                    className="select-field text-xs font-bold text-amber-300 bg-slate-950"
+                  >
+                    <option value="LGS">🏫 LGS Standardı (Ortaokul)</option>
+                    <option value="YKS_TYT">🎓 YKS / TYT Standardı (Lise)</option>
+                    <option value="EQUAL_WEIGHT">⚖️ Eşit Ağırlıklı (500 Üzerinden)</option>
+                    <option value="CUSTOM">🛠️ Özel Katsayılar</option>
+                  </select>
+                </div>
+
                 <div>
                   <label className="block text-[11px] font-semibold text-slate-400 mb-1">Şık Sayısı Tercihi</label>
                   <select
@@ -686,6 +766,19 @@ export const ExamCreateBuilder: React.FC<ExamCreateBuilderProps> = ({
                         value={sbj.questionCount}
                         onChange={(e) => handleSubjectChange(sbj.id, 'questionCount', e.target.value)}
                         className="input-field w-16 text-center text-xs py-1 font-bold text-indigo-300"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-1.5" title="Ders Katsayısı (Net Çarpanı)">
+                      <span className="text-xs text-slate-400 font-semibold">Katsayı:</span>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0.1"
+                        max="10"
+                        value={sbj.coefficient ?? getDefaultSubjectCoefficient(sbj.name, scoringStandard === 'YKS_TYT' ? 'lise' : 'ortaokul')}
+                        onChange={(e) => handleSubjectChange(sbj.id, 'coefficient', parseFloat(e.target.value) || 1)}
+                        className="input-field w-16 text-center text-xs py-1 font-bold text-amber-300"
                       />
                     </div>
 

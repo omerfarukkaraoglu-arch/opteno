@@ -85,6 +85,7 @@ export interface SubjectConfig {
   name: string; // e.g. "Türkçe", "Matematik", "Fen Bilimleri"
   questionCount: number; // e.g. 20
   optionCount: number; // 4 (A-D) or 5 (A-E)
+  coefficient?: number; // Ders Katsayısı (örn: LGS'de Türkçe/Mat/Fen için 4.0, İnkılap/Din/İng için 1.0)
   correctAnswers: string[]; // ['A', 'C', 'B', 'D', ...] (A Kitapçığı veya Standart)
   correctAnswersB?: string[]; // B Kitapçığı cevap anahtarı (İsteğe bağlı)
   learningOutcomes?: string[]; // e.g. ['Üslü İfadeler', 'Çarpanlar ve Katlar', ...]
@@ -101,6 +102,8 @@ export interface Exam {
   netPenaltyRatio?: number; // e.g. 4 (4 wrong 1 correct), 3, or 0
   defaultOptionCount?: number; // 4 or 5
   hasBookletTypes?: boolean; // Kitapçık Türü (A / B) aktif mi?
+  scoringStandard?: 'LGS' | 'YKS_TYT' | 'EQUAL_WEIGHT' | 'CUSTOM'; // Puanlama Standardı
+  baseScore?: number; // Taban Puan (örn: LGS ve YKS için 100)
   subjects: SubjectConfig[];
   totalQuestions: number;
   totalExamsScanned: number;

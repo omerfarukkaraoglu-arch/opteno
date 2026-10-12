@@ -30,6 +30,7 @@ import { storageService, syncWithServer } from '../../services/storageService';
 import { Exam, ScanResult } from '../../types';
 import { examExportService, ExportType, ExportFormat } from '../../services/examExportService';
 import { computeOutcomeAnalyses } from '../../services/omrEngine';
+import { getDefaultSubjectCoefficient } from '../../services/scoreCalculationService';
 import { StudentReportCardCharts } from './StudentReportCardCharts';
 import { StudentCumulativeReport } from './StudentCumulativeReport';
 import {
@@ -388,11 +389,17 @@ export const ExamResultsList: React.FC<ExamResultsListProps> = ({ initialExamId 
                         <th className="px-3 py-3 text-center w-12">Kurum Sıra</th>
                         <th className="px-4 py-3">Öğrenci Bilgisi</th>
                         <th className="px-3 py-3 text-center">Sınıf & Derece</th>
-                        {selectedExam.subjects.map(s => (
-                          <th key={s.id} className="px-3 py-3 text-center border-l border-slate-200 dark:border-slate-700/50">
-                            {s.name} <br/><span className="text-[9px] font-normal">({s.questionCount} Soru)</span>
-                          </th>
-                        ))}
+                        {selectedExam.subjects.map(s => {
+                          const coeff = s.coefficient !== undefined ? s.coefficient : getDefaultSubjectCoefficient(s.name, selectedExam.gradeLevel);
+                          return (
+                            <th key={s.id} className="px-3 py-3 text-center border-l border-slate-200 dark:border-slate-700/50">
+                              {s.name} <br/>
+                              <span className="text-[9px] font-normal text-slate-500">
+                                ({s.questionCount} Soru{coeff !== 1 ? ` • x${coeff}` : ''})
+                              </span>
+                            </th>
+                          );
+                        })}
                         <th className="px-3 py-3 text-center border-l border-slate-200 dark:border-slate-700/50 text-indigo-600 dark:text-indigo-300">Top. Net</th>
                         <th className="px-3 py-3 text-right text-emerald-600 dark:text-emerald-400">Puan</th>
                         <th className="px-3 py-3 text-center">İşlemler</th>

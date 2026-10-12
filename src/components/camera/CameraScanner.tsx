@@ -26,6 +26,7 @@ import { storageService, isSameStudentScanResult } from '../../services/storageS
 import { qrService } from '../../services/qrService';
 import { Exam, ScanResult, OMRQRData, Student, SubjectResult } from '../../types';
 import { getExamAnswerBottom } from '../../services/pdfService';
+import { calculateTotalExamScore } from '../../services/scoreCalculationService';
 
 function playBeepSound() {
   try {
@@ -549,7 +550,7 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({ onScanComplete }) 
       : totalCorrect;
 
     const totalMaxQuestions = detectedExam.totalQuestions || 40;
-    const totalScore = parseFloat(((totalNet / totalMaxQuestions) * 500).toFixed(2));
+    const totalScore = calculateTotalExamScore(detectedExam, updatedSubjectResults, totalNet);
 
     setPendingResult({
       ...pendingResult,
