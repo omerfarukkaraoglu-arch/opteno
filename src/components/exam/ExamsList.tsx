@@ -3,7 +3,7 @@ import {
   FileText, Plus, Calendar, Printer, Camera, Trash2, Layers, Search, 
   Sparkles, CheckCircle2, ChevronRight, ChevronDown, ChevronUp, 
   User as UserIcon, Shield, Building2, Lock, FolderKanban, Filter, X,
-  GraduationCap
+  GraduationCap, RotateCcw, AlertTriangle
 } from 'lucide-react';
 import { Exam, User, Institution, SystemGradeLevel } from '../../types';
 import { storageService } from '../../services/storageService';
@@ -42,14 +42,21 @@ export const ExamsList: React.FC<ExamsListProps> = ({
   const [exams, setExams] = useState<Exam[]>(() => {
     return storageService.getExams(isSuperAdmin ? undefined : activeUser.institutionId);
   });
+  const [trashExams, setTrashExams] = useState<Exam[]>(() => {
+    return storageService.getTrashExams(isSuperAdmin ? undefined : activeUser.institutionId);
+  });
   const [institutions, setInstitutions] = useState<Institution[]>(() => storageService.getInstitutions());
   const [gradeLevels, setGradeLevels] = useState<SystemGradeLevel[]>(() => storageService.getGradeLevels());
 
   // Filter States
   const [searchTerm, setSearchTerm] = useState<string>('');
-  const [scopeFilter, setScopeFilter] = useState<'ALL' | 'SYSTEM' | 'INSTITUTION'>('ALL');
+  const [scopeFilter, setScopeFilter] = useState<'ALL' | 'SYSTEM' | 'INSTITUTION' | 'TRASH'>('ALL');
   const [selectedInstId, setSelectedInstId] = useState<string>('ALL');
   const [selectedGradeLevel, setSelectedGradeLevel] = useState<string>('ALL');
+
+  // Confirmation Modal States
+  const [examToDelete, setExamToDelete] = useState<{ exam: Exam; scanCount: number; isPermanent: boolean } | null>(null);
+  const [deleteConfirmationText, setDeleteConfirmationText] = useState<string>('');
   
   // View Mode & Pagination States
   const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
@@ -78,6 +85,7 @@ export const ExamsList: React.FC<ExamsListProps> = ({
   const reloadExams = () => {
     const user = currentUser || storageService.getCurrentUser();
     setExams(storageService.getExams(user.role === 'SUPER_ADMIN' ? undefined : user.institutionId));
+    setTrashExams(storageService.getTrashExams(user.role === 'SUPER_ADMIN' ? undefined : user.institutionId));
     setInstitutions(storageService.getInstitutions());
     setGradeLevels(storageService.getGradeLevels());
   };
@@ -91,19 +99,46 @@ export const ExamsList: React.FC<ExamsListProps> = ({
     return () => window.removeEventListener('opticok-data-updated', handleUpdate);
   }, [currentUser]);
 
-  const handleDeleteExam = (examId: string, title: string) => {
+  // Sınavı Silmeye Başla (Güvenli Onay Modalı Açar)
+  const handleInitiateDelete = (exam: Exam, isPermanent: boolean = false) => {
     const user = currentUser || storageService.getCurrentUser();
-    const targetExam = exams.find(e => e.id === examId);
-    if (targetExam && !storageService.canDeleteExam(targetExam, user)) {
+    if (!storageService.canDeleteExam(exam, user)) {
       alert('Bu sınav Sistem Yöneticisi tarafından oluşturulmuş merkezi bir sınavdır. Kurumlar sistem sınavlarını silemez; sadece optik basımı yapabilir, optik okuyabilir ve sonuçlarını inceleyebilir.');
       return;
     }
-    if (window.confirm(`"${title}" sınavını silmek istediğinize emin misiniz?`)) {
-      const deleted = storageService.deleteExam(examId, user);
-      if (deleted) {
-        reloadExams();
+    const results = storageService.getResults(exam.id);
+    setExamToDelete({ exam, scanCount: results.length, isPermanent });
+    setDeleteConfirmationText('');
+  };
+
+  // Onaylandıktan Sonra Silme İşlemini Gerçekleştir
+  const handleConfirmDelete = () => {
+    if (!examToDelete) return;
+    const user = currentUser || storageService.getCurrentUser();
+    
+    // Eğer sınavda taranmış optik form varsa veya kalıcı siliniyorsa "SİL" yazılması zorunludur
+    if (examToDelete.scanCount > 0 || examToDelete.isPermanent) {
+      if (deleteConfirmationText.trim().toUpperCase() !== 'SİL') {
+        alert('Lütfen silme işlemini onaylamak için kutuya büyük harflerle SİL yazın.');
+        return;
       }
     }
+
+    if (examToDelete.isPermanent) {
+      storageService.permanentlyDeleteExam(examToDelete.exam.id, user);
+    } else {
+      storageService.deleteExam(examToDelete.exam.id, user);
+    }
+    setExamToDelete(null);
+    setDeleteConfirmationText('');
+    reloadExams();
+  };
+
+  // Çöp Kutusundan Geri Yükle
+  const handleRestoreExam = (exam: Exam) => {
+    const user = currentUser || storageService.getCurrentUser();
+    storageService.restoreExam(exam.id, user);
+    reloadExams();
   };
 
   const isSystemExam = (exam: Exam): boolean => {
@@ -114,10 +149,13 @@ export const ExamsList: React.FC<ExamsListProps> = ({
   const totalCount = exams.length;
   const systemCount = exams.filter(isSystemExam).length;
   const instCount = exams.filter(e => !isSystemExam(e)).length;
+  const trashCount = trashExams.length;
 
-  // Filtered Exams
+  // Filtered Exams (Active or Trash depending on scopeFilter)
   const filteredExams = useMemo(() => {
-    return exams.filter(e => {
+    const listToFilter = scopeFilter === 'TRASH' ? trashExams : exams;
+
+    return listToFilter.filter(e => {
       // 1. Search filter
       const matchesSearch = 
         e.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -127,7 +165,9 @@ export const ExamsList: React.FC<ExamsListProps> = ({
 
       if (!matchesSearch) return false;
 
-      // 2. Scope filter (Tümü / Merkezi / Kurum)
+      // 2. Scope filter (Tümü / Merkezi / Kurum / Çöp Kutusu)
+      if (scopeFilter === 'TRASH') return true;
+
       const isSys = isSystemExam(e);
       if (scopeFilter === 'SYSTEM' && !isSys) return false;
       if (scopeFilter === 'INSTITUTION' && isSys) return false;
@@ -364,11 +404,30 @@ export const ExamsList: React.FC<ExamsListProps> = ({
             )}
           </div>
 
-          {canDelete ? (
+          {scopeFilter === 'TRASH' ? (
+            <div className="flex items-center gap-1.5 ml-auto sm:ml-0">
+              <button
+                onClick={() => handleRestoreExam(exam)}
+                className="btn btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10 rounded-xl cursor-pointer"
+                title="Sınavı ve sonuçlarını çöp kutusundan geri yükle"
+              >
+                <RotateCcw className="h-3.5 w-3.5" /> Geri Yükle
+              </button>
+              {canDelete && (
+                <button
+                  onClick={() => handleInitiateDelete(exam, true)}
+                  className="btn text-xs py-1.5 px-3 flex items-center gap-1.5 bg-rose-600/20 hover:bg-rose-600/30 text-rose-500 dark:text-rose-400 border border-rose-500/30 rounded-xl cursor-pointer"
+                  title="Sınavı kalıcı olarak sil (Geri alınamaz)"
+                >
+                  <Trash2 className="h-3.5 w-3.5" /> Kalıcı Sil
+                </button>
+              )}
+            </div>
+          ) : canDelete ? (
             <button
-              onClick={() => handleDeleteExam(exam.id, exam.title)}
+              onClick={() => handleInitiateDelete(exam, false)}
               className="p-2 text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-colors cursor-pointer shrink-0 ml-auto sm:ml-0"
-              title="Sınavı Sil"
+              title="Sınavı Çöp Kutusuna Gönder"
             >
               <Trash2 className="h-4 w-4" />
             </button>
@@ -477,6 +536,22 @@ export const ExamsList: React.FC<ExamsListProps> = ({
               <span>Kurum Sınavları</span>
               <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${scopeFilter === 'INSTITUTION' ? 'bg-indigo-500/40 text-white' : 'bg-slate-200 dark:bg-slate-700'}`}>
                 {instCount}
+              </span>
+            </button>
+
+            <button
+              onClick={() => { setScopeFilter('TRASH'); setPage(1); }}
+              className={`text-xs py-1.5 px-3 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                scopeFilter === 'TRASH'
+                  ? 'bg-rose-600 text-white shadow-md shadow-rose-600/30'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+              title="Silinen sınavları görün ve geri yükleyin"
+            >
+              <Trash2 className="h-3.5 w-3.5 text-rose-400" />
+              <span>Çöp Kutusu</span>
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${scopeFilter === 'TRASH' ? 'bg-rose-500/40 text-white' : 'bg-slate-200 dark:bg-slate-700'}`}>
+                {trashCount}
               </span>
             </button>
           </div>
@@ -744,11 +819,30 @@ export const ExamsList: React.FC<ExamsListProps> = ({
                               <span>Oku</span>
                             </button>
                           )}
-                          {canDelete ? (
+                          {scopeFilter === 'TRASH' ? (
+                            <>
+                              <button
+                                onClick={() => handleRestoreExam(exam)}
+                                className="btn btn-secondary text-xs py-1 px-2.5 flex items-center gap-1 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10 rounded-lg cursor-pointer whitespace-nowrap shrink-0"
+                                title="Sınavı ve sonuçlarını çöp kutusundan geri yükle"
+                              >
+                                <RotateCcw className="h-3.5 w-3.5" /> Geri Yükle
+                              </button>
+                              {canDelete && (
+                                <button
+                                  onClick={() => handleInitiateDelete(exam, true)}
+                                  className="btn text-xs py-1 px-2.5 flex items-center gap-1 bg-rose-600/20 hover:bg-rose-600/30 text-rose-500 dark:text-rose-400 border border-rose-500/30 rounded-lg cursor-pointer whitespace-nowrap shrink-0"
+                                  title="Sınavı kalıcı olarak sil"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" /> Kalıcı Sil
+                                </button>
+                              )}
+                            </>
+                          ) : canDelete ? (
                             <button
-                              onClick={() => handleDeleteExam(exam.id, exam.title)}
+                              onClick={() => handleInitiateDelete(exam, false)}
                               className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer shrink-0"
-                              title="Sınavı Sil"
+                              title="Sınavı Çöp Kutusuna Gönder"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </button>
@@ -785,6 +879,97 @@ export const ExamsList: React.FC<ExamsListProps> = ({
           itemLabel="sınav"
           className="glass-panel p-4 rounded-2xl"
         />
+      )}
+
+      {/* Güvenli Silme Onay Modalı */}
+      {examToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="glass-panel max-w-lg w-full p-6 rounded-2xl border-rose-500/40 space-y-5 bg-white dark:bg-slate-900 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400">
+                <AlertTriangle className="h-6 w-6" />
+                <h3 className="font-display text-lg font-bold">
+                  {examToDelete.isPermanent ? 'Sınavı Kalıcı Olarak Sil' : 'Sınavı Çöp Kutusuna Gönder'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setExamToDelete(null); setDeleteConfirmationText(''); }}
+                className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-sm text-slate-600 dark:text-slate-300">
+              <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800">
+                <p className="font-bold text-slate-900 dark:text-white text-base">
+                  {examToDelete.exam.title}
+                </p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Kod: <strong className="font-mono text-indigo-600 dark:text-indigo-400">{examToDelete.exam.examCode}</strong> • {examToDelete.exam.institutionName}
+                </p>
+              </div>
+
+              {examToDelete.scanCount > 0 ? (
+                <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 space-y-1">
+                  <p className="font-bold flex items-center gap-1.5 text-rose-600 dark:text-rose-400">
+                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                    DİKKAT: Bu sınava ait {examToDelete.scanCount} öğrencinin okunmuş optik form sonucu bulunuyor!
+                  </p>
+                  <p className="text-xs">
+                    {examToDelete.isPermanent
+                      ? 'Bu sınav kalıcı olarak silindiğinde, öğrencilerin karneleri ve sonuçları da tamamen yok edilecek ve bir daha geri getirilemeyecektir.'
+                      : 'Sınav çöp kutusuna gönderilecek. Dilediğiniz zaman Çöp Kutusu sekmesinden tüm sonuçlarıyla birlikte geri yükleyebilirsiniz.'}
+                  </p>
+                </div>
+              ) : (
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {examToDelete.isPermanent
+                    ? 'Bu sınav sistemden ve veritabanından kalıcı olarak silinecektir.'
+                    : 'Bu sınav çöp kutusuna taşınacak. İhtiyaç halinde geri yükleyebilirsiniz.'}
+                </p>
+              )}
+
+              {(examToDelete.scanCount > 0 || examToDelete.isPermanent) && (
+                <div className="space-y-1.5 pt-2">
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block">
+                    Silme işlemini onaylamak için aşağıdaki kutucuğa büyük harflerle <strong className="text-rose-600 dark:text-rose-400 font-mono">SİL</strong> yazın:
+                  </label>
+                  <input
+                    type="text"
+                    value={deleteConfirmationText}
+                    onChange={(e) => setDeleteConfirmationText(e.target.value)}
+                    placeholder="SİL"
+                    className="input-field text-sm font-mono tracking-wider text-center uppercase font-bold border-rose-300 dark:border-rose-800 focus:border-rose-500"
+                    autoFocus
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => { setExamToDelete(null); setDeleteConfirmationText(''); }}
+                className="btn btn-secondary text-xs py-2 px-4 cursor-pointer"
+              >
+                Vazgeç
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                disabled={
+                  (examToDelete.scanCount > 0 || examToDelete.isPermanent) &&
+                  deleteConfirmationText.trim().toUpperCase() !== 'SİL'
+                }
+                className="btn text-xs py-2 px-5 font-bold bg-rose-600 hover:bg-rose-500 disabled:opacity-40 disabled:cursor-not-allowed text-white shadow-lg shadow-rose-600/30 cursor-pointer transition-all"
+              >
+                {examToDelete.isPermanent ? 'Kalıcı Olarak Sil' : 'Çöp Kutusuna Gönder'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

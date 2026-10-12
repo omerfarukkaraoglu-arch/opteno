@@ -110,6 +110,8 @@ export interface Exam {
   createdByUserId?: string;
   createdByName?: string;
   isSystemExam?: boolean; // Sistem Admini (SuperAdmin) tarafından oluşturulmuş merkezi sınav
+  isDeleted?: boolean; // Çöp kutusuna taşınmış mı? (Soft-delete)
+  deletedAt?: string; // Çöp kutusuna taşınma tarihi
 }
 
 export interface ScannedAnswer {

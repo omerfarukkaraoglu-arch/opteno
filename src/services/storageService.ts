@@ -823,8 +823,22 @@ export const storageService = {
   },
 
   // Exams
-  getExams: (institutionId?: string): Exam[] => {
-    const list = getItem<Exam[]>(KEYS.EXAMS, initialExams);
+  getExams: (institutionId?: string, includeDeleted: boolean = false): Exam[] => {
+    let list = getItem<Exam[]>(KEYS.EXAMS, initialExams);
+    if (!includeDeleted) {
+      list = list.filter(e => !e.isDeleted);
+    }
+    if (!institutionId) return list;
+    return list.filter(e => 
+      e.institutionId === institutionId || 
+      e.isSystemExam === true || 
+      e.createdByRole === 'SUPER_ADMIN' ||
+      e.institutionId === 'ALL' ||
+      e.institutionId === 'SYSTEM'
+    );
+  },
+  getTrashExams: (institutionId?: string): Exam[] => {
+    const list = getItem<Exam[]>(KEYS.EXAMS, initialExams).filter(e => e.isDeleted === true);
     if (!institutionId) return list;
     return list.filter(e => 
       e.institutionId === institutionId || 
@@ -882,14 +896,66 @@ export const storageService = {
     pushToServer();
     window.dispatchEvent(new CustomEvent('opticok-data-updated'));
   },
+  // Çöp Kutusuna Taşı (Soft Delete)
   deleteExam: (examId: string, userOverride?: User): boolean => {
     const currentUser = userOverride || storageService.getCurrentUser();
     const exam = storageService.getExamById(examId);
     if (!exam) return false;
 
     if (!storageService.canDeleteExam(exam, currentUser)) {
-      console.warn(`[Security] Unauthorized delete attempt by ${currentUser.name} (${currentUser.role}) on exam ${exam.title} (${exam.id})`);
+      console.warn(`[Security] Unauthorized delete attempt by ${currentUser?.name} (${currentUser?.role}) on exam ${exam.title} (${exam.id})`);
       alert('Bu sınav Sistem Yöneticisi (Merkezi) tarafından oluşturulmuştur. Kurumlar sistem sınavlarını silemez; sadece optik form basabilir, optik okuyabilir ve sonuçlarını inceleyebilir.');
+      return false;
+    }
+
+    const list = getItem<Exam[]>(KEYS.EXAMS, initialExams).map(e => {
+      if (e.id === examId) {
+        return {
+          ...e,
+          isDeleted: true,
+          deletedAt: new Date().toISOString()
+        };
+      }
+      return e;
+    });
+    setItem(KEYS.EXAMS, list);
+    pushToServer();
+    window.dispatchEvent(new CustomEvent('opticok-data-updated'));
+    return true;
+  },
+  // Çöp Kutusundan Geri Yükle (Restore)
+  restoreExam: (examId: string, userOverride?: User): boolean => {
+    const currentUser = userOverride || storageService.getCurrentUser();
+    const exam = storageService.getExamById(examId);
+    if (!exam) return false;
+
+    if (!storageService.canDeleteExam(exam, currentUser)) {
+      alert('Bu sınavı geri yükleme yetkiniz bulunmuyor.');
+      return false;
+    }
+
+    const list = getItem<Exam[]>(KEYS.EXAMS, initialExams).map(e => {
+      if (e.id === examId) {
+        const copy = { ...e };
+        delete copy.isDeleted;
+        delete copy.deletedAt;
+        return copy;
+      }
+      return e;
+    });
+    setItem(KEYS.EXAMS, list);
+    pushToServer();
+    window.dispatchEvent(new CustomEvent('opticok-data-updated'));
+    return true;
+  },
+  // Çöp Kutusundan Kalıcı Olarak Sil (Permanent Delete)
+  permanentlyDeleteExam: (examId: string, userOverride?: User): boolean => {
+    const currentUser = userOverride || storageService.getCurrentUser();
+    const exam = storageService.getExamById(examId);
+    if (!exam) return false;
+
+    if (!storageService.canDeleteExam(exam, currentUser)) {
+      alert('Bu sınav Sistem Yöneticisi (Merkezi) tarafından oluşturulmuştur. Kurumlar sistem sınavlarını silemez.');
       return false;
     }
 
