@@ -1,5 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Printer, Download, Sparkles, Layers, Sliders, CheckCircle2, ChevronRight, PlusCircle, ArrowLeft, Eye, HelpCircle, Scissors } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { 
+  Printer, Download, Sparkles, Layers, Sliders, CheckCircle2, ChevronRight, 
+  PlusCircle, ArrowLeft, Eye, HelpCircle, Scissors, Users, Search, X, 
+  Building2, AlertTriangle, CheckSquare, Square 
+} from 'lucide-react';
 import { Exam, Student } from '../../types';
 import { storageService } from '../../services/storageService';
 import { pdfService, OMRPageFormat } from '../../services/pdfService';
@@ -17,9 +21,9 @@ export const OMRGenerator: React.FC<OMRGeneratorProps> = ({
   onNavigateToCreateExam
 }) => {
   const currentUser = storageService.getCurrentUser();
+  const isSuperAdmin = currentUser.role === 'SUPER_ADMIN';
+  const institutions = storageService.getInstitutions();
   const exams = storageService.getExams();
-  const classes = storageService.getClasses(currentUser.institutionId);
-  const allStudents = storageService.getStudents(currentUser.institutionId);
 
   // Selected Exam State
   const [selectedExamId, setSelectedExamId] = useState<string>(() => {
@@ -29,43 +33,141 @@ export const OMRGenerator: React.FC<OMRGeneratorProps> = ({
     return exams.length > 0 ? exams[0].id : '';
   });
 
+  const selectedExam = exams.find(e => e.id === selectedExamId) || null;
+
+  // Selected Institution State (for Super Admin to choose institution freely)
+  const [selectedInstId, setSelectedInstId] = useState<string>(() => {
+    if (isSuperAdmin) {
+      if (selectedExam && selectedExam.institutionId && selectedExam.institutionId !== 'ALL' && selectedExam.institutionId !== 'SYSTEM') {
+        return selectedExam.institutionId;
+      }
+      return 'ALL';
+    }
+    return currentUser.institutionId || '';
+  });
+
+  // When selected exam changes, update institution filter if it belongs to a specific institution
+  const handleExamChange = (examId: string) => {
+    setSelectedExamId(examId);
+    const ex = exams.find(e => e.id === examId);
+    if (isSuperAdmin && ex && ex.institutionId && ex.institutionId !== 'ALL' && ex.institutionId !== 'SYSTEM') {
+      setSelectedInstId(ex.institutionId);
+    }
+  };
+
+  // Available classes and students based on user role and selected institution
+  const availableClasses = useMemo(() => {
+    const instId = isSuperAdmin ? (selectedInstId === 'ALL' ? undefined : selectedInstId) : currentUser.institutionId;
+    return storageService.getClasses(instId);
+  }, [isSuperAdmin, selectedInstId, currentUser.institutionId]);
+
+  const availableStudents = useMemo(() => {
+    const instId = isSuperAdmin ? (selectedInstId === 'ALL' ? undefined : selectedInstId) : currentUser.institutionId;
+    return storageService.getStudents(instId);
+  }, [isSuperAdmin, selectedInstId, currentUser.institutionId]);
+
   // Selected Class Filter State
   const [selectedClassId, setSelectedClassId] = useState<string>('GENERIC');
   const [pageFormat, setPageFormat] = useState<OMRPageFormat>('A4');
   const [previewQRUrl, setPreviewQRUrl] = useState<string>('');
   const [isExporting, setIsExporting] = useState<boolean>(false);
 
-  // Get active selected exam object
-  const selectedExam = exams.find(e => e.id === selectedExamId) || null;
+  // Candidate students based on class selection
+  const candidateStudents = useMemo(() => {
+    if (selectedClassId === 'GENERIC') {
+      return [];
+    }
+    if (selectedClassId === 'ALL') {
+      return availableStudents;
+    }
+    return availableStudents.filter(s => s.classId === selectedClassId);
+  }, [availableStudents, selectedClassId]);
 
-  // Generate live preview QR code when selected exam changes
+  // Selected student IDs (Set) for individual student inclusion / exclusion
+  const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(new Set());
+
+  // Search filter query inside student list
+  const [studentSearchQuery, setStudentSearchQuery] = useState<string>('');
+
+  // Whenever candidate students list changes (class / inst change), default to selecting all candidates
+  useEffect(() => {
+    if (candidateStudents.length > 0) {
+      setSelectedStudentIds(new Set(candidateStudents.map(s => s.id)));
+    } else {
+      setSelectedStudentIds(new Set());
+    }
+    setStudentSearchQuery('');
+  }, [candidateStudents]);
+
+  // Filtered candidate students by search query
+  const filteredCandidateStudents = useMemo(() => {
+    if (!studentSearchQuery.trim()) return candidateStudents;
+    const q = studentSearchQuery.toLowerCase().trim();
+    return candidateStudents.filter(s => 
+      `${s.firstName} ${s.lastName}`.toLowerCase().includes(q) ||
+      (s.studentNo && s.studentNo.toLowerCase().includes(q)) ||
+      (s.className && s.className.toLowerCase().includes(q))
+    );
+  }, [candidateStudents, studentSearchQuery]);
+
+  // Toggle single student selection
+  const toggleStudent = (id: string) => {
+    setSelectedStudentIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  // Select all candidate students
+  const handleSelectAll = () => {
+    setSelectedStudentIds(new Set(candidateStudents.map(s => s.id)));
+  };
+
+  // Deselect all candidate students
+  const handleDeselectAll = () => {
+    setSelectedStudentIds(new Set());
+  };
+
+  // Target students to generate OMR forms for
+  const getTargetStudents = (): Student[] => {
+    if (selectedClassId === 'GENERIC') {
+      return []; // Return empty list to generate 1 generic blank form
+    }
+    return candidateStudents.filter(s => selectedStudentIds.has(s.id));
+  };
+
+  // First and second selected students for realistic preview
+  const firstSelectedStudent = useMemo(() => {
+    return candidateStudents.find(s => selectedStudentIds.has(s.id)) || null;
+  }, [candidateStudents, selectedStudentIds]);
+
+  const secondSelectedStudent = useMemo(() => {
+    return candidateStudents.filter(s => selectedStudentIds.has(s.id))[1] || null;
+  }, [candidateStudents, selectedStudentIds]);
+
+  // Generate live preview QR code when selected exam or selected student changes
   useEffect(() => {
     if (selectedExam) {
+      const sampleStudent = firstSelectedStudent;
       qrService.generateOMRQRDataUrl(
         selectedExam.id,
-        'PREVIEW-STUDENT',
+        sampleStudent ? sampleStudent.id : 'PREVIEW-STUDENT',
         {
           examCode: selectedExam.examCode,
-          studentNo: '1042',
+          studentNo: sampleStudent ? sampleStudent.studentNo : '1042',
           instId: selectedExam.institutionId,
-          studentName: 'Örnek Öğrenci'
+          studentName: sampleStudent ? `${sampleStudent.firstName} ${sampleStudent.lastName}` : 'Örnek Öğrenci'
         }
       ).then(url => {
         setPreviewQRUrl(url);
       });
     }
-  }, [selectedExamId]);
-
-  // Determine students to generate OMR forms for
-  const getTargetStudents = (): Student[] => {
-    if (selectedClassId === 'GENERIC') {
-      return []; // Return empty list to generate 1 generic blank form
-    }
-    if (selectedClassId === 'ALL') {
-      return allStudents;
-    }
-    return allStudents.filter(s => s.classId === selectedClassId);
-  };
+  }, [selectedExamId, firstSelectedStudent]);
 
   // Generate and download PDF
   const handleExportPDF = async () => {
@@ -74,12 +176,18 @@ export const OMRGenerator: React.FC<OMRGeneratorProps> = ({
       return;
     }
 
+    if (selectedClassId !== 'GENERIC' && selectedStudentIds.size === 0) {
+      alert('Lütfen optik form basılacak en az 1 öğrenci seçin.');
+      return;
+    }
+
     setIsExporting(true);
     try {
       const targetStudents = getTargetStudents();
       const pdfDoc = await pdfService.generateOMRPDF(selectedExam, targetStudents, pageFormat);
       const suffix = pageFormat === 'A5' ? '_A5_Tasarruf' : '_A4';
-      const filename = `${selectedExam.examCode || 'Opteno'}_Optik_Formlar${suffix}.pdf`;
+      const countLabel = selectedClassId === 'GENERIC' ? '_Bos_Form' : `_${targetStudents.length}_Ogrenci`;
+      const filename = `${selectedExam.examCode || 'Opteno'}_Optik_Formlar${countLabel}${suffix}.pdf`;
       pdfDoc.save(filename);
     } catch (err) {
       console.error('PDF export failed:', err);
@@ -152,18 +260,42 @@ export const OMRGenerator: React.FC<OMRGeneratorProps> = ({
           <div className="lg:col-span-5 space-y-6">
             {/* Exam Picker Box */}
             <div className="glass-panel p-5 space-y-4">
-              <h2 className="text-xs font-bold text-indigo-300 uppercase tracking-wider flex items-center gap-1.5">
-                <Sliders className="h-4 w-4 text-indigo-400" /> 1. Sınav Seçimi
+              <h2 className="text-xs font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
+                <Sliders className="h-4 w-4 text-indigo-400" /> 1. Sınav & Kurum Seçimi
               </h2>
 
+              {/* Kurum Filtresi (Sadece Sistem Admini için görünür) */}
+              {isSuperAdmin && (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
+                    <Building2 className="h-3.5 w-3.5 text-indigo-500" /> Kurum Filtresi (Sistem Yöneticisi)
+                  </label>
+                  <select
+                    value={selectedInstId}
+                    onChange={(e) => {
+                      setSelectedInstId(e.target.value);
+                      setSelectedClassId('ALL');
+                    }}
+                    className="input-field text-xs bg-white dark:bg-slate-900 font-medium py-2"
+                  >
+                    <option value="ALL">Tüm Kurumlar (Hepsi)</option>
+                    {institutions.map(inst => (
+                      <option key={inst.id} value={inst.id}>
+                        {inst.name} ({inst.city})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                   Sınavı Seçiniz *
                 </label>
                 <select
                   value={selectedExamId}
-                  onChange={(e) => setSelectedExamId(e.target.value)}
-                  className="input-field text-xs bg-slate-900 font-medium py-2.5"
+                  onChange={(e) => handleExamChange(e.target.value)}
+                  className="input-field text-xs bg-white dark:bg-slate-900 font-medium py-2.5"
                 >
                   {exams.map(exam => (
                     <option key={exam.id} value={exam.id}>
@@ -174,32 +306,149 @@ export const OMRGenerator: React.FC<OMRGeneratorProps> = ({
               </div>
 
               {/* Class & Printing Options */}
-              <div className="pt-2 border-t border-slate-800 space-y-3">
-                <label className="block text-xs font-semibold text-slate-300">
-                  Basım Modu / Öğrenci Seçimi
+              <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-3">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Basım Modu / Sınıf Seçimi
                 </label>
                 <select
                   value={selectedClassId}
                   onChange={(e) => setSelectedClassId(e.target.value)}
-                  className="input-field text-xs bg-slate-900"
+                  className="input-field text-xs bg-white dark:bg-slate-900"
                 >
                   <option value="GENERIC">İsimsiz Boş Form (Genel Basım)</option>
                   <option value="ALL">Tüm Sınıflar (Öğrenciye Özel İsimli & QR Kodlu)</option>
-                  {classes.map(cls => (
+                  {availableClasses.map(cls => (
                     <option key={cls.id} value={cls.id}>
-                      {cls.name} Sınıfı ({allStudents.filter(s => s.classId === cls.id).length} Öğrenci)
+                      {cls.name} Sınıfı ({availableStudents.filter(s => s.classId === cls.id).length} Öğrenci)
                     </option>
                   ))}
                 </select>
 
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
                   {selectedClassId === 'GENERIC' ? (
-                    '💡 Öğrencilerin isimlerini ve numaralarını kalemle doldurabilecekleri boş optik form üretilir.'
+                    '💡 Öğrencilerin isimlerini ve numaralarını optik form üzerinde kurşun kalemle kodlayacakları boş form üretilir.'
                   ) : (
-                    `💡 Seçilen sınıftaki ${getTargetStudents().length} öğrenci için ad-soyad ve özel karekod içeren optik sayfaları toplu üretilir.`
+                    `💡 Seçilen sınıfta toplam ${candidateStudents.length} öğrenci bulunuyor. Aşağıdaki listeden sınava katılacak öğrencileri seçebilirsiniz.`
                   )}
                 </p>
               </div>
+
+              {/* INTERACTIVE STUDENT SELECTION LIST (İsme Özel Modda Öğrenci Seçimi) */}
+              {selectedClassId !== 'GENERIC' && (
+                <div className="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <Users className="h-4 w-4 text-indigo-500 dark:text-indigo-400" />
+                      <span className="text-xs font-bold text-slate-900 dark:text-slate-200">
+                        Sınava Girecek Öğrenciler
+                      </span>
+                    </div>
+                    <span className={`badge text-[10px] font-bold ${
+                      selectedStudentIds.size > 0 ? 'badge-primary' : 'badge-warning'
+                    }`}>
+                      {selectedStudentIds.size} / {candidateStudents.length} Seçili
+                    </span>
+                  </div>
+
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Sınava sokmayacağınız öğrencilerin işaretini kaldırabilirsiniz. Yalnızca işaretli öğrencilere form basılacaktır.
+                  </p>
+
+                  {/* Search and Bulk Action Buttons */}
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
+                      <input
+                        type="text"
+                        placeholder="Öğrenci ara (Ad, No, Sınıf)..."
+                        value={studentSearchQuery}
+                        onChange={(e) => setStudentSearchQuery(e.target.value)}
+                        className="input-field text-xs pl-8 py-1.5 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+                      />
+                      {studentSearchQuery && (
+                        <button
+                          type="button"
+                          onClick={() => setStudentSearchQuery('')}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleSelectAll}
+                      className="btn btn-secondary text-[11px] py-1.5 px-2.5 rounded-lg whitespace-nowrap hover:text-indigo-600 dark:hover:text-indigo-400"
+                      title="Tüm Öğrencileri Seç"
+                    >
+                      Tümünü Seç
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleDeselectAll}
+                      className="btn btn-secondary text-[11px] py-1.5 px-2.5 rounded-lg whitespace-nowrap hover:text-rose-600 dark:hover:text-rose-400"
+                      title="Tüm Seçimleri Kaldır"
+                    >
+                      Kaldır
+                    </button>
+                  </div>
+
+                  {/* Scrollable Student Checklist */}
+                  <div className="max-h-60 overflow-y-auto rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/60 divide-y divide-slate-100 dark:divide-slate-800/80 shadow-inner">
+                    {candidateStudents.length === 0 ? (
+                      <div className="p-4 text-center text-xs text-slate-400 italic">
+                        Bu sınıfta veya kurumda henüz kayıtlı öğrenci bulunmuyor.
+                      </div>
+                    ) : filteredCandidateStudents.length === 0 ? (
+                      <div className="p-4 text-center text-xs text-slate-400 italic">
+                        Arama kriterine uygun öğrenci bulunamadı.
+                      </div>
+                    ) : (
+                      filteredCandidateStudents.map((st) => {
+                        const isChecked = selectedStudentIds.has(st.id);
+                        return (
+                          <div
+                            key={st.id}
+                            onClick={() => toggleStudent(st.id)}
+                            className={`px-3 py-2 flex items-center justify-between gap-2.5 cursor-pointer select-none transition-colors ${
+                              isChecked 
+                                ? 'bg-indigo-50/60 dark:bg-indigo-950/30 hover:bg-indigo-50 dark:hover:bg-indigo-950/40' 
+                                : 'hover:bg-slate-50 dark:hover:bg-slate-900/60 opacity-60'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() => {}} // Row onClick manages toggle
+                                className="rounded accent-indigo-600 h-4 w-4 cursor-pointer shrink-0"
+                              />
+                              <span className="font-mono text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/70 border border-indigo-200 dark:border-indigo-800/60 px-1.5 py-0.5 rounded shrink-0">
+                                {st.studentNo || '---'}
+                              </span>
+                              <span className="text-xs font-semibold text-slate-900 dark:text-white truncate">
+                                {st.firstName} {st.lastName}
+                              </span>
+                            </div>
+
+                            <span className="badge text-[9px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 shrink-0">
+                              {st.className || 'Sınıf Yok'}
+                            </span>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  {selectedStudentIds.size === 0 && (
+                    <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4 shrink-0" />
+                      <span>Hiçbir öğrenci seçilmedi. Lütfen optik form basılacak en az 1 öğrenci seçin.</span>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Paper Format Option (A4 vs A5) */}
               <div className="pt-3 border-t border-slate-800 space-y-2.5">
@@ -320,7 +569,7 @@ export const OMRGenerator: React.FC<OMRGeneratorProps> = ({
             <div className="glass-panel p-5">
               <button
                 onClick={handleExportPDF}
-                disabled={isExporting || !selectedExam}
+                disabled={isExporting || !selectedExam || (selectedClassId !== 'GENERIC' && selectedStudentIds.size === 0)}
                 className="w-full btn btn-primary py-3.5 px-6 text-sm font-bold shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {isExporting ? (
@@ -331,11 +580,16 @@ export const OMRGenerator: React.FC<OMRGeneratorProps> = ({
                 ) : (
                   <>
                     <Download className="h-5 w-5" /> 
-                    <span>Optik Form İndir (PDF - {pageFormat === 'A5' ? 'A5 Kağıt Tasarrufu' : 'A4 Standart'})</span>
+                    <span>
+                      {selectedClassId === 'GENERIC'
+                        ? `Optik Form İndir (PDF - Boş Form)`
+                        : `Optik Form İndir (PDF - ${selectedStudentIds.size} Öğrenci)`
+                      }
+                    </span>
                   </>
                 )}
               </button>
-              <p className="text-[10px] text-slate-400 text-center mt-2">
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 text-center mt-2">
                 {pageFormat === 'A5'
                   ? '1 A4 sayfasına altlı üstlü 2 optik form basılır, ortadan kesildiğinde 2 adet A5 form olur.'
                   : 'Yüksek çözünürlüklü A4 formatında hizalama işaretli (Fiducial) optik form üretilir.'}
@@ -376,14 +630,14 @@ export const OMRGenerator: React.FC<OMRGeneratorProps> = ({
                         </div>
                       </div>
                       <div className="text-right text-[9px] text-slate-600">
-                        {selectedClassId !== 'GENERIC' ? 'Öğrenci 1 (Önizleme)' : 'Boş Form 1'} • 1. A5 Parçası
+                        {selectedClassId !== 'GENERIC' ? (firstSelectedStudent ? `${firstSelectedStudent.firstName} ${firstSelectedStudent.lastName}` : 'Öğrenci 1') : 'Boş Form 1'} • 1. A5 Parçası
                       </div>
                     </div>
 
                     <div className="flex items-center justify-between gap-2 px-3">
                       <div className="text-[9px] text-slate-700 space-y-0.5">
-                        <div>Ad Soyad: {selectedClassId !== 'GENERIC' ? 'Örnek Öğrenci 1' : '__________________'}</div>
-                        <div>Öğrenci No: {selectedClassId !== 'GENERIC' ? '1042' : '[  ][  ][  ]'} | Sınıf: 8/A</div>
+                        <div>Ad Soyad: {selectedClassId !== 'GENERIC' ? (firstSelectedStudent ? `${firstSelectedStudent.firstName} ${firstSelectedStudent.lastName}` : 'Öğrenci Seçilmedi') : '__________________'}</div>
+                        <div>Öğrenci No: {selectedClassId !== 'GENERIC' ? (firstSelectedStudent?.studentNo || '---') : '[  ][  ][  ]'} | Sınıf: {firstSelectedStudent?.className || '---'}</div>
                         {selectedExam.hasBookletTypes && (
                           <div className="flex items-center gap-1.5 text-[8.5px] font-bold text-slate-900 pt-0.5">
                             <span>KİTAPÇIK:</span>
@@ -448,14 +702,14 @@ export const OMRGenerator: React.FC<OMRGeneratorProps> = ({
                         </div>
                       </div>
                       <div className="text-right text-[9px] text-slate-600">
-                        {selectedClassId !== 'GENERIC' ? 'Öğrenci 2 (Önizleme)' : 'Boş Form 2'} • 2. A5 Parçası
+                        {selectedClassId !== 'GENERIC' ? (secondSelectedStudent ? `${secondSelectedStudent.firstName} ${secondSelectedStudent.lastName}` : (firstSelectedStudent ? '2. Form' : 'Öğrenci 2')) : 'Boş Form 2'} • 2. A5 Parçası
                       </div>
                     </div>
 
                     <div className="flex items-center justify-between gap-2 px-3">
                       <div className="text-[9px] text-slate-700 space-y-0.5">
-                        <div>Ad Soyad: {selectedClassId !== 'GENERIC' ? 'Örnek Öğrenci 2' : '__________________'}</div>
-                        <div>Öğrenci No: {selectedClassId !== 'GENERIC' ? '1043' : '[  ][  ][  ]'} | Sınıf: 8/A</div>
+                        <div>Ad Soyad: {selectedClassId !== 'GENERIC' ? (secondSelectedStudent ? `${secondSelectedStudent.firstName} ${secondSelectedStudent.lastName}` : (selectedStudentIds.size > 1 ? 'Örnek Öğrenci 2' : '2. Öğrenci')) : '__________________'}</div>
+                        <div>Öğrenci No: {selectedClassId !== 'GENERIC' ? (secondSelectedStudent?.studentNo || '---') : '[  ][  ][  ]'} | Sınıf: {secondSelectedStudent?.className || '---'}</div>
                       </div>
                       {/* Mini QR */}
                       <div className="w-10 h-10 border border-slate-300 bg-white p-0.5 flex items-center justify-center shrink-0">
@@ -513,9 +767,9 @@ export const OMRGenerator: React.FC<OMRGeneratorProps> = ({
                       </div>
                       {selectedClassId !== 'GENERIC' ? (
                         <div className="space-y-0.5 text-[10px]">
-                          <div>Adı Soyadı: <strong className="text-black font-bold">Örnek Öğrenci (Önizleme)</strong></div>
-                          <div>Öğrenci No: <strong className="font-mono text-black">1042</strong></div>
-                          <div>Sınıfı: <strong className="text-black">8/A Sınıfı</strong></div>
+                          <div>Adı Soyadı: <strong className="text-black font-bold">{firstSelectedStudent ? `${firstSelectedStudent.firstName} ${firstSelectedStudent.lastName}` : (selectedStudentIds.size === 0 ? 'Öğrenci Seçilmedi' : 'Örnek Öğrenci')}</strong></div>
+                          <div>Öğrenci No: <strong className="font-mono text-black">{firstSelectedStudent?.studentNo || '1042'}</strong></div>
+                          <div>Sınıfı: <strong className="text-black">{firstSelectedStudent?.className || '8/A Sınıfı'}</strong></div>
                         </div>
                       ) : (
                         <div className="space-y-0.5 text-[10px] text-slate-700">
