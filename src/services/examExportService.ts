@@ -439,56 +439,56 @@ function drawRankingTablePDF(
 
   const overallAccuracy = exam.totalQuestions > 0 ? Math.round((avgTotalNet / exam.totalQuestions) * 100) : 0;
 
-  // 2. Executive Corporate Header
+  // 2. Executive Corporate Header (Compact)
   doc.setFillColor(15, 23, 42); // Deep Midnight Slate
-  doc.rect(12, 10, 4, 13, 'F');
+  doc.rect(10, 8, 3.5, 11, 'F');
 
   doc.setFont('Roboto', 'bold');
-  doc.setFontSize(12.5);
+  doc.setFontSize(11);
   doc.setTextColor(15, 23, 42);
-  doc.text(title, 18, 15.5);
+  doc.text(title, 16, 13);
 
   doc.setFont('Roboto', 'normal');
-  doc.setFontSize(8.5);
+  doc.setFontSize(7.5);
   doc.setTextColor(100, 116, 139);
-  doc.text(subtitle, 18, 21.5);
+  doc.text(subtitle, 16, 17.5);
 
   // Institution Logo at top right if available (Landscape A4: width 297mm)
   if (institutionLogo) {
     try {
-      doc.addImage(institutionLogo, 252, 7, 33, 16);
+      doc.addImage(institutionLogo, 256, 6, 29, 13);
     } catch (err) {
       console.warn('PDF Institution Logo draw error:', err);
     }
   }
 
-  // 3. TABLE 1: KURUMSAL GENEL ORTALAMALAR TABLOSU (SUMMARY KPI TABLE)
+  // 3. TABLE 1: KURUMSAL GENEL ORTALAMALAR TABLOSU (SUMMARY KPI TABLE - COMPACT)
   const summaryHeaders = [
-    'DEĞERLENDİRME KRİTERİ',
+    'KRİTER',
     ...exam.subjects.map(s => `${s.name} Ort.`),
-    'TOPLAM NET ORT.',
-    'ORTALAMA PUAN',
-    'EN YÜKSEK / DÜŞÜK'
+    'TOP. NET ORT.',
+    'PUAN ORT.',
+    'EN YÜKSEK / EN DÜŞÜK'
   ];
 
   const summaryRowNet = [
-    'Katılımcı / Sınıf Ortalaması',
-    ...subAverages.map(a => `${a.avgD}D - ${a.avgY}Y\n${a.avgNet} Net`),
-    `${avgTotalD}D - ${avgTotalY}Y\n${avgTotalNet} Net`,
+    'Genel Ortalama',
+    ...subAverages.map(a => `${a.avgD}D ${a.avgY}Y | ${a.avgNet}N`),
+    `${avgTotalD}D ${avgTotalY}Y | ${avgTotalNet}N`,
     `${avgScore} Puan`,
     `${maxScore} / ${minScore}`
   ];
 
   const summaryRowAcc = [
-    'Ders Başarı Oranı (%)',
+    'Başarı Oranı',
     ...subAverages.map(a => `%${a.accuracy}`),
     `%${overallAccuracy}`,
-    `Mevcut: ${studentCount} Öğrenci`,
+    `Mevcut: ${studentCount} Öğr.`,
     `500 Üzerinden`
   ];
 
   const summaryColStyles: { [key: number]: any } = {
-    0: { halign: 'left', fontStyle: 'bold', cellWidth: 55 }
+    0: { halign: 'left', fontStyle: 'bold', cellWidth: 42 }
   };
   let sColIdx = 1;
   exam.subjects.forEach(() => {
@@ -500,36 +500,36 @@ function drawRankingTablePDF(
   summaryColStyles[sColIdx + 2] = { halign: 'center', fontStyle: 'normal' };
 
   autoTable(doc, {
-    startY: 26,
+    startY: 21,
     head: [summaryHeaders],
     body: [summaryRowNet, summaryRowAcc],
     theme: 'grid',
     styles: {
       font: 'Roboto',
-      fontSize: 7.5,
-      cellPadding: { top: 2, bottom: 2, left: 2.5, right: 2.5 },
+      fontSize: 6.8,
+      cellPadding: { top: 1.2, bottom: 1.2, left: 1.5, right: 1.5 },
       valign: 'middle',
       textColor: [15, 23, 42],
       lineColor: [203, 213, 225],
-      lineWidth: 0.2,
+      lineWidth: 0.15,
     },
     headStyles: {
       font: 'Roboto',
-      fillColor: [30, 41, 59], // Dark Slate Corporate Header
+      fillColor: [30, 41, 59],
       textColor: [255, 255, 255],
       fontStyle: 'bold',
       halign: 'center',
       valign: 'middle',
-      fontSize: 8,
+      fontSize: 7,
       lineColor: [15, 23, 42],
-      lineWidth: 0.2,
+      lineWidth: 0.15,
     },
     columnStyles: summaryColStyles,
-    margin: { left: 12, right: 12 },
+    margin: { left: 10, right: 10 },
     didParseCell: (data) => {
       if (data.section === 'body') {
         if (data.row.index === 0) {
-          data.cell.styles.fillColor = [240, 249, 255]; // Soft ice blue
+          data.cell.styles.fillColor = [240, 249, 255];
         } else {
           data.cell.styles.fillColor = [255, 255, 255];
         }
@@ -537,9 +537,16 @@ function drawRankingTablePDF(
     }
   });
 
-  const mainTableStartY = ((doc as any).lastAutoTable?.finalY || 45) + 5;
+  const mainTableStartY = ((doc as any).lastAutoTable?.finalY || 35) + 3;
 
-  // 4. TABLE 2: ANA ÖĞRENCİ SIRALAMA LİSTESİ (HER DERSİN DOĞRU, YANLIŞ VE NETİ)
+  // Dynamic Compact Sizing based on Student Count to ensure single page fitting
+  const isCompact = studentCount >= 16;
+  const isSuperCompact = studentCount >= 28;
+  const fontSize = isSuperCompact ? 6 : isCompact ? 6.5 : 7.2;
+  const headFontSize = isSuperCompact ? 6.5 : isCompact ? 7 : 7.8;
+  const cellPadVertical = isSuperCompact ? 0.7 : isCompact ? 1.0 : 1.5;
+
+  // 4. TABLE 2: ANA ÖĞRENCİ SIRALAMA LİSTESİ
   const headers: string[] = [];
   const rows: (string | number)[][] = [];
   const columnStyles: { [key: number]: any } = {};
@@ -547,14 +554,14 @@ function drawRankingTablePDF(
   if (isNameSorted) {
     // İsim Sıralı Liste (A-Z)
     headers.push('No', 'Öğrenci Adı Soyadı (A-Z)', 'Okul No', 'Sınıfı', 'Kurum Sırası');
-    exam.subjects.forEach(s => headers.push(`${s.name}\n(D - Y | Net)`));
-    headers.push('Top. Net\n(D - Y | Net)', 'Puan');
+    exam.subjects.forEach(s => headers.push(isCompact ? `${s.name}\n(D/Y/Net)` : `${s.name}\n(D - Y | Net)`));
+    headers.push(isCompact ? 'Top. Net\n(D/Y/Net)' : 'Top. Net\n(D - Y | Net)', 'Puan');
 
-    columnStyles[0] = { halign: 'center', cellWidth: 12 };
+    columnStyles[0] = { halign: 'center', cellWidth: 10 };
     columnStyles[1] = { halign: 'left', fontStyle: 'bold' };
-    columnStyles[2] = { halign: 'center', cellWidth: 16 };
-    columnStyles[3] = { halign: 'center', cellWidth: 16 };
-    columnStyles[4] = { halign: 'center', fontStyle: 'bold', cellWidth: 20 };
+    columnStyles[2] = { halign: 'center', cellWidth: 15 };
+    columnStyles[3] = { halign: 'center', cellWidth: 15 };
+    columnStyles[4] = { halign: 'center', fontStyle: 'bold', cellWidth: 18 };
 
     let cIdx = 5;
     exam.subjects.forEach(() => {
@@ -578,21 +585,21 @@ function drawRankingTablePDF(
         const d = sub ? sub.correctCount : 0;
         const y = sub ? sub.wrongCount : 0;
         const net = sub ? sub.netCount : 0;
-        row.push(`${d}D - ${y}Y\n${net} Net`);
+        row.push(isCompact ? `${d}D ${y}Y | ${net}N` : `${d}D - ${y}Y\n${net} Net`);
       });
-      row.push(`${r.totalCorrect}D - ${r.totalWrong}Y\n${r.totalNet} Net`, r.totalScore.toFixed(1));
+      row.push(isCompact ? `${r.totalCorrect}D ${r.totalWrong}Y | ${r.totalNet}N` : `${r.totalCorrect}D - ${r.totalWrong}Y\n${r.totalNet} Net`, r.totalScore.toFixed(1));
       rows.push(row);
     });
   } else {
     // Net Sıralı Liste
     headers.push('Sıra', 'No', 'Öğrenci Adı Soyadı', 'Sınıfı');
-    exam.subjects.forEach(s => headers.push(`${s.name}\n(D - Y | Net)`));
-    headers.push('Top. Net\n(D - Y | Net)', 'Puan');
+    exam.subjects.forEach(s => headers.push(isCompact ? `${s.name}\n(D/Y/Net)` : `${s.name}\n(D - Y | Net)`));
+    headers.push(isCompact ? 'Top. Net\n(D/Y/Net)' : 'Top. Net\n(D - Y | Net)', 'Puan');
 
-    columnStyles[0] = { halign: 'center', fontStyle: 'bold', cellWidth: 12 };
-    columnStyles[1] = { halign: 'center', cellWidth: 16 };
+    columnStyles[0] = { halign: 'center', fontStyle: 'bold', cellWidth: 11 };
+    columnStyles[1] = { halign: 'center', cellWidth: 15 };
     columnStyles[2] = { halign: 'left', fontStyle: 'bold' };
-    columnStyles[3] = { halign: 'center', cellWidth: 16 };
+    columnStyles[3] = { halign: 'center', cellWidth: 15 };
 
     let cIdx = 4;
     exam.subjects.forEach(() => {
@@ -614,9 +621,9 @@ function drawRankingTablePDF(
         const d = sub ? sub.correctCount : 0;
         const y = sub ? sub.wrongCount : 0;
         const net = sub ? sub.netCount : 0;
-        row.push(`${d}D - ${y}Y\n${net} Net`);
+        row.push(isCompact ? `${d}D ${y}Y | ${net}N` : `${d}D - ${y}Y\n${net} Net`);
       });
-      row.push(`${r.totalCorrect}D - ${r.totalWrong}Y\n${r.totalNet} Net`, r.totalScore.toFixed(1));
+      row.push(isCompact ? `${r.totalCorrect}D ${r.totalWrong}Y | ${r.totalNet}N` : `${r.totalCorrect}D - ${r.totalWrong}Y\n${r.totalNet} Net`, r.totalScore.toFixed(1));
       rows.push(row);
     });
   }
@@ -633,9 +640,9 @@ function drawRankingTablePDF(
   }
   exam.subjects.forEach(s => {
     const subAvg = subAverages.find(sa => sa.name === s.name);
-    bottomAvgRow.push(subAvg ? `${subAvg.avgD}D - ${subAvg.avgY}Y\n${subAvg.avgNet} Net` : '0');
+    bottomAvgRow.push(subAvg ? (isCompact ? `${subAvg.avgD}D ${subAvg.avgY}Y | ${subAvg.avgNet}N` : `${subAvg.avgD}D - ${subAvg.avgY}Y\n${subAvg.avgNet} Net`) : '0');
   });
-  bottomAvgRow.push(`${avgTotalD}D - ${avgTotalY}Y\n${avgTotalNet} Net`, avgScore);
+  bottomAvgRow.push(isCompact ? `${avgTotalD}D ${avgTotalY}Y | ${avgTotalNet}N` : `${avgTotalD}D - ${avgTotalY}Y\n${avgTotalNet} Net`, avgScore);
   rows.push(bottomAvgRow);
 
   autoTable(doc, {
@@ -645,29 +652,29 @@ function drawRankingTablePDF(
     theme: 'grid',
     styles: {
       font: 'Roboto',
-      fontSize: 7.5,
-      cellPadding: { top: 2, bottom: 2, left: 1.8, right: 1.8 },
+      fontSize,
+      cellPadding: { top: cellPadVertical, bottom: cellPadVertical, left: 1.5, right: 1.5 },
       valign: 'middle',
       textColor: [30, 41, 59],
       lineColor: [226, 232, 240],
-      lineWidth: 0.15,
+      lineWidth: 0.12,
     },
     headStyles: {
       font: 'Roboto',
-      fillColor: isNameSorted ? [49, 46, 129] : [15, 23, 42], // Deep Navy
+      fillColor: isNameSorted ? [49, 46, 129] : [15, 23, 42],
       textColor: [255, 255, 255],
       fontStyle: 'bold',
       halign: 'center',
       valign: 'middle',
-      fontSize: 8,
+      fontSize: headFontSize,
       lineColor: [15, 23, 42],
-      lineWidth: 0.2,
+      lineWidth: 0.15,
     },
     alternateRowStyles: {
       fillColor: [248, 250, 252],
     },
     columnStyles,
-    margin: { left: 12, right: 12, top: 12, bottom: 12 },
+    margin: { left: 10, right: 10, top: 8, bottom: 8 },
     didParseCell: (data) => {
       // Highlight bottom average row
       if (data.section === 'body' && data.row.index === rows.length - 1) {
