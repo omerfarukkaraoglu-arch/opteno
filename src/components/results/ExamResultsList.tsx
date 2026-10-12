@@ -23,7 +23,8 @@ import {
   Share2,
   Copy,
   Percent,
-  BookOpen
+  BookOpen,
+  Trash2
 } from 'lucide-react';
 import { storageService, syncWithServer } from '../../services/storageService';
 import { Exam, ScanResult } from '../../types';
@@ -190,6 +191,17 @@ export const ExamResultsList: React.FC<ExamResultsListProps> = ({ initialExamId 
     navigator.clipboard.writeText(text);
     setCopiedResultId(res.id);
     setTimeout(() => setCopiedResultId(null), 2500);
+  };
+
+  const handleDeleteResult = (res: ScanResult) => {
+    const confirmMsg = `"${res.studentName}" adlı öğrencinin (${res.examTitle}) sınav sonucunu silmek istediğinizden emin misiniz?\n\nBu işlem geri alınamaz.`;
+    if (window.confirm(confirmMsg)) {
+      storageService.deleteScanResult(res.id);
+      if (selectedStudentResult?.id === res.id) {
+        setSelectedStudentResult(null);
+      }
+      setSyncTick(t => t + 1);
+    }
   };
 
   return (
@@ -464,6 +476,14 @@ export const ExamResultsList: React.FC<ExamResultsListProps> = ({ initialExamId 
                                   title="WhatsApp ile Veliye Gönder"
                                 >
                                   <MessageSquare className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteResult(res)}
+                                  className="p-1.5 rounded-lg bg-rose-500/10 dark:bg-rose-500/20 hover:bg-rose-500/20 dark:hover:bg-rose-500/30 text-rose-600 dark:text-rose-400 border border-rose-500/30 dark:border-rose-500/40 transition-colors"
+                                  title="Bu Öğrencinin Sonucunu Sil"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
                                 </button>
                               </div>
                             </td>
@@ -1105,6 +1125,15 @@ export const ExamResultsList: React.FC<ExamResultsListProps> = ({ initialExamId 
                   className="btn btn-secondary text-xs py-2 px-3 flex items-center gap-1.5 text-emerald-400 border-emerald-500/30 hover:bg-emerald-950/40 font-semibold cursor-pointer"
                 >
                   <FileSpreadsheet className="h-4 w-4 text-emerald-400" /> Excel
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleDeleteResult(selectedStudentResult)}
+                  className="btn text-xs py-2 px-3 flex items-center gap-1.5 bg-rose-600/20 hover:bg-rose-600/30 text-rose-400 border border-rose-500/30 font-semibold cursor-pointer transition-all"
+                  title="Bu sınav sonucunu kalıcı olarak sil"
+                >
+                  <Trash2 className="h-4 w-4 text-rose-400" /> Sonucu Sil
                 </button>
               </div>
 

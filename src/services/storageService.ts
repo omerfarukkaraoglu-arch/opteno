@@ -989,8 +989,19 @@ export const storageService = {
     window.dispatchEvent(new CustomEvent('opticok-data-updated'));
   },
   deleteScanResult: (resultId: string) => {
-    const list = getItem<ScanResult[]>(KEYS.RESULTS, initialScanResults).filter(r => r.id !== resultId);
-    setItem(KEYS.RESULTS, list);
+    const list = getItem<ScanResult[]>(KEYS.RESULTS, initialScanResults);
+    const targetResult = list.find(r => r.id === resultId);
+    const updatedList = list.filter(r => r.id !== resultId);
+    setItem(KEYS.RESULTS, updatedList);
+
+    if (targetResult) {
+      const exams = getItem<Exam[]>(KEYS.EXAMS, initialExams);
+      const exam = exams.find(e => e.id === targetResult.examId);
+      if (exam) {
+        exam.totalExamsScanned = updatedList.filter(r => r.examId === targetResult.examId).length;
+        setItem(KEYS.EXAMS, exams);
+      }
+    }
 
     // Atomik bulut silmesi
     deleteSingleResultFromServer(resultId);
