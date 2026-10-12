@@ -651,8 +651,8 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
           <div className="clay-panel p-6 rounded-[28px]">
             <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
               <div>
-                <h2 className="font-display text-lg font-bold text-white">Tüm Kurumlar Paneli</h2>
-                <p className="text-xs text-slate-400">Sisteme tanımlı okul, dershane ve özel kurumların genel yönetimi</p>
+                <h2 className="font-display text-lg font-bold text-slate-900 dark:text-white">Tüm Kurumlar Paneli</h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Sisteme tanımlı okul, dershane ve özel kurumların genel yönetimi</p>
               </div>
 
               <div className="flex flex-wrap items-center gap-3">
@@ -689,10 +689,10 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
 
             {/* Content Area: Empty State / List View / Grid View */}
             {filteredInstitutions.length === 0 ? (
-              <div className="p-12 text-center text-slate-400 bg-slate-800/30 rounded-2xl border border-slate-700/40 space-y-2">
-                <Building2 className="h-10 w-10 text-slate-500 mx-auto" />
-                <h3 className="text-sm font-bold text-white">Aranan Kriterlere Uygun Kurum Bulunamadı</h3>
-                <p className="text-xs text-slate-400">Lütfen farklı bir arama terimi deneyin.</p>
+              <div className="p-12 text-center text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/30 rounded-2xl border border-slate-200 dark:border-slate-700/40 space-y-2">
+                <Building2 className="h-10 w-10 text-slate-400 dark:text-slate-500 mx-auto" />
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">Aranan Kriterlere Uygun Kurum Bulunamadı</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Lütfen farklı bir arama terimi deneyin.</p>
                 {searchTerm && (
                   <button
                     onClick={() => handleInstSearchChange('')}
@@ -704,10 +704,10 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
               </div>
             ) : instViewMode === 'list' ? (
               /* COMPACT LIST (TABLE) VIEW - FITS ON SCREEN WITHOUT HORIZONTAL SCROLL */
-              <div className="rounded-2xl border border-slate-700/60 bg-slate-900/60 shadow-sm overflow-hidden">
+              <div className="rounded-2xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-900/60 shadow-sm overflow-hidden">
                 <div className="overflow-x-auto sm:overflow-x-visible">
-                  <table className="w-full text-left text-xs text-slate-300">
-                    <thead className="uppercase bg-slate-800/80 text-slate-400 font-bold border-b border-slate-700/60 text-[11px]">
+                  <table className="w-full text-left text-xs text-slate-700 dark:text-slate-300">
+                    <thead className="uppercase bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 font-bold border-b border-slate-200 dark:border-slate-700/60 text-[11px]">
                       <tr>
                         <th className="px-3.5 py-3">Kurum Adı & Kod</th>
                         <th className="px-3 py-3 hidden md:table-cell">Şehir & İletişim</th>
@@ -717,26 +717,26 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                         <th className="px-3.5 py-3 text-right">İşlemler</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-800/60">
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
                       {paginatedInstitutions.map((inst) => {
                         const instPersonnel = storageService.getUsersByInstitution(inst.id);
                         const instAdmin = instPersonnel.find(u => u.role === 'INSTITUTION_ADMIN');
                         return (
-                          <tr key={inst.id} className="hover:bg-slate-800/50 transition-colors">
+                          <tr key={inst.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                             <td className="px-3.5 py-3">
                               <div className="flex items-center gap-2.5">
                                 {inst.logoUrl ? (
-                                  <div className="w-8 h-8 rounded-lg bg-white p-0.5 border border-slate-700 flex items-center justify-center shrink-0 overflow-hidden shadow-sm">
+                                  <div className="w-8 h-8 rounded-lg bg-white p-0.5 border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0 overflow-hidden shadow-sm">
                                     <img src={inst.logoUrl} alt={inst.name} className="max-w-full max-h-full object-contain" />
                                   </div>
                                 ) : (
-                                  <div className="w-8 h-8 rounded-lg bg-slate-800 p-1.5 border border-slate-700 flex items-center justify-center shrink-0 text-slate-400">
+                                  <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 p-1.5 border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0 text-slate-500 dark:text-slate-400">
                                     <Building2 className="h-4 w-4" />
                                   </div>
                                 )}
                                 <div className="min-w-0">
-                                  <div className="font-display font-bold text-sm text-white truncate max-w-[170px] sm:max-w-xs">{inst.name}</div>
-                                  <div className="text-[10px] text-slate-400 flex items-center gap-1.5 mt-0.5">
+                                  <div className="font-display font-bold text-sm text-slate-900 dark:text-white truncate max-w-[170px] sm:max-w-xs">{inst.name}</div>
+                                  <div className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-0.5">
                                     <span className="badge badge-primary text-[9px] py-0 px-1.5 shrink-0">{inst.code}</span>
                                     <span className="truncate md:hidden">• {inst.city}</span>
                                   </div>
@@ -746,11 +746,11 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
 
                             {/* Şehir & İletişim (Masaüstü) */}
                             <td className="px-3 py-3 hidden md:table-cell">
-                              <div className="flex items-center gap-1 text-slate-200 font-medium text-xs">
+                              <div className="flex items-center gap-1 text-slate-700 dark:text-slate-200 font-medium text-xs">
                                 <MapPin className="h-3 w-3 text-slate-400 shrink-0" />
                                 <span>{inst.city || '-'}</span>
                               </div>
-                              <div className="text-[10px] text-slate-400 truncate max-w-[150px] mt-0.5">
+                              <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate max-w-[150px] mt-0.5">
                                 {inst.phone || inst.email || '-'}
                               </div>
                             </td>
@@ -775,7 +775,7 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                                 </div>
                               ) : (
                                 <div className="flex items-center gap-1">
-                                  <span className="text-[10px] text-rose-400 font-semibold whitespace-nowrap">⚠️ Yönetici Yok</span>
+                                  <span className="text-[10px] text-rose-500 dark:text-rose-400 font-semibold whitespace-nowrap">⚠️ Yönetici Yok</span>
                                   <button
                                     type="button"
                                     onClick={() => {
@@ -785,7 +785,7 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                                       setAssignAdminUsername(`admin_${clean || 'kurum'}`);
                                       setAssignAdminPassword(`${clean || 'kurum'}123`);
                                     }}
-                                    className="text-[10px] text-indigo-400 hover:text-indigo-300 underline font-bold cursor-pointer whitespace-nowrap"
+                                    className="text-[10px] text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 underline font-bold cursor-pointer whitespace-nowrap"
                                   >
                                     Ata
                                   </button>
@@ -795,11 +795,11 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
 
                             {/* Öğrenci / Personel (Tablet/Masaüstü) */}
                             <td className="px-3 py-3 text-center hidden sm:table-cell whitespace-nowrap">
-                              <span className="font-bold text-white text-xs">{inst.studentCount}</span>{' '}
-                              <span className="text-slate-400 text-[10px]">Öğr.</span>
-                              <span className="text-slate-500 mx-1">/</span>
-                              <span className="font-bold text-indigo-300 text-xs">{instPersonnel.length}</span>{' '}
-                              <span className="text-slate-400 text-[10px]">Pers.</span>
+                              <span className="font-bold text-slate-900 dark:text-white text-xs">{inst.studentCount}</span>{' '}
+                              <span className="text-slate-500 dark:text-slate-400 text-[10px]">Öğr.</span>
+                              <span className="text-slate-400 dark:text-slate-500 mx-1">/</span>
+                              <span className="font-bold text-indigo-600 dark:text-indigo-300 text-xs">{instPersonnel.length}</span>{' '}
+                              <span className="text-slate-500 dark:text-slate-400 text-[10px]">Pers.</span>
                             </td>
 
                             {/* Durum */}
@@ -812,13 +812,13 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                               <div className="flex items-center justify-end gap-1.5">
                                 <button
                                   onClick={() => setSelectedInstDetails(inst)}
-                                  className="btn btn-secondary py-1 px-2 text-xs text-indigo-300 flex items-center gap-1 cursor-pointer hover:bg-indigo-500/20 whitespace-nowrap"
+                                  className="btn btn-secondary py-1 px-2 text-xs text-indigo-600 dark:text-indigo-300 flex items-center gap-1 cursor-pointer hover:bg-indigo-500/20 whitespace-nowrap"
                                 >
                                   <Eye className="h-3 w-3" /> Detay
                                 </button>
                                 <button
                                   onClick={() => handleDeleteInstitution(inst)}
-                                  className="p-1 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-all cursor-pointer border border-red-500/20 shrink-0"
+                                  className="p-1 rounded-lg bg-red-500/10 text-red-500 dark:text-red-400 hover:bg-red-500/20 hover:text-red-600 dark:hover:text-red-300 transition-all cursor-pointer border border-red-500/20 shrink-0"
                                   title="Kurumu Sil"
                                 >
                                   <Trash2 className="h-3.5 w-3.5" />
@@ -839,7 +839,7 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                   const instPersonnel = storageService.getUsersByInstitution(inst.id);
                   const instAdmin = instPersonnel.find(u => u.role === 'INSTITUTION_ADMIN');
                   return (
-                    <div key={inst.id} className="clay-card p-5 rounded-[24px] border border-slate-700/50 flex flex-col justify-between hover:border-indigo-500/40">
+                    <div key={inst.id} className="clay-card p-5 rounded-[24px] border border-slate-200 dark:border-slate-700/50 flex flex-col justify-between hover:border-indigo-500/40">
                       <div>
                         <div className="flex items-start justify-between gap-2 mb-2">
                           <span className="badge badge-primary text-[10px]">{inst.code}</span>
@@ -848,18 +848,18 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
 
                         <div className="flex items-center gap-3">
                           {inst.logoUrl ? (
-                            <div className="w-10 h-10 rounded-lg bg-white p-1 border border-slate-700 flex items-center justify-center shrink-0 overflow-hidden shadow-sm">
+                            <div className="w-10 h-10 rounded-lg bg-white p-1 border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0 overflow-hidden shadow-sm">
                               <img src={inst.logoUrl} alt={inst.name} className="max-w-full max-h-full object-contain" />
                             </div>
                           ) : (
-                            <div className="w-10 h-10 rounded-lg bg-slate-800 p-2 border border-slate-700 flex items-center justify-center shrink-0 text-slate-400">
+                            <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 p-2 border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0 text-slate-500 dark:text-slate-400">
                               <Building2 className="h-5 w-5" />
                             </div>
                           )}
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-display font-bold text-base text-white truncate">{inst.name}</h3>
+                            <h3 className="font-display font-bold text-base text-slate-900 dark:text-white truncate">{inst.name}</h3>
                             {instAdmin ? (
-                              <div className="mt-1.5 flex items-center justify-between gap-1 bg-slate-900/90 px-2 py-1 rounded-xl border border-indigo-500/20">
+                              <div className="mt-1.5 flex items-center justify-between gap-1 bg-slate-950/80 px-2 py-1 rounded-xl border border-indigo-500/20">
                                 <div className="text-[11px] font-mono leading-tight truncate">
                                   <span className="text-amber-300 font-bold">👤 {instAdmin.username}</span>
                                   <span className="text-slate-500 mx-1">•</span>
@@ -879,7 +879,7 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                               </div>
                             ) : (
                               <div className="mt-1 flex items-center gap-1.5">
-                                <span className="text-[10px] text-rose-400 font-semibold">⚠️ Yönetici Yok</span>
+                                <span className="text-[10px] text-rose-500 dark:text-rose-400 font-semibold">⚠️ Yönetici Yok</span>
                                 <button
                                   type="button"
                                   onClick={(e) => {
@@ -890,7 +890,7 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                                     setAssignAdminUsername(`admin_${clean || 'kurum'}`);
                                     setAssignAdminPassword(`${clean || 'kurum'}123`);
                                   }}
-                                  className="text-[10px] text-indigo-400 hover:text-indigo-300 underline font-bold"
+                                  className="text-[10px] text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 underline font-bold"
                                 >
                                   Yönetici Ata
                                 </button>
@@ -899,7 +899,7 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                           </div>
                         </div>
 
-                        <div className="mt-3 space-y-1.5 text-xs text-slate-300">
+                        <div className="mt-3 space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
                           <p className="flex items-center gap-2">
                             <MapPin className="h-3.5 w-3.5 text-slate-400" /> {inst.city}
                           </p>
@@ -912,18 +912,18 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                         </div>
                       </div>
 
-                      <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs font-semibold">
-                        <span className="text-slate-400">{inst.studentCount} Öğrenci | {instPersonnel.length} Personel</span>
+                      <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs font-semibold">
+                        <span className="text-slate-500 dark:text-slate-400">{inst.studentCount} Öğrenci | {instPersonnel.length} Personel</span>
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => setSelectedInstDetails(inst)}
-                            className="text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer"
+                            className="text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer"
                           >
                             Detaylar <ChevronRight className="h-3.5 w-3.5" />
                           </button>
                           <button
                             onClick={() => handleDeleteInstitution(inst)}
-                            className="p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-all cursor-pointer border border-red-500/20"
+                            className="p-1.5 rounded-lg bg-red-500/10 text-red-500 dark:text-red-400 hover:bg-red-500/20 hover:text-red-600 dark:hover:text-red-300 transition-all cursor-pointer border border-red-500/20"
                             title="Kurumu Sil"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
@@ -1930,8 +1930,8 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                     </div>
                   )}
                   <div>
-                    <h3 className="font-display text-lg font-bold text-white">{selectedInstDetails.name}</h3>
-                    <p className="text-xs text-slate-400">{selectedInstDetails.city} | Kod: {selectedInstDetails.code}</p>
+                    <h3 className="font-display text-lg font-bold text-slate-900 dark:text-white">{selectedInstDetails.name}</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{selectedInstDetails.city} | Kod: {selectedInstDetails.code}</p>
                   </div>
                 </div>
                 <motion.button
@@ -1944,10 +1944,10 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
               </div>
 
               {/* Institution Logo Management in Details Modal */}
-              <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
                 <div>
-                  <h4 className="text-xs font-bold text-slate-200">Kurum Resmi Logosu</h4>
-                  <p className="text-[11px] text-slate-400">Sınav derece listeleri ve öğrenci karnesi PDF çıktılarında kullanılır.</p>
+                  <h4 className="text-xs font-bold text-slate-900 dark:text-slate-200">Kurum Resmi Logosu</h4>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">Sınav derece listeleri ve öğrenci karnesi PDF çıktılarında kullanılır.</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <label className="btn btn-primary text-xs py-1.5 px-3 flex-1 sm:flex-initial flex items-center justify-center gap-1.5 cursor-pointer rounded-xl">
@@ -2030,10 +2030,10 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                 ) : (
                   <div className="space-y-2">
                     {storageService.getUsersByInstitution(selectedInstDetails.id).map(p => (
-                      <div key={p.id} className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 text-xs">
+                      <div key={p.id} className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 text-xs">
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2">
-                            {p.name && <span className="font-bold text-white truncate">{p.name}</span>}
+                            {p.name && <span className="font-bold text-slate-900 dark:text-white truncate">{p.name}</span>}
                             <span className="badge badge-primary text-[10px] shrink-0">{p.role === 'INSTITUTION_ADMIN' ? 'Kurum Yöneticisi' : 'Öğretmen'}</span>
                           </div>
                           <div className="text-[11px] text-slate-400 font-mono mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
