@@ -256,6 +256,98 @@ export const deleteSingleResultFromServer = async (resultId: string) => {
   }
 };
 
+// Helper to normalize strings for comparison (case-insensitive, trimmed, single spaces, turkish char map)
+const normalizeStudentString = (s?: string): string => {
+  if (!s) return '';
+  return s
+    .trim()
+    .toLowerCase()
+    .replace(/ç/g, 'c')
+    .replace(/ğ/g, 'g')
+    .replace(/ı/g, 'i')
+    .replace(/ö/g, 'o')
+    .replace(/ş/g, 's')
+    .replace(/ü/g, 'u')
+    .replace(/\s+/g, ' ');
+};
+
+const isGenericStudentName = (name?: string): boolean => {
+  if (!name) return true;
+  const n = normalizeStudentString(name);
+  if (!n) return true;
+  // Matches "ogrenci", "ogrenci #1", "ogrenci 12", "misafir", "misafir ogrenci", "ornek ogrenci", "isimsiz", "genel"
+  if (/^ogrenci(\s*#?\d*|\s*misafir)?$/i.test(n)) return true;
+  if (/^misafir(\s*ogrenci)?$/i.test(n)) return true;
+  if (n === 'ornek ogrenci' || n === 'genel' || n === 'isimsiz') return true;
+  return false;
+};
+
+const isValidStudentNo = (no?: string): boolean => {
+  if (!no) return false;
+  const clean = no.trim();
+  if (!clean) return false;
+  // Exclude generated random suffixes like "1-4829" or generic fallback "101" / "1042" when auto-generated
+  if (/^\d+-\d{4,}$/.test(clean)) return false;
+  if (clean === '101' || clean === '1042') return false;
+  return true;
+};
+
+export const isSameStudentScanResult = (a: ScanResult, b: ScanResult): boolean => {
+  // If exam IDs differ, they are definitely different exams
+  if (a.examId !== b.examId) return false;
+
+  // 1. Exact scan record ID match
+  if (a.id && b.id && a.id === b.id) return true;
+
+  // 2. Same studentId (if valid and not generic)
+  if (
+    a.studentId &&
+    b.studentId &&
+    a.studentId === b.studentId &&
+    !a.studentId.startsWith('std-generic') &&
+    a.studentId !== 'GENERIC' &&
+    !a.studentId.startsWith('std-opt-') // std-opt- is generated for anonymous scans
+  ) {
+    return true;
+  }
+
+  // 3. Same student name (if not generic/anonymous)
+  const aNameValid = !isGenericStudentName(a.studentName);
+  const bNameValid = !isGenericStudentName(b.studentName);
+  if (aNameValid && bNameValid) {
+    const aNorm = normalizeStudentString(a.studentName);
+    const bNorm = normalizeStudentString(b.studentName);
+    if (aNorm === bNorm) {
+      // If both have student numbers, they must not conflict
+      if (isValidStudentNo(a.studentNo) && isValidStudentNo(b.studentNo) && a.studentNo.trim() !== b.studentNo.trim()) {
+        return false;
+      }
+      return true;
+    }
+  }
+
+  // 4. Same student number (if valid and not generic)
+  if (
+    isValidStudentNo(a.studentNo) &&
+    isValidStudentNo(b.studentNo) &&
+    a.studentNo.trim() === b.studentNo.trim()
+  ) {
+    // If both have different non-generic names, they are different students with the same number
+    if (aNameValid && bNameValid) {
+      const aNorm = normalizeStudentString(a.studentName);
+      const bNorm = normalizeStudentString(b.studentName);
+      if (aNorm !== bNorm) return false;
+    }
+    // If classes exist and differ, they are different students
+    if (a.className && b.className && a.className.trim() !== b.className.trim()) {
+      return false;
+    }
+    return true;
+  }
+
+  return false;
+};
+
 let lastSyncTime = 0;
 
 // Synchronization with Firebase Cloud Database (Authoritative Single Source of Truth)
@@ -339,7 +431,29 @@ export const syncWithServer = async (force: boolean = false) => {
       missingInCloud.forEach(r => pushSingleResultToServer(r));
     }
 
-    const mergedResults = Array.from(resultMap.values());
+    // 3. Deduplicate across server & local for same student in same exam:
+    // If multiple results exist for the same student in the same exam (from past rescans),
+    // keep only the newest one and purge older stale duplicates from Firebase!
+    const allCandidates = Array.from(resultMap.values());
+    allCandidates.sort((a, b) => new Date(b.scannedAt || 0).getTime() - new Date(a.scannedAt || 0).getTime());
+
+    const deduplicatedResults: ScanResult[] = [];
+    const staleCloudIdsToDelete: string[] = [];
+
+    for (const item of allCandidates) {
+      const alreadyHas = deduplicatedResults.some(existing => isSameStudentScanResult(existing, item));
+      if (!alreadyHas) {
+        deduplicatedResults.push(item);
+      } else {
+        staleCloudIdsToDelete.push(item.id);
+      }
+    }
+
+    if (staleCloudIdsToDelete.length > 0) {
+      staleCloudIdsToDelete.forEach(id => deleteSingleResultFromServer(id));
+    }
+
+    const mergedResults = deduplicatedResults;
     mergedResults.sort((a, b) => new Date(b.scannedAt || 0).getTime() - new Date(a.scannedAt || 0).getTime());
 
     const serverStudents: Student[] = serverData.students || [];
@@ -1017,38 +1131,47 @@ export const storageService = {
       delete resultToSave.rawImageBase64;
     }
 
-    const list = getItem<ScanResult[]>(KEYS.RESULTS, initialScanResults);
+    let list = getItem<ScanResult[]>(KEYS.RESULTS, initialScanResults);
 
     // 3. Güvenli Eşleşme Kontrolü:
-    // Sadece AYNI ID'ye sahipse (örneğin doğrulama penceresinde şık değiştirilip tekrar kaydedilmişse)
-    // VEYA gerçekten sistemde kayıtlı bir öğrencinin aynı sınavdaki önceki sonucunu güncellemek isteniyorsa:
-    const registeredStudents = storageService.getStudents();
-    const isRealRegisteredStudent = Boolean(
-      resultToSave.studentId &&
-      !resultToSave.studentId.startsWith('std-opt-') &&
-      !resultToSave.studentId.startsWith('std-generic') &&
-      registeredStudents.some(s => s.id === resultToSave.studentId)
-    );
-
-    let existingIndex = -1;
-    if (isRealRegisteredStudent) {
-      existingIndex = list.findIndex(r => 
-        r.id === resultToSave.id || (
-          r.examId === resultToSave.examId && 
-          r.studentId === resultToSave.studentId
-        )
-      );
-    } else {
-      // Jenerik veya geçici isimlerde ASLA başka bir kağıdın üzerine yazma!
-      existingIndex = list.findIndex(r => r.id === resultToSave.id);
-    }
+    // Eğer aynı sınavda aynı öğrencinin (öğrenci ID, öğrenci No veya isim eşleşmesiyle) önceki bir sonucu varsa:
+    // Var olan sonucun ID'sini devralarak üzerine yazar.
+    // Bu sayede hem LocalStorage'da tek kayıt kalır hem de Firebase PUT /results/{id}.json ile
+    // buluttaki eski kayıt doğrudan ezilir ve hayalet çift kayıt oluşmaz!
+    const existingIndex = list.findIndex(r => isSameStudentScanResult(r, resultToSave));
 
     if (existingIndex >= 0) {
-      list[existingIndex] = resultToSave;
+      const existingResult = list[existingIndex];
+      const targetId = existingResult.id;
+
+      resultToSave.id = targetId;
+      resultToSave.scannedAt = new Date().toISOString().replace('T', ' ').substring(0, 16);
+
+      // Daha önce silindi olarak işaretlendiyse dirilt (tombstone listesinden temizle)
+      const deletedIds = getItem<string[]>(KEYS.DELETED_RESULT_IDS, []);
+      if (deletedIds.includes(targetId)) {
+        setItem(KEYS.DELETED_RESULT_IDS, deletedIds.filter(id => id !== targetId));
+      }
+
+      // Geçmişten kalan olası mükerrer kayıtları buluttan ve yerelden temizle
+      const otherDuplicates = list.filter((r, idx) => idx !== existingIndex && isSameStudentScanResult(r, resultToSave));
+      for (const dup of otherDuplicates) {
+        deleteSingleResultFromServer(dup.id);
+      }
+
+      const updatedList = list.filter((r, idx) => idx === existingIndex || !isSameStudentScanResult(r, resultToSave));
+      const finalIdx = updatedList.findIndex(r => r.id === targetId);
+      if (finalIdx >= 0) {
+        updatedList[finalIdx] = resultToSave;
+      } else {
+        updatedList.unshift(resultToSave);
+      }
+      list = updatedList;
+      setItem(KEYS.RESULTS, list);
     } else {
       list.unshift(resultToSave);
+      setItem(KEYS.RESULTS, list);
     }
-    setItem(KEYS.RESULTS, list);
 
     const exams = storageService.getExams();
     const exam = exams.find(e => e.id === resultToSave.examId);
@@ -1059,7 +1182,7 @@ export const storageService = {
 
     // 4. ATOMİK BULUT KAYDI:
     // Doğrudan Firebase'e tekil sonuç olarak gönder (PUT /results/{id}.json)
-    // Bu sayede hiçbir cihaz diğerinin sonucunu EZEMEZ!
+    // Var olan ID devralındığı için doğrudan eski sonucun üzerine yazar!
     pushSingleResultToServer(resultToSave);
 
     window.dispatchEvent(new CustomEvent('opticok-data-updated'));

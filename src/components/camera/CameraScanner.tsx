@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { omrEngine } from '../../services/omrEngine';
-import { storageService } from '../../services/storageService';
+import { storageService, isSameStudentScanResult } from '../../services/storageService';
 import { qrService } from '../../services/qrService';
 import { Exam, ScanResult, OMRQRData, Student, SubjectResult } from '../../types';
 import { getExamAnswerBottom } from '../../services/pdfService';
@@ -82,6 +82,13 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({ onScanComplete }) 
   const [pendingResult, setPendingResult] = useState<ScanResult | null>(null);
   const [isVerifyModalOpen, setIsVerifyModalOpen] = useState<boolean>(false);
   const [activeSubjectTab, setActiveSubjectTab] = useState<number>(0);
+
+  // Check if this student already has a recorded scan result for this exam
+  const isExistingResult = React.useMemo(() => {
+    if (!pendingResult) return false;
+    const allResults = storageService.getAllScanResults();
+    return allResults.some(r => isSameStudentScanResult(r, pendingResult));
+  }, [pendingResult]);
 
   // When verification modal opens, focus on first subject with uncertain marks (or first subject)
   useEffect(() => {
@@ -584,7 +591,11 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({ onScanComplete }) 
     setDetectedStudent(null);
     setIsCornersAligned(false);
     setScanStage('STEP1_QR');
-    setStatusMessage('✅ Öğrenci sonucu başarıyla kaydedildi! Yeni kağıt için karekodu okutun.');
+    setStatusMessage(
+      isExistingResult
+        ? `✅ ${savedResult.studentName} isimli öğrencinin sonucu başarıyla güncellendi! Yeni kağıt için karekodu okutun.`
+        : '✅ Öğrenci sonucu başarıyla kaydedildi! Yeni kağıt için karekodu okutun.'
+    );
   };
 
   // Retake Scan
@@ -952,6 +963,19 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({ onScanComplete }) 
               {/* Modal Main Content (Split View: Left Photo, Right Virtual OMR Grid) */}
               <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
                 
+                {/* Notice if this is a rescan / update of an existing student result */}
+                {isExistingResult && (
+                  <div className="p-3.5 rounded-2xl bg-amber-500/15 border border-amber-500/40 flex items-center gap-3 text-xs text-amber-200 shadow-md">
+                    <RefreshCw className="h-5 w-5 text-amber-400 shrink-0" />
+                    <div>
+                      <div className="font-bold text-amber-300">Önceki Okuma Tespit Edildi (Tekrar Okuma & Güncelleme)</div>
+                      <div className="text-[11px] text-amber-200/90 mt-0.5">
+                        Bu öğrencinin (<strong>{pendingResult.studentName}</strong>) bu sınavda kayıtlı bir sonucu var. Kaydettiğinizde önceki sonuç bu yeni cevaplar ve puanla <strong>güncellenecektir</strong>.
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Live Real-time Score Summary Header */}
                 <div className="p-4 rounded-2xl bg-slate-800/90 border border-slate-700 flex flex-wrap items-center justify-between gap-4 shadow-lg">
                   <div>
@@ -1201,9 +1225,9 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({ onScanComplete }) 
                     type="button"
                     onClick={() => handleConfirmAndSave(false)}
                     className="btn btn-secondary text-xs py-3 px-4 font-semibold text-emerald-300 border-emerald-500/40 hover:bg-emerald-950/40 flex items-center gap-2 cursor-pointer"
-                    title="Sonucu kaydeder ve sıradaki kağıdı okumak için kamerada kalır"
+                    title={isExistingResult ? "Önceki sonucu günceller ve sıradaki kağıdı okumak için kamerada kalır" : "Sonucu kaydeder ve sıradaki kağıdı okumak için kamerada kalır"}
                   >
-                    <Plus className="h-4 w-4 text-emerald-400" /> Kaydet & Sıradakini Oku
+                    <Plus className="h-4 w-4 text-emerald-400" /> {isExistingResult ? 'Sonucu Güncelle & Sıradakini Oku' : 'Kaydet & Sıradakini Oku'}
                   </button>
 
                   <button
@@ -1211,7 +1235,7 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({ onScanComplete }) 
                     onClick={() => handleConfirmAndSave(true)}
                     className="btn btn-primary text-sm py-3 px-6 font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-xl shadow-emerald-600/30 flex items-center gap-2 cursor-pointer"
                   >
-                    <UploadCloud className="h-5 w-5" /> Sonucu Yükle & Sınavlara Git
+                    <UploadCloud className="h-5 w-5" /> {isExistingResult ? 'Sonucu Güncelle & Sınavlara Git' : 'Sonucu Yükle & Sınavlara Git'}
                   </button>
                 </div>
               </div>
