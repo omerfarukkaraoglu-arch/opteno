@@ -17,6 +17,7 @@ interface ExamsListProps {
   onNavigateToOMR?: (examId: string) => void;
   onNavigateToScan?: () => void;
   onNavigateToResults?: (examId: string) => void;
+  onNavigateToCalendar?: () => void;
 }
 
 const formatGradeLevel = (gl?: string | number) => {
@@ -34,7 +35,8 @@ export const ExamsList: React.FC<ExamsListProps> = ({
   onNavigateToCreateExam,
   onNavigateToOMR,
   onNavigateToScan,
-  onNavigateToResults
+  onNavigateToResults,
+  onNavigateToCalendar
 }) => {
   const activeUser = currentUser || storageService.getCurrentUser();
   const isSuperAdmin = activeUser.role === 'SUPER_ADMIN';
@@ -476,11 +478,22 @@ export const ExamsList: React.FC<ExamsListProps> = ({
             </button>
           )}
 
+          {onNavigateToCalendar && (
+            <button
+              onClick={onNavigateToCalendar}
+              className="btn text-xs py-2 px-2.5 sm:px-4 font-bold flex items-center justify-center gap-1.5 sm:gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all shadow-sm"
+              title="Sınav takvimini ve ajanda planlayıcısını açar"
+            >
+              <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-purple-500 shrink-0" />
+              <span className="truncate">Sınav Takvimi</span>
+            </button>
+          )}
+
           {onNavigateToCreateExam && (
             <button
               onClick={onNavigateToCreateExam}
               className={`btn btn-primary text-xs py-2 px-2.5 sm:px-5 font-bold shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-1.5 sm:gap-2 ${
-                !isSuperAdmin ? 'col-span-2 sm:w-auto' : ''
+                !isSuperAdmin && !onNavigateToCalendar ? 'col-span-2 sm:w-auto' : ''
               }`}
             >
               <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" /> 

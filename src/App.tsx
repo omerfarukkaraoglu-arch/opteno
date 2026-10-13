@@ -9,6 +9,7 @@ import { ExamsList } from './components/exam/ExamsList';
 import { CameraScanner } from './components/camera/CameraScanner';
 import { InstitutionManagement } from './components/management/InstitutionManagement';
 import { ExamResultsList } from './components/results/ExamResultsList';
+import { ExamCalendar } from './components/calendar/ExamCalendar';
 import { LoginForm } from './components/auth/LoginForm';
 import { Footer } from './components/layout/Footer';
 
@@ -145,6 +146,24 @@ function App() {
                 onNavigateToCreateExam={() => setActiveTab('create-exam')}
                 onNavigateToOMR={(examId) => handleNavigateToOMR(examId)}
                 onNavigateToScan={() => setActiveTab('scan')}
+                onNavigateToResults={(examId) => {
+                  setSelectedExamId(examId);
+                  setActiveTab('results');
+                }}
+                onNavigateToCalendar={() => setActiveTab('calendar')}
+              />
+            )}
+
+            {/* Sınav Takvimi & Planlayıcı */}
+            {activeTab === 'calendar' && (
+              <ExamCalendar
+                currentUser={currentUser}
+                onNavigateToCreateExam={() => setActiveTab('create-exam')}
+                onNavigateToOMR={(examId) => handleNavigateToOMR(examId)}
+                onNavigateToScan={(examId) => {
+                  if (examId) setSelectedExamId(examId);
+                  setActiveTab('scan');
+                }}
                 onNavigateToResults={(examId) => {
                   setSelectedExamId(examId);
                   setActiveTab('results');

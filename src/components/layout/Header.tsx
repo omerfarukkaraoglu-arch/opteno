@@ -15,7 +15,8 @@ import {
   Menu, 
   X, 
   ChevronRight, 
-  PlusCircle 
+  PlusCircle,
+  Calendar
 } from 'lucide-react';
 import { User } from '../../types';
 import { storageService } from '../../services/storageService';
@@ -151,6 +152,17 @@ export const Header: React.FC<HeaderProps> = ({
               }`}
             >
               <ListOrdered className="h-4 w-4" /> Sınavlar & Sonuçlar
+            </motion.button>
+
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              data-active={activeTab === 'calendar'}
+              onClick={() => setActiveTab('calendar')}
+              className={`relative z-10 flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-colors duration-200 ${
+                activeTab === 'calendar' ? 'text-white drop-shadow-sm' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+              }`}
+            >
+              <Calendar className="h-4 w-4" /> Takvim
             </motion.button>
 
             <motion.button
@@ -414,6 +426,27 @@ export const Header: React.FC<HeaderProps> = ({
                     <div className="text-left">
                       <div className="font-bold text-slate-900 dark:text-white text-sm">Yeni Sınav Oluştur</div>
                       <div className="text-xs text-slate-500 dark:text-slate-400 font-normal">Soru sayısı ve cevap anahtarı tanımla</div>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-slate-400 dark:text-slate-500 shrink-0" />
+                </motion.button>
+
+                {/* 2. Sınav Takvimi & Planlayıcı */}
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => {
+                    setActiveTab('calendar');
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="w-full flex items-center justify-between p-3.5 rounded-2xl clay-card transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-purple-50 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400 shrink-0 shadow-[inset_0_2px_4px_rgba(255,255,255,0.2)]">
+                      <Calendar className="h-5 w-5" />
+                    </div>
+                    <div className="text-left">
+                      <div className="font-bold text-slate-900 dark:text-white text-sm">Sınav Takvimi & Planlayıcı</div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400 font-normal">Tarihe göre denemeler, geri sayım ve hızlı işlemler</div>
                     </div>
                   </div>
                   <ChevronRight className="h-5 w-5 text-slate-400 dark:text-slate-500 shrink-0" />
