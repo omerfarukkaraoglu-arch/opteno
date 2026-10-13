@@ -82,14 +82,14 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
           {/* Logo & Title */}
           <div 
-            className="flex cursor-pointer items-center gap-2 sm:gap-3"
+            className="flex shrink-0 cursor-pointer items-center gap-2 sm:gap-3"
             onClick={() => setActiveTab('dashboard')}
           >
             <motion.div 
               whileHover={{ scale: 1.03, y: -1 }}
               whileTap={{ scale: 0.97 }}
               transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-              className="flex items-center gap-2.5 sm:gap-3 rounded-2xl bg-white px-3.5 sm:px-4 py-2 sm:py-2.5 shadow-[0_6px_16px_rgba(0,0,0,0.12),inset_0_2px_4px_rgba(255,255,255,0.9),inset_0_-2px_4px_rgba(0,0,0,0.06)] border border-slate-200/90 dark:border-white/20 transition-all select-none"
+              className="flex shrink-0 items-center gap-2.5 sm:gap-3 rounded-2xl bg-white px-3.5 sm:px-4 py-2 sm:py-2.5 shadow-[0_6px_16px_rgba(0,0,0,0.12),inset_0_2px_4px_rgba(255,255,255,0.9),inset_0_-2px_4px_rgba(0,0,0,0.06)] border border-slate-200/90 dark:border-white/20 transition-all select-none"
             >
               <img 
                 src="/opteno-icon.png" 
@@ -132,85 +132,41 @@ export const Header: React.FC<HeaderProps> = ({
               }}
             />
 
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              data-active={activeTab === 'dashboard'}
-              onClick={() => setActiveTab('dashboard')}
-              className={`relative z-10 flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-colors duration-200 ${
-                activeTab === 'dashboard' ? 'text-white drop-shadow-sm' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
-              }`}
-            >
-              <BarChart3 className="h-4 w-4" /> Paneller
-            </motion.button>
-
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              data-active={activeTab === 'exams' || activeTab === 'results'}
-              onClick={() => setActiveTab('exams')}
-              className={`relative z-10 flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-colors duration-200 ${
-                activeTab === 'exams' || activeTab === 'results' ? 'text-white drop-shadow-sm' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
-              }`}
-            >
-              <ListOrdered className="h-4 w-4" /> Sınavlar & Sonuçlar
-            </motion.button>
-
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              data-active={activeTab === 'calendar'}
-              onClick={() => setActiveTab('calendar')}
-              className={`relative z-10 flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-colors duration-200 ${
-                activeTab === 'calendar' ? 'text-white drop-shadow-sm' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
-              }`}
-            >
-              <Calendar className="h-4 w-4" /> Takvim
-            </motion.button>
-
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              data-active={activeTab === 'scan'}
-              onClick={() => setActiveTab('scan')}
-              className={`relative z-10 flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-extrabold transition-colors duration-200 ${
-                activeTab === 'scan'
-                  ? 'text-white drop-shadow-sm'
-                  : 'text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300'
-              }`}
-            >
-              <Camera className="h-4 w-4" /> Optik Oku
-            </motion.button>
-
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              data-active={activeTab === 'generate-omr' || activeTab === 'generator'}
-              onClick={() => setActiveTab('generate-omr')}
-              className={`relative z-10 flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-colors duration-200 ${
-                activeTab === 'generate-omr' || activeTab === 'generator' ? 'text-white drop-shadow-sm' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
-              }`}
-            >
-              <Printer className="h-4 w-4" /> Optik Form Bas
-            </motion.button>
-
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              data-active={activeTab === 'create-exam'}
-              onClick={() => setActiveTab('create-exam')}
-              className={`relative z-10 flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-colors duration-200 ${
-                activeTab === 'create-exam' ? 'text-white drop-shadow-sm' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
-              }`}
-            >
-              <PlusCircle className="h-4 w-4" /> Yeni Sınav
-            </motion.button>
-
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              data-active={activeTab === 'management'}
-              onClick={() => setActiveTab('management')}
-              className={`relative z-10 flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-colors duration-200 ${
-                activeTab === 'management' ? 'text-white drop-shadow-sm' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
-              }`}
-            >
-              {currentUser.role === 'SUPER_ADMIN' ? <Building2 className="h-4 w-4" /> : <Users className="h-4 w-4" />}
-              {currentUser.role === 'SUPER_ADMIN' ? 'Kurumlar' : 'Yönetim'}
-            </motion.button>
+            {[
+              { key: 'dashboard', active: activeTab === 'dashboard', icon: <BarChart3 className="h-4 w-4 shrink-0" />, label: 'Paneller' },
+              { key: 'exams', active: activeTab === 'exams' || activeTab === 'results', icon: <ListOrdered className="h-4 w-4 shrink-0" />, label: 'Sınavlar & Sonuçlar' },
+              { key: 'calendar', active: activeTab === 'calendar', icon: <Calendar className="h-4 w-4 shrink-0" />, label: 'Takvim' },
+              { key: 'scan', active: activeTab === 'scan', icon: <Camera className="h-4 w-4 shrink-0" />, label: 'Optik Oku', isScan: true },
+              { key: 'generate-omr', active: activeTab === 'generate-omr' || activeTab === 'generator', icon: <Printer className="h-4 w-4 shrink-0" />, label: 'Optik Form Bas' },
+              { key: 'create-exam', active: activeTab === 'create-exam', icon: <PlusCircle className="h-4 w-4 shrink-0" />, label: 'Yeni Sınav' },
+              {
+                key: 'management',
+                active: activeTab === 'management',
+                icon: currentUser.role === 'SUPER_ADMIN' ? <Building2 className="h-4 w-4 shrink-0" /> : <Users className="h-4 w-4 shrink-0" />,
+                label: currentUser.role === 'SUPER_ADMIN' ? 'Kurumlar' : 'Yönetim'
+              }
+            ].map((item) => (
+              <motion.button
+                key={item.key}
+                whileTap={{ scale: 0.95 }}
+                data-active={item.active}
+                onClick={() => setActiveTab(item.key)}
+                title={item.label}
+                aria-label={item.label}
+                className={`relative z-10 flex shrink-0 items-center gap-1.5 whitespace-nowrap px-2.5 xl:px-3.5 py-2 rounded-xl text-xs transition-colors duration-200 ${
+                  item.isScan ? 'font-extrabold' : 'font-bold'
+                } ${
+                  item.active
+                    ? 'text-white drop-shadow-sm'
+                    : item.isScan
+                      ? 'text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300'
+                      : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+                }`}
+              >
+                {item.icon}
+                <span className={item.active ? 'inline' : 'hidden xl:inline'}>{item.label}</span>
+              </motion.button>
+            ))}
           </nav>
 
           {/* Right Section: Profile & Actions */}
@@ -238,7 +194,7 @@ export const Header: React.FC<HeaderProps> = ({
               <div className="h-7 w-7 rounded-xl bg-indigo-600/20 text-indigo-600 dark:bg-indigo-600/30 dark:text-indigo-400 flex items-center justify-center font-bold shadow-[inset_0_2px_4px_rgba(255,255,255,0.2)]">
                 {currentUser.name.charAt(0)}
               </div>
-              <div className="hidden sm:block text-left">
+              <div className="hidden sm:block md:hidden xl:block text-left whitespace-nowrap">
                 <div className="font-bold text-slate-800 dark:text-slate-100 leading-tight">{currentUser.name}</div>
                 <div className="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold">
                   {currentUser.role === 'SUPER_ADMIN' ? 'Sistem Yöneticisi' : currentUser.role === 'INSTITUTION_ADMIN' ? 'Kurum Yöneticisi' : 'Öğretmen'}
