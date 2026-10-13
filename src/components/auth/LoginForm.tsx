@@ -168,11 +168,22 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess, theme, onT
             transition={{ type: 'spring', stiffness: 350, damping: 20 }}
             className="inline-flex items-center justify-center bg-white rounded-[28px] px-7 py-3.5 shadow-[0_16px_36px_-8px_rgba(0,0,0,0.4),inset_0_3px_6px_rgba(255,255,255,1),inset_0_-4px_8px_rgba(0,0,0,0.12)] border border-white/60 mb-1 cursor-pointer"
           >
-            <img 
-              src="/opteno-logo.png" 
-              alt="Opteno - Dijital Sınav Yönetim Sistemi" 
-              className="h-14 sm:h-16 w-auto object-contain filter drop-shadow-sm"
-            />
+            <div className="flex items-center gap-3.5 sm:gap-4 select-none">
+              <img 
+                src="/opteno-icon.png" 
+                alt="Opteno Logo" 
+                className="h-12 sm:h-14 w-auto object-contain shrink-0 drop-shadow-sm"
+              />
+              <div className="flex flex-col text-left justify-center">
+                <div className="font-display font-black text-[34px] sm:text-[40px] tracking-tight leading-none flex items-baseline">
+                  <span className="text-indigo-600">Opt</span>
+                  <span className="text-slate-900">eno</span>
+                </div>
+                <span className="text-[9px] sm:text-[10px] font-extrabold tracking-[0.18em] text-slate-500 uppercase mt-2.5 leading-none whitespace-nowrap">
+                  DİJİTAL SINAV SİSTEMİ
+                </span>
+              </div>
+            </div>
           </motion.div>
         </motion.div>
 
