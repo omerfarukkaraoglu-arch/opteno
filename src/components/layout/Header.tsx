@@ -16,11 +16,13 @@ import {
   X, 
   ChevronRight, 
   PlusCircle,
-  Calendar
+  Calendar,
+  UserCog
 } from 'lucide-react';
 import { User } from '../../types';
 import { storageService } from '../../services/storageService';
 import { Theme } from '../../services/themeService';
+import { ProfileMenu, ProfileSettingsModal } from './ProfileMenu';
 
 interface HeaderProps {
   activeTab: string;
@@ -44,6 +46,7 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleTheme
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isProfileSettingsOpen, setIsProfileSettingsOpen] = useState(false);
   const siteSettings = storageService.getSiteSettings();
   const navRef = React.useRef<HTMLElement>(null);
   const [sliderStyle, setSliderStyle] = useState<{ left: number; width: number; visible: boolean }>({
@@ -189,26 +192,6 @@ export const Header: React.FC<HeaderProps> = ({
               </motion.button>
             )}
 
-            {/* Profile badge (clickable on mobile to open drawer) */}
-            <motion.div 
-              whileHover={{ scale: 1.02, y: -1 }}
-              whileTap={{ scale: 0.97 }}
-              transition={{ type: 'spring', stiffness: 350, damping: 22 }}
-              onClick={() => setIsMobileMenuOpen(true)}
-              className="flex items-center gap-2.5 rounded-2xl clay-card px-2.5 sm:px-3.5 py-1.5 text-xs cursor-pointer hover:border-indigo-500/50 transition-all"
-              title="Kullanıcı Menüsü"
-            >
-              <div className="h-7 w-7 rounded-xl bg-indigo-600/20 text-indigo-600 dark:bg-indigo-600/30 dark:text-indigo-400 flex items-center justify-center font-bold shadow-[inset_0_2px_4px_rgba(255,255,255,0.2)]">
-                {currentUser.name.charAt(0)}
-              </div>
-              <div className="hidden sm:block md:hidden 2xl:block text-left whitespace-nowrap">
-                <div className="font-bold text-slate-800 dark:text-slate-100 leading-tight">{currentUser.name}</div>
-                <div className="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold">
-                  {currentUser.role === 'SUPER_ADMIN' ? 'Sistem Yöneticisi' : currentUser.role === 'INSTITUTION_ADMIN' ? 'Kurum Yöneticisi' : 'Öğretmen'}
-                </div>
-              </div>
-            </motion.div>
-
             {/* Theme Switcher Button (Dark / Light) */}
             <motion.button
               whileHover={{ scale: 1.08, y: -1 }}
@@ -226,18 +209,13 @@ export const Header: React.FC<HeaderProps> = ({
               )}
             </motion.button>
 
-            {/* Desktop Logout Button */}
-            <motion.button
-              whileHover={{ scale: 1.04, y: -1 }}
-              whileTap={{ scale: 0.96 }}
-              transition={{ type: 'spring', stiffness: 350, damping: 22 }}
-              onClick={onLogout}
-              className="hidden sm:flex px-3 py-2 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 dark:text-rose-400 border border-rose-200/80 dark:border-rose-500/30 transition-all text-xs font-bold items-center gap-1.5 cursor-pointer shadow-[0_6px_14px_rgba(244,63,94,0.15),inset_0_2px_4px_rgba(255,255,255,0.4),inset_0_-2px_4px_rgba(0,0,0,0.1)] active:translate-y-0.5"
-              title="Oturumu Kapat"
-            >
-              <LogOut className="h-4 w-4" />
-              <span className="hidden 2xl:inline">Çıkış</span>
-            </motion.button>
+            {/* Profil Menüsü (en sağda): Profil Ayarları + Oturumu Kapat */}
+            <ProfileMenu
+              currentUser={currentUser}
+              onLogout={onLogout}
+              onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
+              onOpenProfileSettings={() => setIsProfileSettingsOpen(true)}
+            />
           </div>
         </div>
       </header>
@@ -438,7 +416,28 @@ export const Header: React.FC<HeaderProps> = ({
                   <ChevronRight className="h-5 w-5 text-slate-400 dark:text-slate-500 shrink-0" />
                 </motion.button>
 
-                {/* 3. Tema Değiştir */}
+                {/* 3. Profil Ayarları */}
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    setIsProfileSettingsOpen(true);
+                  }}
+                  className="w-full flex items-center justify-between p-3.5 rounded-2xl clay-card transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 shrink-0 shadow-[inset_0_2px_4px_rgba(255,255,255,0.2)]">
+                      <UserCog className="h-5 w-5" />
+                    </div>
+                    <div className="text-left">
+                      <div className="font-bold text-slate-900 dark:text-white text-sm">Profil Ayarları</div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400 font-normal">İsim, e-posta, telefon ve şifre değiştir</div>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-slate-400 dark:text-slate-500 shrink-0" />
+                </motion.button>
+
+                {/* 4. Tema Değiştir */}
                 <motion.button
                   whileTap={{ scale: 0.98 }}
                   onClick={() => {
@@ -462,7 +461,7 @@ export const Header: React.FC<HeaderProps> = ({
                   </span>
                 </motion.button>
 
-                {/* 4. Uygulamayı Yükle (PWA) */}
+                {/* 5. Uygulamayı Yükle (PWA) */}
                 {deferredPrompt && (
                   <motion.button
                     whileTap={{ scale: 0.98 }}
@@ -485,7 +484,7 @@ export const Header: React.FC<HeaderProps> = ({
                   </motion.button>
                 )}
 
-                {/* 5. Çıkış Yap */}
+                {/* 6. Çıkış Yap */}
                 <motion.button
                   whileTap={{ scale: 0.98 }}
                   onClick={() => {
@@ -510,6 +509,13 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         )}
       </AnimatePresence>
+
+      {/* Profil Ayarları Penceresi (Modal) */}
+      <ProfileSettingsModal
+        open={isProfileSettingsOpen}
+        currentUser={currentUser}
+        onClose={() => setIsProfileSettingsOpen(false)}
+      />
     </>
   );
 };
