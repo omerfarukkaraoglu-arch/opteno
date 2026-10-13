@@ -134,10 +134,10 @@ export const Header: React.FC<HeaderProps> = ({
 
             {[
               { key: 'dashboard', active: activeTab === 'dashboard', icon: <BarChart3 className="h-4 w-4 shrink-0" />, label: 'Paneller' },
-              { key: 'exams', active: activeTab === 'exams' || activeTab === 'results', icon: <ListOrdered className="h-4 w-4 shrink-0" />, label: 'Sınavlar & Sonuçlar' },
+              { key: 'exams', active: activeTab === 'exams' || activeTab === 'results', icon: <ListOrdered className="h-4 w-4 shrink-0" />, label: 'Sınavlar & Sonuçlar', short: 'Sınavlar' },
               { key: 'calendar', active: activeTab === 'calendar', icon: <Calendar className="h-4 w-4 shrink-0" />, label: 'Takvim' },
               { key: 'scan', active: activeTab === 'scan', icon: <Camera className="h-4 w-4 shrink-0" />, label: 'Optik Oku', isScan: true },
-              { key: 'generate-omr', active: activeTab === 'generate-omr' || activeTab === 'generator', icon: <Printer className="h-4 w-4 shrink-0" />, label: 'Optik Form Bas' },
+              { key: 'generate-omr', active: activeTab === 'generate-omr' || activeTab === 'generator', icon: <Printer className="h-4 w-4 shrink-0" />, label: 'Optik Form Bas', short: 'Optik Bas' },
               { key: 'create-exam', active: activeTab === 'create-exam', icon: <PlusCircle className="h-4 w-4 shrink-0" />, label: 'Yeni Sınav' },
               {
                 key: 'management',
@@ -153,7 +153,7 @@ export const Header: React.FC<HeaderProps> = ({
                 onClick={() => setActiveTab(item.key)}
                 title={item.label}
                 aria-label={item.label}
-                className={`relative z-10 flex shrink-0 items-center gap-1.5 whitespace-nowrap px-2.5 xl:px-3.5 py-2 rounded-xl text-xs transition-colors duration-200 ${
+                className={`relative z-10 flex shrink-0 items-center gap-1.5 whitespace-nowrap px-2.5 xl:px-3 2xl:px-3.5 py-2 rounded-xl text-xs transition-colors duration-200 ${
                   item.isScan ? 'font-extrabold' : 'font-bold'
                 } ${
                   item.active
@@ -164,7 +164,14 @@ export const Header: React.FC<HeaderProps> = ({
                 }`}
               >
                 {item.icon}
-                <span className={item.active ? 'inline' : 'hidden xl:inline'}>{item.label}</span>
+                <span className={item.active ? 'inline' : 'hidden xl:inline'}>
+                  {(item as { short?: string }).short ? (
+                    <>
+                      <span className="2xl:hidden">{(item as { short?: string }).short}</span>
+                      <span className="hidden 2xl:inline">{item.label}</span>
+                    </>
+                  ) : item.label}
+                </span>
               </motion.button>
             ))}
           </nav>
