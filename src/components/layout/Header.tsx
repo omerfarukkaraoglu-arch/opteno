@@ -79,7 +79,7 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <>
       <header className="clay-panel sticky top-0 z-40 mb-4 sm:mb-6 rounded-none border-x-0 border-t-0 px-3 sm:px-6 py-2.5 sm:py-3 shadow-md transition-colors backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
+        <div className="mx-auto flex max-w-screen-2xl items-center justify-between gap-3">
           {/* Logo & Title */}
           <div 
             className="flex shrink-0 cursor-pointer items-center gap-2 sm:gap-3"
@@ -114,7 +114,7 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Desktop & Tablet Navigation Tabs (md:flex) */}
           <nav 
             ref={navRef}
-            className="hidden md:flex relative items-center gap-1.5 rounded-[22px] clay-sunken p-1.5 transition-colors"
+            className="hidden md:flex relative min-w-0 items-center gap-1 xl:gap-1.5 rounded-[22px] clay-sunken p-1.5 transition-colors"
           >
             {/* Kayar Mavi/Yeşil Arka Plan Hapı (Sliding Clay Pill Indicator) */}
             <div
@@ -170,7 +170,7 @@ export const Header: React.FC<HeaderProps> = ({
           </nav>
 
           {/* Right Section: Profile & Actions */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             {deferredPrompt && (
               <motion.button
                 whileHover={{ scale: 1.04, y: -1 }}
@@ -194,7 +194,7 @@ export const Header: React.FC<HeaderProps> = ({
               <div className="h-7 w-7 rounded-xl bg-indigo-600/20 text-indigo-600 dark:bg-indigo-600/30 dark:text-indigo-400 flex items-center justify-center font-bold shadow-[inset_0_2px_4px_rgba(255,255,255,0.2)]">
                 {currentUser.name.charAt(0)}
               </div>
-              <div className="hidden sm:block md:hidden xl:block text-left whitespace-nowrap">
+              <div className="hidden sm:block md:hidden 2xl:block text-left whitespace-nowrap">
                 <div className="font-bold text-slate-800 dark:text-slate-100 leading-tight">{currentUser.name}</div>
                 <div className="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold">
                   {currentUser.role === 'SUPER_ADMIN' ? 'Sistem Yöneticisi' : currentUser.role === 'INSTITUTION_ADMIN' ? 'Kurum Yöneticisi' : 'Öğretmen'}
@@ -229,7 +229,7 @@ export const Header: React.FC<HeaderProps> = ({
               title="Oturumu Kapat"
             >
               <LogOut className="h-4 w-4" />
-              <span className="hidden md:inline">Çıkış</span>
+              <span className="hidden 2xl:inline">Çıkış</span>
             </motion.button>
           </div>
         </div>
