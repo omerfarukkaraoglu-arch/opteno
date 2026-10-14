@@ -586,8 +586,8 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
             <div className="clay-card p-5 border border-indigo-500/30">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-semibold text-slate-400">Toplam Kayıtlı Kurum</p>
-                  <h3 className="font-display text-2xl font-black text-white mt-1">{institutions.length}</h3>
+                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Toplam Kayıtlı Kurum</p>
+                  <h3 className="font-display text-2xl font-black text-slate-900 dark:text-white mt-1">{institutions.length}</h3>
                 </div>
                 <div className="h-11 w-11 rounded-2xl bg-indigo-500/20 flex items-center justify-center text-indigo-400 shadow-[inset_0_2px_4px_rgba(255,255,255,0.3),inset_0_-2px_4px_rgba(0,0,0,0.25)]">
                   <Building2 className="h-5 w-5" />
@@ -598,8 +598,8 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
             <div className="clay-card p-5 border border-emerald-500/30">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-semibold text-slate-400">Toplam Kayıtlı Öğrenci</p>
-                  <h3 className="font-display text-2xl font-black text-white mt-1">{totalStudentsCount}</h3>
+                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Toplam Kayıtlı Öğrenci</p>
+                  <h3 className="font-display text-2xl font-black text-slate-900 dark:text-white mt-1">{totalStudentsCount}</h3>
                 </div>
                 <div className="h-11 w-11 rounded-2xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 shadow-[inset_0_2px_4px_rgba(255,255,255,0.3),inset_0_-2px_4px_rgba(0,0,0,0.25)]">
                   <Users className="h-5 w-5" />
@@ -610,8 +610,8 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
             <div className="clay-card p-5 border border-fuchsia-500/30">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-semibold text-slate-400">Toplam Sınav & Optik Okuma</p>
-                  <h3 className="font-display text-2xl font-black text-white mt-1">{totalExamsCount}</h3>
+                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Toplam Sınav & Optik Okuma</p>
+                  <h3 className="font-display text-2xl font-black text-slate-900 dark:text-white mt-1">{totalExamsCount}</h3>
                 </div>
                 <div className="h-11 w-11 rounded-2xl bg-fuchsia-500/20 flex items-center justify-center text-fuchsia-400 shadow-[inset_0_2px_4px_rgba(255,255,255,0.3),inset_0_-2px_4px_rgba(0,0,0,0.25)]">
                   <FileText className="h-5 w-5" />
@@ -959,10 +959,10 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
       {/* SUB-TAB 3: STUDENTS MANAGEMENT */}
       {activeSubTab === 'STUDENTS' && (
         <div className="glass-panel p-6 space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
             <div>
-              <h2 className="font-display text-lg font-bold text-white">Öğrenci Yönetimi & Listesi</h2>
-              <p className="text-xs text-slate-400">Kurum seçimi yaparak veya arama kriteri belirterek öğrencileri listeleyin</p>
+              <h2 className="font-display text-lg font-bold text-slate-900 dark:text-white">Öğrenci Yönetimi & Listesi</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Kurum seçimi yaparak veya arama kriteri belirterek öğrencileri listeleyin</p>
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
@@ -1144,10 +1144,10 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
         <div className="glass-panel p-6 space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <h2 className="font-display text-lg font-bold text-white flex items-center gap-2">
-                <FileText className="h-5 w-5 text-fuchsia-400" /> Sınav Tanımlama & Genel Yönetim
+              <h2 className="font-display text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <FileText className="h-5 w-5 text-fuchsia-500 dark:text-fuchsia-400" /> Sınav Tanımlama & Genel Yönetim
               </h2>
-              <p className="text-xs text-slate-400">SuperAdmin yetkisiyle istenen kuruma özel optik deneme sınavı açın.</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">SuperAdmin yetkisiyle istenen kuruma özel optik deneme sınavı açın.</p>
             </div>
 
             <div className="flex items-center gap-2">
@@ -1170,12 +1170,12 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                 value={examSearchTerm}
                 onChange={(e) => { setExamSearchTerm(e.target.value); setDashExamPage(1); }}
                 placeholder="Sınav adı, kodu veya kurum ile ara..."
-                className="input-field pl-10 text-xs py-2.5 w-full bg-slate-900/80 border-slate-700/80 text-white placeholder-slate-500 rounded-xl"
+                className="input-field pl-10 text-xs py-2.5 w-full bg-white dark:bg-slate-900/80 border-slate-200 dark:border-slate-700/80 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 rounded-xl"
               />
               {examSearchTerm && (
                 <button
                   onClick={() => { setExamSearchTerm(''); setDashExamPage(1); }}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 dark:hover:text-white"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
@@ -1187,7 +1187,7 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
               <select
                 value={examInstFilter}
                 onChange={(e) => { setExamInstFilter(e.target.value); setDashExamPage(1); }}
-                className="input-field pl-9 text-xs py-2.5 w-full bg-slate-900/80 border-slate-700/80 text-white font-medium cursor-pointer rounded-xl"
+                className="input-field pl-9 text-xs py-2.5 w-full bg-white dark:bg-slate-900/80 border-slate-200 dark:border-slate-700/80 text-slate-900 dark:text-white font-medium cursor-pointer rounded-xl"
               >
                 <option value="ALL">🏢 Tüm Kurumlar ({exams.length} Sınav)</option>
                 <option value="SYSTEM">🛡️ Sadece Merkezi Sistem</option>
@@ -1219,13 +1219,13 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
 
             if (filteredDashExams.length === 0) {
               return (
-                <div className="p-10 text-center text-slate-400 bg-slate-800/40 rounded-2xl border border-slate-700/40 space-y-2">
-                  <FileText className="h-8 w-8 text-slate-500 mx-auto" />
-                  <p className="text-xs font-semibold">Filtrelere uygun sınav bulunamadı.</p>
+                <div className="p-10 text-center text-slate-500 dark:text-slate-400 bg-slate-100/70 dark:bg-slate-800/40 rounded-2xl border border-slate-200 dark:border-slate-700/40 space-y-2">
+                  <FileText className="h-8 w-8 text-slate-400 dark:text-slate-500 mx-auto" />
+                  <p className="text-xs font-semibold text-slate-600 dark:text-slate-300">Filtrelere uygun sınav bulunamadı.</p>
                   {(examSearchTerm || examInstFilter !== 'ALL') && (
                     <button
                       onClick={() => { setExamSearchTerm(''); setExamInstFilter('ALL'); setDashExamPage(1); }}
-                      className="text-xs text-indigo-400 hover:underline inline-block mt-1"
+                      className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline inline-block mt-1 font-semibold"
                     >
                       Filtreleri Temizle
                     </button>
@@ -1238,9 +1238,9 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
               <div className="space-y-4">
                 {dashExamViewMode === 'list' ? (
                   /* LIST / TABLE VIEW FOR DASHBOARD EXAMS */
-                  <div className="overflow-x-auto rounded-2xl border border-slate-700/60 bg-slate-900/60 shadow-sm">
-                    <table className="w-full text-left text-xs text-slate-300">
-                      <thead className="uppercase bg-slate-800/80 text-slate-400 font-bold border-b border-slate-700/60 text-[11px]">
+                  <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-700/60 bg-white/80 dark:bg-slate-900/60 shadow-sm">
+                    <table className="w-full text-left text-xs text-slate-700 dark:text-slate-300">
+                      <thead className="uppercase bg-slate-100/90 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 font-bold border-b border-slate-200 dark:border-slate-700/60 text-[11px]">
                         <tr>
                           <th className="px-3.5 py-3 whitespace-nowrap">Sınav Kodu & Tarih</th>
                           <th className="px-3 py-3">Sınav Adı</th>
@@ -1250,30 +1250,30 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                           <th className="px-3.5 py-3 text-right whitespace-nowrap">İşlemler</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-800/60">
+                      <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60">
                         {paginatedDashExams.map((e) => (
-                          <tr key={e.id} className="hover:bg-slate-800/50 transition-colors">
+                          <tr key={e.id} className="hover:bg-slate-100/70 dark:hover:bg-slate-800/50 transition-colors">
                             <td className="px-3.5 py-3 whitespace-nowrap">
                               <span className="badge badge-primary text-[10px] font-mono">{e.examCode}</span>
-                              <div className="text-[10px] text-slate-400 flex items-center gap-1 mt-1">
+                              <div className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-1">
                                 <Calendar className="h-3 w-3" /> {e.date}
                               </div>
                             </td>
                             <td className="px-3 py-3 min-w-0">
-                              <div className="font-display font-bold text-sm text-white truncate max-w-xs">{e.title}</div>
-                              <div className="text-[10.5px] text-slate-400 truncate max-w-xs mt-0.5">
+                              <div className="font-display font-bold text-sm text-slate-900 dark:text-white truncate max-w-xs">{e.title}</div>
+                              <div className="text-[10.5px] text-slate-500 dark:text-slate-400 truncate max-w-xs mt-0.5">
                                 {e.subjects.map(s => s.name).join(', ')}
                               </div>
-                              <div className="text-[10px] text-indigo-400 font-medium md:hidden mt-0.5 truncate">
+                              <div className="text-[10px] text-indigo-600 dark:text-indigo-400 font-medium md:hidden mt-0.5 truncate">
                                 {e.institutionName}
                               </div>
                             </td>
                             <td className="px-3 py-3 hidden md:table-cell">
-                              <span className="font-medium text-slate-200 line-clamp-1">{e.institutionName}</span>
+                              <span className="font-semibold text-slate-800 dark:text-slate-200 line-clamp-1">{e.institutionName}</span>
                             </td>
                             <td className="px-3 py-3 text-center whitespace-nowrap">
-                              <span className="font-bold text-white">{e.totalQuestions} Soru</span>
-                              <div className="text-[10px] text-slate-400">{e.subjects.length} Ders</div>
+                              <span className="font-bold text-slate-900 dark:text-white">{e.totalQuestions} Soru</span>
+                              <div className="text-[10px] text-slate-500 dark:text-slate-400">{e.subjects.length} Ders</div>
                             </td>
                             <td className="px-3 py-3 text-center whitespace-nowrap">
                               <span className="badge badge-success text-[10px] font-bold">
@@ -1288,7 +1288,7 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                                     const pdf = await pdfService.generateOMRPDF(e, studentsList, 'A4');
                                     pdf.save(`${e.examCode}_Optik_Form_A4.pdf`);
                                   }}
-                                  className="btn btn-secondary py-1 px-2.5 text-xs text-indigo-300 rounded-lg flex items-center gap-1"
+                                  className="btn btn-secondary py-1 px-2.5 text-xs text-indigo-600 dark:text-indigo-300 rounded-lg flex items-center gap-1"
                                   title="1 Sayfada 1 Tam Boy Optik Form"
                                 >
                                   <Download className="h-3 w-3" /> A4
@@ -1299,7 +1299,7 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                                     const pdf = await pdfService.generateOMRPDF(e, studentsList, 'A5');
                                     pdf.save(`${e.examCode}_Optik_Form_A5_Tasarruf.pdf`);
                                   }}
-                                  className="btn btn-secondary py-1 px-2.5 text-xs text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/30 rounded-lg flex items-center gap-1"
+                                  className="btn btn-secondary py-1 px-2.5 text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/30 rounded-lg flex items-center gap-1"
                                   title="A5 Kesimli (2'li) Optik Form"
                                 >
                                   <Download className="h-3 w-3" /> A5
@@ -1311,7 +1311,7 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                                       setExams(storageService.getExams());
                                     }
                                   }}
-                                  className="p-1.5 rounded-lg text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 transition-all cursor-pointer"
+                                  className="p-1.5 rounded-lg text-rose-500 hover:text-rose-600 dark:text-rose-400 dark:hover:text-rose-300 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 transition-all cursor-pointer"
                                   title="Sınavı Sil"
                                 >
                                   <Trash2 className="h-3.5 w-3.5" />
@@ -1327,26 +1327,26 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                   /* GRID VIEW */
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {paginatedDashExams.map(e => (
-                      <div key={e.id} className="clay-card p-5 rounded-2xl border border-slate-700/60 flex flex-col justify-between overflow-hidden shadow-sm">
+                      <div key={e.id} className="clay-card p-5 rounded-2xl border border-slate-200 dark:border-slate-700/60 flex flex-col justify-between overflow-hidden shadow-sm">
                         <div>
                           <div className="flex items-center justify-between mb-2">
                             <span className="badge badge-primary text-[10px]">{e.examCode}</span>
-                            <span className="text-xs text-slate-400 flex items-center gap-1">
+                            <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
                               <Calendar className="h-3.5 w-3.5" /> {e.date}
                             </span>
                           </div>
 
-                          <h3 className="font-display font-bold text-base text-white">{e.title}</h3>
-                          <p className="text-xs text-indigo-400 mt-1 font-semibold">{e.institutionName}</p>
+                          <h3 className="font-display font-bold text-base text-slate-900 dark:text-white">{e.title}</h3>
+                          <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1 font-semibold">{e.institutionName}</p>
 
-                          <div className="mt-3 flex flex-wrap items-center gap-3 sm:gap-4 text-xs text-slate-300">
+                          <div className="mt-3 flex flex-wrap items-center gap-3 sm:gap-4 text-xs text-slate-600 dark:text-slate-300">
                             <div><strong>{e.totalQuestions}</strong> Soru</div>
                             <div><strong>{e.subjects.length}</strong> Ders</div>
                             <div><strong>{e.totalExamsScanned || 0}</strong> Okunan Optik</div>
                           </div>
                         </div>
 
-                        <div className="mt-4 pt-3.5 border-t border-slate-700/60 flex flex-wrap items-center justify-between gap-2">
+                        <div className="mt-4 pt-3.5 border-t border-slate-200 dark:border-slate-700/60 flex flex-wrap items-center justify-between gap-2">
                           <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
                             <button
                               onClick={async () => {
@@ -1354,7 +1354,7 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                                 const pdf = await pdfService.generateOMRPDF(e, studentsList, 'A4');
                                 pdf.save(`${e.examCode}_Optik_Form_A4.pdf`);
                               }}
-                              className="btn btn-secondary py-1.5 px-3 text-[11px] font-bold flex items-center justify-center gap-1.5 text-indigo-300 border-indigo-500/30 flex-1 sm:flex-initial rounded-xl whitespace-nowrap min-w-[85px]"
+                              className="btn btn-secondary py-1.5 px-3 text-[11px] font-bold flex items-center justify-center gap-1.5 text-indigo-600 dark:text-indigo-300 border-indigo-500/30 flex-1 sm:flex-initial rounded-xl whitespace-nowrap min-w-[85px]"
                               title="1 Sayfada 1 Tam Boy Optik Form"
                             >
                               <Download className="h-3.5 w-3.5 shrink-0" />
@@ -1366,7 +1366,7 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                                 const pdf = await pdfService.generateOMRPDF(e, studentsList, 'A5');
                                 pdf.save(`${e.examCode}_Optik_Form_A5_Tasarruf.pdf`);
                               }}
-                              className="btn btn-secondary py-1.5 px-3 text-[11px] font-bold flex items-center justify-center gap-1.5 text-emerald-400 border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 flex-1 sm:flex-initial rounded-xl whitespace-nowrap min-w-[85px]"
+                              className="btn btn-secondary py-1.5 px-3 text-[11px] font-bold flex items-center justify-center gap-1.5 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 flex-1 sm:flex-initial rounded-xl whitespace-nowrap min-w-[85px]"
                               title="1 Sayfada Altlı Üstlü 2 Optik Form (A5 Kesimli, %50 Kağıt Tasarrufu)"
                             >
                               <Download className="h-3.5 w-3.5 shrink-0" />
@@ -1381,7 +1381,7 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                                 setExams(storageService.getExams());
                               }
                             }}
-                            className="p-2 rounded-xl text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 transition-all flex items-center gap-1 text-xs shrink-0 cursor-pointer ml-auto sm:ml-0"
+                            className="p-2 rounded-xl text-rose-500 hover:text-rose-600 dark:text-rose-400 dark:hover:text-rose-300 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 transition-all flex items-center gap-1 text-xs shrink-0 cursor-pointer ml-auto sm:ml-0"
                             title="Sınavı Sil"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -1421,12 +1421,12 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                   <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
                     Eğitim Kademeleri & Düzeyleri
                   </span>
-                  <span className="text-xs text-slate-400">• Toplam {gradeLevels.length} Aktif Kademe</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">• Toplam {gradeLevels.length} Aktif Kademe</span>
                 </div>
-                <h3 className="font-display text-xl font-bold text-white flex items-center gap-2">
-                  <Layers className="h-6 w-6 text-indigo-400" /> Sistem Sınıf Kademeleri (Seviyeler)
+                <h3 className="font-display text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Layers className="h-6 w-6 text-indigo-500 dark:text-indigo-400" /> Sistem Sınıf Kademeleri (Seviyeler)
                 </h3>
-                <p className="text-xs text-slate-300 mt-1 max-w-2xl leading-relaxed">
+                <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 max-w-2xl leading-relaxed">
                   Sistemde geçerli sınıf düzeylerini (5. Sınıf, 6. Sınıf, 7. Sınıf, 8. Sınıf, Lise, Mezun vb.) buradan tanımlayabilirsiniz. Eklediğiniz her kademe otomatik olarak sınav oluşturma, optik form ve şube listelerinde kullanılabilir hale gelir.
                 </p>
               </div>
@@ -1436,10 +1436,10 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.96 }}
                   onClick={handleResetGradeLevels}
-                  className="btn btn-secondary text-xs py-2 px-3.5 flex items-center gap-1.5 text-slate-300 border-slate-700 hover:border-amber-500/50 rounded-xl"
+                  className="btn btn-secondary text-xs py-2 px-3.5 flex items-center gap-1.5 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-amber-500/50 rounded-xl"
                   title="5-12. Sınıf ve Mezun varsayılan kademelerine geri döndür"
                 >
-                  <RotateCcw className="h-3.5 w-3.5 text-amber-400" /> Kademeleri Sıfırla
+                  <RotateCcw className="h-3.5 w-3.5 text-amber-500 dark:text-amber-400" /> Kademeleri Sıfırla
                 </motion.button>
 
                 <motion.button
@@ -1459,7 +1459,7 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
             </div>
 
             {/* Grade Levels Cards Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 mt-6 pt-5 border-t border-slate-800/80">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 mt-6 pt-5 border-t border-slate-200 dark:border-slate-800/80">
               {gradeLevels.map(gl => {
                 const classCount = globalClasses.filter(c => c.gradeLevel === gl.level).length;
                 return (
@@ -1467,15 +1467,15 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                     key={gl.id}
                     initial={{ opacity: 0, scale: 0.96 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="clay-card p-3.5 rounded-2xl border border-slate-800 hover:border-indigo-500/50 transition-all flex flex-col justify-between group"
+                    className="clay-card p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-indigo-500/50 transition-all flex flex-col justify-between group"
                   >
                     <div>
                       <div className="flex items-center justify-between">
                         <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
-                          gl.category === 'Ortaokul' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
-                          gl.category === 'Lise' ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' :
-                          gl.category === 'İlkokul' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
-                          'bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/30'
+                          gl.category === 'Ortaokul' ? 'bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/30' :
+                          gl.category === 'Lise' ? 'bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 border border-indigo-500/30' :
+                          gl.category === 'İlkokul' ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30' :
+                          'bg-fuchsia-500/20 text-fuchsia-600 dark:text-fuchsia-300 border border-fuchsia-500/30'
                         }`}>
                           {gl.category}
                         </span>
@@ -1483,7 +1483,7 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                         <button
                           type="button"
                           onClick={() => handleDeleteGradeLevel(gl.id, gl.name)}
-                          className="text-slate-500 hover:text-rose-400 p-1 rounded-lg opacity-60 group-hover:opacity-100 transition-opacity"
+                          className="text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 p-1 rounded-lg opacity-60 group-hover:opacity-100 transition-opacity"
                           title="Kademeyi Sil"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
@@ -1491,16 +1491,16 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                       </div>
 
                       <div className="mt-2">
-                        <h4 className="font-display text-sm sm:text-base font-bold text-white tracking-tight">{gl.name}</h4>
+                        <h4 className="font-display text-sm sm:text-base font-bold text-slate-900 dark:text-white tracking-tight">{gl.name}</h4>
                         {gl.description && (
-                          <p className="text-[10px] text-slate-400 truncate mt-0.5">{gl.description}</p>
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate mt-0.5">{gl.description}</p>
                         )}
                       </div>
                     </div>
 
-                    <div className="pt-2 mt-2 border-t border-slate-800/70 flex items-center justify-between text-[10px] text-slate-400">
-                      <span>Düzey No: <strong className="text-white font-mono">{gl.level}</strong></span>
-                      <span className="text-indigo-300 font-semibold">{classCount} Şube</span>
+                    <div className="pt-2 mt-2 border-t border-slate-200 dark:border-slate-800/70 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
+                      <span>Düzey No: <strong className="text-slate-900 dark:text-white font-mono">{gl.level}</strong></span>
+                      <span className="text-indigo-600 dark:text-indigo-300 font-semibold">{classCount} Şube</span>
                     </div>
                   </motion.div>
                 );
@@ -1513,15 +1513,15 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/30">
                     Standart Şube Havuzu
                   </span>
-                  <span className="text-xs text-slate-400">• Toplam {globalClasses.length} Standart Sınıf / Şube</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">• Toplam {globalClasses.length} Standart Sınıf / Şube</span>
                 </div>
-                <h3 className="font-display text-lg sm:text-xl font-bold text-white flex items-center gap-2">
-                  <GraduationCap className="h-5 w-5 text-amber-400" /> Kademelere Göre Standart Şubeler
+                <h3 className="font-display text-lg sm:text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <GraduationCap className="h-5 w-5 text-amber-500 dark:text-amber-400" /> Kademelere Göre Standart Şubeler
                 </h3>
-                <p className="text-xs text-slate-300 mt-1 max-w-2xl leading-relaxed">
+                <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 max-w-2xl leading-relaxed">
                   Kurumların şube açarken doğrudan tek tıkla ekleyebileceği standart şubeleri buradan yönetin.
                 </p>
               </div>
@@ -1539,7 +1539,7 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
             </div>
 
             {/* Dynamic Level Filters & Search */}
-            <div className="pt-4 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-3">
+            <div className="pt-4 border-t border-slate-200 dark:border-slate-800/80 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-1.5 flex-wrap">
                 <button
                   type="button"
@@ -1547,7 +1547,7 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                   className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
                     globalGradeFilter === 'ALL'
                       ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30'
-                      : 'bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800'
+                      : 'bg-slate-100 dark:bg-slate-900/60 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-800'
                   }`}
                 >
                   Tümü ({globalClasses.length})
@@ -1563,7 +1563,7 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                       className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
                         globalGradeFilter === gl.level
                           ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30'
-                          : 'bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800'
+                          : 'bg-slate-100 dark:bg-slate-900/60 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-800'
                       }`}
                     >
                       {gl.name}
@@ -1580,7 +1580,7 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                   placeholder="Şube veya sınıf ara..."
                   value={globalClassSearch}
                   onChange={(e) => setGlobalClassSearch(e.target.value)}
-                  className="input-field pl-9 py-1.5 text-xs rounded-xl w-56 bg-slate-950/60"
+                  className="input-field pl-9 py-1.5 text-xs rounded-xl w-56 bg-white dark:bg-slate-950/60 text-slate-900 dark:text-white border-slate-200 dark:border-slate-800"
                 />
               </div>
             </div>
@@ -1597,17 +1597,17 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                       key={cls.id}
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="clay-card p-4 rounded-2xl border border-slate-800 hover:border-indigo-500/40 transition-all flex flex-col justify-between group"
+                      className="clay-card p-4 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-indigo-500/40 transition-all flex flex-col justify-between group"
                     >
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                          <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold tracking-wide uppercase bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                          <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold tracking-wide uppercase bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 border border-indigo-500/30">
                             {matchingLevel?.name || `${cls.gradeLevel}. Sınıf`}
                           </span>
                           <button
                             type="button"
                             onClick={() => handleDeleteGlobalClass(cls.id, cls.name)}
-                            className="text-slate-500 hover:text-rose-400 p-1 rounded-lg transition-colors opacity-70 group-hover:opacity-100"
+                            className="text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 p-1 rounded-lg transition-colors opacity-70 group-hover:opacity-100"
                             title="Havuzdan Kaldır"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -1615,16 +1615,16 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                         </div>
 
                         <div>
-                          <h4 className="font-display text-lg font-black text-white tracking-tight">{cls.name}</h4>
+                          <h4 className="font-display text-lg font-black text-slate-900 dark:text-white tracking-tight">{cls.name}</h4>
                           {cls.description && (
-                            <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-2">{cls.description}</p>
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">{cls.description}</p>
                           )}
                         </div>
                       </div>
 
-                      <div className="pt-3 mt-3 border-t border-slate-800/80 flex items-center justify-between text-[10px] text-slate-500">
+                      <div className="pt-3 mt-3 border-t border-slate-200 dark:border-slate-800/80 flex items-center justify-between text-[10px] text-slate-500">
                         <span className="font-mono">ID: {cls.id}</span>
-                        <span className="text-emerald-400 flex items-center gap-1 font-semibold">
+                        <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-semibold">
                           <CheckCircle2 className="h-3 w-3" /> Standart Şube
                         </span>
                       </div>
@@ -1634,10 +1634,10 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
             </div>
 
             {globalClasses.length === 0 && (
-              <div className="p-10 text-center rounded-2xl border border-slate-800 space-y-2">
-                <GraduationCap className="h-10 w-10 text-slate-600 mx-auto" />
-                <h4 className="font-display text-sm font-bold text-white">Standart Şube Bulunamadı</h4>
-                <p className="text-xs text-slate-400">Bu kademe için henüz şube eklenmedi. Yukarıdaki butondan ekleyebilirsiniz.</p>
+              <div className="p-10 text-center rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2">
+                <GraduationCap className="h-10 w-10 text-slate-400 dark:text-slate-600 mx-auto" />
+                <h4 className="font-display text-sm font-bold text-slate-900 dark:text-white">Standart Şube Bulunamadı</h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Bu kademe için henüz şube eklenmedi. Yukarıdaki butondan ekleyebilirsiniz.</p>
               </div>
             )}
           </div>
