@@ -117,7 +117,7 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Desktop & Tablet Navigation Tabs (md:flex) */}
           <nav 
             ref={navRef}
-            className="hidden md:flex relative min-w-0 items-center gap-1 xl:gap-1.5 rounded-[22px] clay-sunken p-1.5 transition-colors"
+            className="hidden md:flex relative min-w-0 items-center gap-0.5 lg:gap-1 xl:gap-1.5 rounded-[22px] clay-sunken p-1.5 transition-colors"
           >
             {/* Kayar Mavi/Yeşil Arka Plan Hapı (Sliding Clay Pill Indicator) */}
             <div
@@ -156,7 +156,7 @@ export const Header: React.FC<HeaderProps> = ({
                 onClick={() => setActiveTab(item.key)}
                 title={item.label}
                 aria-label={item.label}
-                className={`relative z-10 flex shrink-0 items-center gap-1.5 whitespace-nowrap px-2.5 xl:px-3 2xl:px-3.5 py-2 rounded-xl text-xs transition-colors duration-200 ${
+                className={`relative z-10 flex shrink-0 items-center gap-1.5 whitespace-nowrap px-2 lg:px-2.5 xl:px-3 2xl:px-3.5 py-2 rounded-xl text-xs transition-colors duration-200 ${
                   item.isScan ? 'font-extrabold' : 'font-bold'
                 } ${
                   item.active
@@ -180,15 +180,18 @@ export const Header: React.FC<HeaderProps> = ({
           </nav>
 
           {/* Right Section: Profile & Actions */}
-          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2 xl:gap-3">
             {deferredPrompt && (
               <motion.button
-                whileHover={{ scale: 1.04, y: -1 }}
-                whileTap={{ scale: 0.96 }}
+                whileHover={{ scale: 1.05, y: -1 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={installApp}
-                className="btn btn-primary text-xs py-1.5 px-3 hidden sm:inline-flex rounded-2xl"
+                className="btn btn-primary text-xs py-2 px-2.5 2xl:px-3 rounded-2xl flex items-center gap-1.5 shadow-sm shrink-0"
+                title="Uygulamayı Yükle (PWA)"
+                aria-label="Uygulamayı Yükle"
               >
-                <Download className="h-3.5 w-3.5" /> Yükle
+                <Download className="h-4 w-4 shrink-0" />
+                <span className="hidden 2xl:inline font-bold">Yükle</span>
               </motion.button>
             )}
 
@@ -198,7 +201,7 @@ export const Header: React.FC<HeaderProps> = ({
               whileTap={{ scale: 0.92 }}
               transition={{ type: 'spring', stiffness: 400, damping: 20 }}
               onClick={onToggleTheme}
-              className="p-2.5 rounded-2xl clay-card text-amber-500 dark:text-amber-400 text-xs font-semibold flex items-center justify-center cursor-pointer shadow-sm hover:text-amber-600"
+              className="p-2 sm:p-2.5 rounded-2xl clay-card text-amber-500 dark:text-amber-400 text-xs font-semibold flex items-center justify-center cursor-pointer shadow-sm hover:text-amber-600 shrink-0"
               title={theme === 'dark' ? 'Aydınlık Moda Geç' : 'Karanlık Moda Geç'}
               aria-label="Tema Değiştir"
             >
@@ -215,6 +218,8 @@ export const Header: React.FC<HeaderProps> = ({
               onLogout={onLogout}
               onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
               onOpenProfileSettings={() => setIsProfileSettingsOpen(true)}
+              deferredPrompt={deferredPrompt}
+              installApp={installApp}
             />
           </div>
         </div>

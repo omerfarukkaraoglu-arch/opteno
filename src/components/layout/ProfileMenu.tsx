@@ -10,7 +10,8 @@ import {
   CheckCircle2,
   AlertCircle,
   Building2,
-  Save
+  Save,
+  Download
 } from 'lucide-react';
 import { User } from '../../types';
 import { storageService } from '../../services/storageService';
@@ -263,13 +264,17 @@ interface ProfileMenuProps {
   onLogout: () => void;
   onOpenMobileMenu: () => void;
   onOpenProfileSettings: () => void;
+  deferredPrompt?: any;
+  installApp?: () => void;
 }
 
 export const ProfileMenu: React.FC<ProfileMenuProps> = ({
   currentUser,
   onLogout,
   onOpenMobileMenu,
-  onOpenProfileSettings
+  onOpenProfileSettings,
+  deferredPrompt,
+  installApp
 }) => {
   const [open, setOpen] = useState(false);
 
@@ -306,7 +311,7 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
         <div className="h-8 w-8 shrink-0 rounded-xl bg-gradient-to-tr from-indigo-600 to-fuchsia-600 text-white flex items-center justify-center font-black text-[11px] shadow-[0_4px_10px_rgba(79,70,229,0.35),inset_0_2px_4px_rgba(255,255,255,0.35)]">
           {getInitials(currentUser.name)}
         </div>
-        <div className="hidden sm:block md:hidden lg:block text-left min-w-0 max-w-[150px]">
+        <div className="hidden 2xl:block text-left min-w-0 max-w-[150px]">
           <div className="font-bold text-slate-800 dark:text-slate-100 leading-tight truncate">{currentUser.name}</div>
           <div className="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold truncate">{getRoleLabel(currentUser.role)}</div>
         </div>
@@ -343,6 +348,21 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
                   </span>
                 </div>
               </div>
+
+              {deferredPrompt && installApp && (
+                <button
+                  role="menuitem"
+                  type="button"
+                  onClick={() => {
+                    setOpen(false);
+                    installApp();
+                  }}
+                  className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/10 transition-colors"
+                >
+                  <Download className="h-4 w-4" />
+                  Uygulamayı Yükle
+                </button>
+              )}
 
               <button
                 role="menuitem"
