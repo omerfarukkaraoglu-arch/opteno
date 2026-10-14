@@ -7,12 +7,16 @@ import * as XLSX from 'xlsx';
 
 interface ExamCreateBuilderProps {
   currentUser?: User;
+  initialExamId?: string;
+  initialStep?: 1 | 2 | 3;
   onNavigateToOMR?: (examId: string) => void;
   onNavigateToExams?: () => void;
 }
 
 export const ExamCreateBuilder: React.FC<ExamCreateBuilderProps> = ({
   currentUser,
+  initialExamId,
+  initialStep,
   onNavigateToOMR,
   onNavigateToExams
 }) => {
@@ -20,52 +24,66 @@ export const ExamCreateBuilder: React.FC<ExamCreateBuilderProps> = ({
   const institutions = storageService.getInstitutions();
   const gradeLevels = storageService.getGradeLevels();
 
-  const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
+  // If initialExamId is provided, load existing exam for editing
+  const existingExam = initialExamId ? storageService.getExamById(initialExamId) : undefined;
+  const isEditing = Boolean(existingExam);
+
+  const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(initialStep || 1);
 
   // Step 1: Exam Basic Info
   const [selectedInstId, setSelectedInstId] = useState<string>(
-    activeUser.institutionId || (institutions[0] ? institutions[0].id : 'inst-1')
+    existingExam?.institutionId || activeUser.institutionId || (institutions[0] ? institutions[0].id : 'inst-1')
   );
-  const [examTitle, setExamTitle] = useState<string>('');
-  const [examCode, setExamCode] = useState<string>('');
-  const [gradeLevel, setGradeLevel] = useState<string>(gradeLevels[0]?.name || '8. Sınıf');
-  const [scoringStandard, setScoringStandard] = useState<'LGS' | 'YKS_TYT' | 'EQUAL_WEIGHT' | 'CUSTOM'>('LGS');
-  const [defaultOptionCount, setDefaultOptionCount] = useState<number>(4);
-  const [netPenaltyRatio, setNetPenaltyRatio] = useState<number>(3); // 3 for LGS
-  const [isStudentSpecific, setIsStudentSpecific] = useState<boolean>(true);
-  const [hasBookletTypes, setHasBookletTypes] = useState<boolean>(false);
+  const [examTitle, setExamTitle] = useState<string>(existingExam?.title || '');
+  const [examCode, setExamCode] = useState<string>(existingExam?.examCode || '');
+  const [gradeLevel, setGradeLevel] = useState<string>(existingExam?.gradeLevel ? String(existingExam.gradeLevel) : (gradeLevels[0]?.name || '8. Sınıf'));
+  const [scoringStandard, setScoringStandard] = useState<'LGS' | 'YKS_TYT' | 'EQUAL_WEIGHT' | 'CUSTOM'>(existingExam?.scoringStandard || 'LGS');
+  const [defaultOptionCount, setDefaultOptionCount] = useState<number>(existingExam?.defaultOptionCount || 4);
+  const [netPenaltyRatio, setNetPenaltyRatio] = useState<number>(existingExam?.netPenaltyRatio !== undefined ? existingExam.netPenaltyRatio : 3);
+  const [isStudentSpecific, setIsStudentSpecific] = useState<boolean>(existingExam?.isStudentSpecific !== undefined ? existingExam.isStudentSpecific : true);
+  const [hasBookletTypes, setHasBookletTypes] = useState<boolean>(existingExam?.hasBookletTypes || false);
   const [activeBookletTab, setActiveBookletTab] = useState<'A' | 'B'>('A');
 
-  // Step 2: Subjects & Question Counts (Kazanımlar varsayılan olarak boştur; kullanıcı isterse girer veya Excel'den yükler)
-  const [subjects, setSubjects] = useState<SubjectConfig[]>([
-    {
-      id: 'sbj-1',
-      name: 'Türkçe',
-      questionCount: 20,
-      optionCount: 4,
-      coefficient: 4.0,
-      correctAnswers: Array(20).fill('A'),
-      learningOutcomes: undefined
-    },
-    {
-      id: 'sbj-2',
-      name: 'Matematik',
-      questionCount: 20,
-      optionCount: 4,
-      coefficient: 4.0,
-      correctAnswers: Array(20).fill('B'),
-      learningOutcomes: undefined
-    },
-    {
-      id: 'sbj-3',
-      name: 'Fen Bilimleri',
-      questionCount: 20,
-      optionCount: 4,
-      coefficient: 4.0,
-      correctAnswers: Array(20).fill('C'),
-      learningOutcomes: undefined
+  // Step 2: Subjects & Question Counts
+  const [subjects, setSubjects] = useState<SubjectConfig[]>(() => {
+    if (existingExam && existingExam.subjects && existingExam.subjects.length > 0) {
+      return existingExam.subjects.map(s => ({
+        ...s,
+        correctAnswers: [...s.correctAnswers],
+        correctAnswersB: s.correctAnswersB ? [...s.correctAnswersB] : undefined,
+        learningOutcomes: s.learningOutcomes ? [...s.learningOutcomes] : undefined
+      }));
     }
-  ]);
+    return [
+      {
+        id: 'sbj-1',
+        name: 'Türkçe',
+        questionCount: 20,
+        optionCount: 4,
+        coefficient: 4.0,
+        correctAnswers: Array(20).fill('A'),
+        learningOutcomes: undefined
+      },
+      {
+        id: 'sbj-2',
+        name: 'Matematik',
+        questionCount: 20,
+        optionCount: 4,
+        coefficient: 4.0,
+        correctAnswers: Array(20).fill('B'),
+        learningOutcomes: undefined
+      },
+      {
+        id: 'sbj-3',
+        name: 'Fen Bilimleri',
+        questionCount: 20,
+        optionCount: 4,
+        coefficient: 4.0,
+        correctAnswers: Array(20).fill('C'),
+        learningOutcomes: undefined
+      }
+    ];
+  });
 
   // Step 3: Quick Answer Key Paste State
   const [quickPasteText, setQuickPasteText] = useState<string>('');
@@ -476,6 +494,30 @@ export const ExamCreateBuilder: React.FC<ExamCreateBuilderProps> = ({
       };
     });
 
+    if (isEditing && existingExam) {
+      const updatedExam: Exam = {
+        ...existingExam,
+        institutionId: selectedInstId,
+        institutionName: isAllInstitutions 
+          ? 'Tüm Kurumlar (Merkezi Sınav)' 
+          : (inst ? inst.name : existingExam.institutionName),
+        title: examTitle.trim(),
+        examCode: examCode.trim() || existingExam.examCode,
+        gradeLevel,
+        netPenaltyRatio,
+        defaultOptionCount,
+        hasBookletTypes,
+        scoringStandard,
+        baseScore: (scoringStandard === 'LGS' || scoringStandard === 'YKS_TYT') ? 100 : 0,
+        subjects: sanitizedSubjects,
+        totalQuestions
+      };
+
+      storageService.updateExam(updatedExam, true);
+      setCreatedExam(updatedExam);
+      return;
+    }
+
     const newExam: Exam = {
       id: examId,
       institutionId: selectedInstId,
@@ -556,9 +598,26 @@ export const ExamCreateBuilder: React.FC<ExamCreateBuilderProps> = ({
         {/* STEP 1: EXAM BASIC INFO */}
         {currentStep === 1 && (
           <form onSubmit={(e) => { e.preventDefault(); setCurrentStep(2); }} className="space-y-5 animate-fade-in">
+            {isEditing && (
+              <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-3 text-xs text-amber-300">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-amber-400 shrink-0" />
+                  <span>
+                    <strong>Sınav Düzenleme Modu:</strong> Cevap anahtarını hem elle şıkları tıklayarak hem de Excel dosyası yükleyerek güncelleyebilirsiniz. Kaydettiğinizde taranmış tüm öğrenci sonuçları otomatik güncellenecektir.
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCurrentStep(3)}
+                  className="btn btn-secondary text-xs py-1 px-2.5 text-amber-300 border-amber-500/30 whitespace-nowrap shrink-0"
+                >
+                  Doğrudan Cevap Anahtarına Git &rarr;
+                </button>
+              </div>
+            )}
             <div className="border-b border-slate-800 pb-3">
               <h2 className="font-display text-lg font-bold text-white flex items-center gap-2">
-                <Sliders className="h-5 w-5 text-indigo-400" /> 1. Sınav Temel Bilgileri ve Kurallar
+                <Sliders className="h-5 w-5 text-indigo-400" /> {isEditing ? '1. Sınav Bilgileri ve Kurallar (Düzenle)' : '1. Sınav Temel Bilgileri ve Kurallar'}
               </h2>
               <p className="text-xs text-slate-400 mt-1">Sınavın adını, hangi sınıflara uygulanacağını ve değerlendirme kurallarını belirleyin.</p>
             </div>
@@ -837,13 +896,23 @@ export const ExamCreateBuilder: React.FC<ExamCreateBuilderProps> = ({
         {/* STEP 3: ANSWER KEY & SAVE */}
         {currentStep === 3 && (
           <div className="space-y-5 animate-fade-in">
+            {isEditing && (
+              <div className="p-3.5 rounded-xl bg-indigo-500/10 border border-indigo-500/30 flex items-center gap-3 text-xs text-indigo-300">
+                <KeyRound className="h-4 w-4 text-indigo-400 shrink-0" />
+                <span>
+                  <strong>Cevap Anahtarı Düzenleme:</strong> Şıkları manuel olarak aşağıdaki butonlara tıklayarak değiştirebilir, metin kutusuna "1A2B3C..." yapıştırabilir veya <strong>Excel / CSV</strong> yükleyerek topluca güncelleyebilirsiniz. Kaydettiğinizde sınavın tüm puanları ve dereceleri anında yeniden oluşturulacaktır.
+                </span>
+              </div>
+            )}
             <div className="border-b border-slate-800 pb-3 flex items-center justify-between">
               <div>
                 <h2 className="font-display text-lg font-bold text-white flex items-center gap-2">
-                  <KeyRound className="h-5 w-5 text-indigo-400" /> 3. Cevap Anahtarı ve Sınavı Kaydetme
+                  <KeyRound className="h-5 w-5 text-indigo-400" /> {isEditing ? '3. Cevap Anahtarını Düzenle & Güncelle' : '3. Cevap Anahtarı ve Sınavı Kaydetme'}
                 </h2>
                 <p className="text-xs text-slate-400 mt-1">
-                  Cevap anahtarını belirleyin. Kazanım/konu alanları isteğe bağlıdır; doldurulmazsa sınav kazanımsız olarak değerlendirilir.
+                  {isEditing 
+                    ? 'Cevap anahtarındaki hatalı şıkları manuel tıklayarak veya Excel şablonu yükleyerek düzeltin.' 
+                    : 'Cevap anahtarını belirleyin. Kazanım/konu alanları isteğe bağlıdır; doldurulmazsa sınav kazanımsız olarak değerlendirilir.'}
                 </p>
               </div>
 
@@ -1048,7 +1117,7 @@ export const ExamCreateBuilder: React.FC<ExamCreateBuilderProps> = ({
                 onClick={handleSaveExam}
                 className="btn btn-primary py-3 px-6 text-sm font-bold shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2 w-full sm:w-auto order-1 sm:order-2"
               >
-                <FileText className="h-5 w-5 shrink-0" /> Sınavı Kaydet & Sisteme Ekle
+                <FileText className="h-5 w-5 shrink-0" /> {isEditing ? 'Değişiklikleri Kaydet & Sonuçları Güncelle' : 'Sınavı Kaydet & Sisteme Ekle'}
               </button>
             </div>
           </div>
@@ -1056,7 +1125,7 @@ export const ExamCreateBuilder: React.FC<ExamCreateBuilderProps> = ({
 
       </div>
 
-      {/* Created Exam Success Modal */}
+      {/* Created / Updated Exam Success Modal */}
       {createdExam && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4 animate-fade-in">
           <div className="glass-panel max-w-md w-full p-6 rounded-2xl border-emerald-500/40 text-center space-y-4">
@@ -1065,9 +1134,12 @@ export const ExamCreateBuilder: React.FC<ExamCreateBuilderProps> = ({
             </div>
 
             <div>
-              <h3 className="font-display text-xl font-bold text-white">Sınav Başarıyla Oluşturuldu!</h3>
+              <h3 className="font-display text-xl font-bold text-white">
+                {isEditing ? 'Sınav & Cevap Anahtarı Güncellendi!' : 'Sınav Başarıyla Oluşturuldu!'}
+              </h3>
               <p className="text-xs text-slate-300 mt-1">
-                <strong>{createdExam.title}</strong> ({createdExam.examCode}) başarıyla kaydedildi. Şimdi doğrudan bu sınav için optik basabilirsiniz.
+                <strong>{createdExam.title}</strong> ({createdExam.examCode}) başarıyla kaydedildi.
+                {isEditing && ' Bu sınava ait önceden taranmış tüm öğrenci sonuçları ve kazanım analizleri yeni cevap anahtarına göre anında otomatik olarak yeniden hesaplandı.'}
               </p>
             </div>
 

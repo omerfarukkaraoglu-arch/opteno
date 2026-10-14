@@ -1,5 +1,6 @@
 import { Institution, SchoolClass, Student, Exam, ScanResult, User, SiteSettings, GlobalClassTemplate, SystemGradeLevel } from '../types';
 import { initialInstitutions, initialClasses, initialStudents, initialExams, initialScanResults, initialUsers, initialSiteSettings } from './mockData';
+import { calculateTotalExamScore } from './scoreCalculationService';
 
 const FIREBASE_DB_URL = 'https://opteno-aba91-default-rtdb.europe-west1.firebasedatabase.app/opteno';
 
@@ -966,6 +967,23 @@ export const storageService = {
     const list = getItem<Exam[]>(KEYS.EXAMS, initialExams);
     return list.find(e => e.id === examId);
   },
+  canEditExam: (exam: Exam, userOverride?: User): boolean => {
+    const currentUser = userOverride || storageService.getCurrentUser();
+    if (!currentUser) return false;
+    // Super Admin has master authority to edit any exam
+    if (currentUser.role === 'SUPER_ADMIN') return true;
+
+    // System exams (created by Super Admin or marked as system exam) CANNOT be edited by institutions
+    const isSystemExam = exam.isSystemExam === true || 
+      exam.createdByRole === 'SUPER_ADMIN' || 
+      exam.institutionId === 'ALL' || 
+      exam.institutionId === 'SYSTEM';
+
+    if (isSystemExam) return false;
+
+    // Institutions can only edit their own institution's exams
+    return !!(currentUser.institutionId && exam.institutionId === currentUser.institutionId);
+  },
   canDeleteExam: (exam: Exam, userOverride?: User): boolean => {
     const currentUser = userOverride || storageService.getCurrentUser();
     if (!currentUser) return false;
@@ -1004,11 +1022,192 @@ export const storageService = {
     pushToServer();
     window.dispatchEvent(new CustomEvent('opticok-data-updated'));
   },
-  updateExam: (exam: Exam) => {
+  updateExam: (exam: Exam, recalculateResults: boolean = true) => {
     const list = getItem<Exam[]>(KEYS.EXAMS, initialExams).map(e => e.id === exam.id ? exam : e);
     setItem(KEYS.EXAMS, list);
+    
+    // Sınavın cevap anahtarı veya kuralları güncellendiğinde daha önce okunmuş tüm optik sonuçları otomatik yeniden hesapla
+    if (recalculateResults) {
+      storageService.recalculateResultsForExam(exam);
+    }
+
     pushToServer();
     window.dispatchEvent(new CustomEvent('opticok-data-updated'));
+  },
+  // Verilen sınava ait mevcut tüm taranmış optik form sonuçlarını güncellenen cevap anahtarına göre yeniden hesaplar
+  recalculateResultsForExam: (exam: Exam): number => {
+    const allResults = getItem<ScanResult[]>(KEYS.RESULTS, initialScanResults);
+    const examResults = allResults.filter(r => r.examId === exam.id);
+    if (examResults.length === 0) return 0;
+
+    const penaltyRatio = exam.netPenaltyRatio !== undefined ? exam.netPenaltyRatio : 3;
+
+    const updatedAllResults = allResults.map(res => {
+      if (res.examId !== exam.id) return res;
+
+      let totalCorrect = 0;
+      let totalWrong = 0;
+      let totalEmpty = 0;
+
+      const updatedSubjectResults = (exam.subjects || []).map(subject => {
+        let subCorrect = 0;
+        let subWrong = 0;
+        let subEmpty = 0;
+
+        for (let q = 1; q <= subject.questionCount; q++) {
+          const isBookletB = res.bookletType === 'B';
+          const correctAnswer = (isBookletB && subject.correctAnswersB?.[q - 1])
+            ? subject.correctAnswersB[q - 1]
+            : (subject.correctAnswers[q - 1] || 'A');
+
+          // Öğrencinin bu soruya vermiş olduğu işaretlemeyi bul
+          const existingAns = res.answers?.find(
+            a => a.subjectName === subject.name && a.questionNumber === q
+          );
+          const selectedOption = existingAns ? existingAns.selectedOption : null;
+
+          if (!selectedOption || selectedOption.trim() === '') {
+            subEmpty++;
+          } else if (selectedOption === 'MULTIPLE') {
+            subWrong++;
+          } else if (selectedOption === correctAnswer) {
+            subCorrect++;
+          } else {
+            subWrong++;
+          }
+        }
+
+        const subNet = penaltyRatio > 0
+          ? Math.max(0, parseFloat((subCorrect - subWrong / penaltyRatio).toFixed(2)))
+          : subCorrect;
+
+        totalCorrect += subCorrect;
+        totalWrong += subWrong;
+        totalEmpty += subEmpty;
+
+        return {
+          subjectName: subject.name,
+          correctCount: subCorrect,
+          wrongCount: subWrong,
+          emptyCount: subEmpty,
+          netCount: subNet
+        };
+      });
+
+      const totalNet = penaltyRatio > 0
+        ? Math.max(0, parseFloat((totalCorrect - totalWrong / penaltyRatio).toFixed(2)))
+        : totalCorrect;
+
+      const totalScore = calculateTotalExamScore(exam, updatedSubjectResults, totalNet);
+
+      // Soru bazlı answers listesini güncelle
+      const updatedAnswers = (exam.subjects || []).flatMap(subject => {
+        const subjectAnswers = [];
+        for (let q = 1; q <= subject.questionCount; q++) {
+          const isBookletB = res.bookletType === 'B';
+          const correctAnswer = (isBookletB && subject.correctAnswersB?.[q - 1])
+            ? subject.correctAnswersB[q - 1]
+            : (subject.correctAnswers[q - 1] || 'A');
+
+          const existingAns = res.answers?.find(
+            a => a.subjectName === subject.name && a.questionNumber === q
+          );
+          const selectedOption = existingAns ? existingAns.selectedOption : null;
+          const isBlank = !selectedOption || selectedOption.trim() === '';
+          const isCorrect = !isBlank && selectedOption !== 'MULTIPLE' && selectedOption === correctAnswer;
+          const outcome = subject.learningOutcomes?.[q - 1] || existingAns?.learningOutcome || '';
+
+          subjectAnswers.push({
+            subjectName: subject.name,
+            questionNumber: q,
+            selectedOption,
+            correctAnswer,
+            isCorrect,
+            isBlank,
+            isUncertain: existingAns?.isUncertain,
+            learningOutcome: outcome
+          });
+        }
+        return subjectAnswers;
+      });
+
+      // Kazanım analizlerini tekrar hesapla
+      const outcomeMap = new Map<string, {
+        subjectName: string;
+        outcome: string;
+        total: number;
+        correct: number;
+        wrong: number;
+        empty: number;
+      }>();
+
+      updatedAnswers.forEach(ans => {
+        let outcome = ans.learningOutcome;
+        if (!outcome) {
+          const sub = exam.subjects?.find(s => s.name === ans.subjectName);
+          if (sub && sub.learningOutcomes && sub.learningOutcomes[ans.questionNumber - 1]) {
+            outcome = sub.learningOutcomes[ans.questionNumber - 1];
+          }
+        }
+        if (!outcome || !outcome.trim()) return;
+
+        const key = `${ans.subjectName}:::${outcome.trim()}`;
+        if (!outcomeMap.has(key)) {
+          outcomeMap.set(key, {
+            subjectName: ans.subjectName,
+            outcome: outcome.trim(),
+            total: 0,
+            correct: 0,
+            wrong: 0,
+            empty: 0
+          });
+        }
+        const item = outcomeMap.get(key)!;
+        item.total++;
+        if (ans.isCorrect) item.correct++;
+        else if (ans.isBlank) item.empty++;
+        else item.wrong++;
+      });
+
+      const updatedOutcomeAnalyses = Array.from(outcomeMap.values()).map(item => {
+        const rate = item.total > 0 ? parseFloat(((item.correct / item.total) * 100).toFixed(1)) : 0;
+        let status: 'SUCCESS' | 'WARNING' | 'DANGER' = 'SUCCESS';
+        if (rate < 50) status = 'DANGER';
+        else if (rate < 80) status = 'WARNING';
+
+        return {
+          subjectName: item.subjectName,
+          outcome: item.outcome,
+          totalQuestions: item.total,
+          correctCount: item.correct,
+          wrongCount: item.wrong,
+          emptyCount: item.empty,
+          successRate: rate,
+          status
+        };
+      });
+
+      const updatedResult: ScanResult = {
+        ...res,
+        examTitle: exam.title,
+        totalCorrect,
+        totalWrong,
+        totalEmpty,
+        totalNet,
+        totalScore,
+        subjectResults: updatedSubjectResults,
+        answers: updatedAnswers,
+        outcomeAnalyses: updatedOutcomeAnalyses
+      };
+
+      // Tekil olarak Firebase bulutuna da güncelle
+      pushSingleResultToServer(updatedResult);
+
+      return updatedResult;
+    });
+
+    setItem(KEYS.RESULTS, updatedAllResults);
+    return examResults.length;
   },
   // Çöp Kutusuna Taşı (Soft Delete)
   deleteExam: (examId: string, userOverride?: User): boolean => {

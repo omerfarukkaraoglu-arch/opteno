@@ -21,6 +21,8 @@ function App() {
   const [isReady, setIsReady] = useState(false);
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [selectedExamId, setSelectedExamId] = useState<string | undefined>(undefined);
+  const [editingExamId, setEditingExamId] = useState<string | undefined>(undefined);
+  const [editStep, setEditStep] = useState<1 | 2 | 3>(1);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [theme, setTheme] = useState<Theme>(getStoredTheme);
@@ -120,12 +122,18 @@ function App() {
               <div className="mx-auto max-w-6xl py-2"><InstitutionAdminDash setActiveTab={setActiveTab} /></div>
             )}
 
-            {/* 1. Sınav Oluşturma Paneli */}
+            {/* 1. Sınav Oluşturma & Düzenleme Paneli */}
             {activeTab === 'create-exam' && (
               <ExamCreateBuilder
                 currentUser={currentUser}
+                initialExamId={editingExamId}
+                initialStep={editStep}
                 onNavigateToOMR={(examId) => handleNavigateToOMR(examId)}
-                onNavigateToExams={() => setActiveTab('exams')}
+                onNavigateToExams={() => {
+                  setEditingExamId(undefined);
+                  setEditStep(1);
+                  setActiveTab('exams');
+                }}
               />
             )}
 
@@ -134,7 +142,11 @@ function App() {
               <OMRGenerator
                 initialExamId={selectedExamId}
                 onNavigateToExams={() => setActiveTab('exams')}
-                onNavigateToCreateExam={() => setActiveTab('create-exam')}
+                onNavigateToCreateExam={() => {
+                  setEditingExamId(undefined);
+                  setEditStep(1);
+                  setActiveTab('create-exam');
+                }}
               />
             )}
 
@@ -143,7 +155,16 @@ function App() {
               <ExamsList
                 currentUser={currentUser}
                 highlightedExamId={selectedExamId}
-                onNavigateToCreateExam={() => setActiveTab('create-exam')}
+                onNavigateToCreateExam={() => {
+                  setEditingExamId(undefined);
+                  setEditStep(1);
+                  setActiveTab('create-exam');
+                }}
+                onNavigateToEditExam={(examId, step = 3) => {
+                  setEditingExamId(examId);
+                  setEditStep(step);
+                  setActiveTab('create-exam');
+                }}
                 onNavigateToOMR={(examId) => handleNavigateToOMR(examId)}
                 onNavigateToScan={() => setActiveTab('scan')}
                 onNavigateToResults={(examId) => {

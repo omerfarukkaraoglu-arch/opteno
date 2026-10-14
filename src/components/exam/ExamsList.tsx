@@ -3,7 +3,7 @@ import {
   FileText, Plus, Calendar, Printer, Camera, Trash2, Layers, Search, 
   Sparkles, CheckCircle2, ChevronRight, ChevronDown, ChevronUp, 
   User as UserIcon, Shield, Building2, Lock, FolderKanban, Filter, X,
-  GraduationCap, RotateCcw, AlertTriangle
+  GraduationCap, RotateCcw, AlertTriangle, Edit3
 } from 'lucide-react';
 import { Exam, User, Institution, SystemGradeLevel } from '../../types';
 import { storageService } from '../../services/storageService';
@@ -14,6 +14,7 @@ interface ExamsListProps {
   currentUser?: User;
   highlightedExamId?: string;
   onNavigateToCreateExam?: () => void;
+  onNavigateToEditExam?: (examId: string, step?: 1 | 2 | 3) => void;
   onNavigateToOMR?: (examId: string) => void;
   onNavigateToScan?: () => void;
   onNavigateToResults?: (examId: string) => void;
@@ -33,6 +34,7 @@ export const ExamsList: React.FC<ExamsListProps> = ({
   currentUser,
   highlightedExamId,
   onNavigateToCreateExam,
+  onNavigateToEditExam,
   onNavigateToOMR,
   onNavigateToScan,
   onNavigateToResults,
@@ -250,6 +252,7 @@ export const ExamsList: React.FC<ExamsListProps> = ({
     const isHighlighted = exam.id === highlightedExamId;
     const isSys = isSystemExam(exam);
     const canDelete = storageService.canDeleteExam(exam, activeUser);
+    const canEdit = storageService.canEditExam(exam, activeUser);
 
     return (
       <div
@@ -402,6 +405,17 @@ export const ExamsList: React.FC<ExamsListProps> = ({
               >
                 <Camera className="h-3.5 w-3.5 shrink-0" /> 
                 <span>Optik Oku</span>
+              </button>
+            )}
+
+            {canEdit && onNavigateToEditExam && scopeFilter !== 'TRASH' && (
+              <button
+                onClick={() => onNavigateToEditExam(exam.id, 3)}
+                className="btn btn-secondary text-xs py-1.5 px-2.5 sm:px-3 flex items-center justify-center gap-1.5 text-indigo-600 dark:text-indigo-400 border-indigo-500/30 hover:bg-indigo-500/10 flex-1 sm:flex-initial rounded-xl"
+                title="Cevap anahtarını ve sınav ayarlarını düzenleyin (Excel veya Manuel)"
+              >
+                <Edit3 className="h-3.5 w-3.5 shrink-0" />
+                <span>Cevap Anahtarı Düzenle</span>
               </button>
             )}
           </div>
@@ -737,6 +751,7 @@ export const ExamsList: React.FC<ExamsListProps> = ({
                 {paginatedExams.map((exam) => {
                   const examResults = storageService.getResults(exam.id);
                   const canDelete = storageService.canDeleteExam(exam, activeUser);
+                  const canEdit = storageService.canEditExam(exam, activeUser);
                   return (
                     <tr key={exam.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                       {/* Sınav Bilgisi (Adı, Kodu, Tarihi, Dersler) */}
@@ -830,6 +845,16 @@ export const ExamsList: React.FC<ExamsListProps> = ({
                             >
                               <Camera className="h-3.5 w-3.5 shrink-0" />
                               <span>Oku</span>
+                            </button>
+                          )}
+                          {canEdit && onNavigateToEditExam && scopeFilter !== 'TRASH' && (
+                            <button
+                              onClick={() => onNavigateToEditExam(exam.id, 3)}
+                              className="btn btn-secondary text-xs py-1 px-2 flex items-center gap-1 text-indigo-600 dark:text-indigo-400 border-indigo-500/30 hover:bg-indigo-500/10 rounded-lg cursor-pointer whitespace-nowrap shrink-0"
+                              title="Cevap anahtarını ve sınav ayarlarını düzenleyin (Excel veya Manuel)"
+                            >
+                              <Edit3 className="h-3.5 w-3.5 shrink-0" />
+                              <span>Cevap Anahtarı</span>
                             </button>
                           )}
                           {scopeFilter === 'TRASH' ? (
