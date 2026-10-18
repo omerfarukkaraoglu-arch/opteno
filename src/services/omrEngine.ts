@@ -275,6 +275,79 @@ export const omrEngine = {
       rows.push(renderColumns.slice(i, i + maxColsPerRow));
     }
 
+    // Step 4: Detect Booklet Type (Kitapçık Türü A / B) from optical bubbles
+    let detectedBooklet: 'A' | 'B' = (qrData?.bookletType as 'A' | 'B') || 'A';
+    const hasBookletTypes = exam.hasBookletTypes || exam.subjects.some(s => s.correctAnswersB && s.correctAnswersB.length > 0);
+
+    if (hasBookletTypes) {
+      const answerBottom = getExamAnswerBottom(exam);
+      // Kitapçık Türü A bubble coordinates: (125.0, 28.0) mm
+      const uA = (125.0 - 13) / (197 - 13);
+      const vA = (28.0 - 55) / ((answerBottom - 3) - 55);
+      const ptA = perspectiveMap(uA, vA);
+
+      // Kitapçık Türü B bubble coordinates: (140.0, 28.0) mm
+      const uB = (140.0 - 13) / (197 - 13);
+      const vB = (28.0 - 55) / ((answerBottom - 3) - 55);
+      const ptB = perspectiveMap(uB, vB);
+
+      // Jitter search to lock onto maximum darkness even with camera angle variance
+      const sampleBestBubble = (cx: number, cy: number) => {
+        let best = measureBubbleContrast(grayData, width, height, cx, cy, pixelsPerMm);
+        const step = Math.max(1, Math.round(pixelsPerMm * 0.45));
+        for (const dy of [-step, 0, step]) {
+          for (const dx of [-step, 0, step]) {
+            if (dx === 0 && dy === 0) continue;
+            const px = Math.round(cx + dx);
+            const py = Math.round(cy + dy);
+            if (px >= 0 && px < width && py >= 0 && py < height) {
+              const probe = measureBubbleContrast(grayData, width, height, px, py, pixelsPerMm);
+              if (probe.fill > best.fill) {
+                best = probe;
+              }
+            }
+          }
+        }
+        return best;
+      };
+
+      const resA = sampleBestBubble(ptA.x, ptA.y);
+      const resB = sampleBestBubble(ptB.x, ptB.y);
+
+      // Decision logic:
+      // Empty bubble with printed letter 'A'/'B' has fill ~0.04 - 0.13.
+      // Filled bubble with pencil has fill > 0.20 (typically 0.35 - 0.85).
+      if (resB.fill >= 0.20 && (resB.fill >= resA.fill * 1.25 || resB.fill - resA.fill >= 0.10)) {
+        detectedBooklet = 'B';
+      } else if (resA.fill >= 0.20 && (resA.fill >= resB.fill * 1.25 || resA.fill - resB.fill >= 0.10)) {
+        detectedBooklet = 'A';
+      } else if (resB.fill > resA.fill && resB.fill >= 0.22) {
+        detectedBooklet = 'B';
+      } else if (resA.fill > resB.fill && resA.fill >= 0.22) {
+        detectedBooklet = 'A';
+      } else if (qrData?.bookletType === 'B') {
+        detectedBooklet = 'B';
+      } else {
+        detectedBooklet = 'A';
+      }
+
+      // Visual debug rings on canvas so the user/teacher sees which booklet bubble was detected
+      [
+        { opt: 'A', pt: ptA, isFilled: detectedBooklet === 'A' },
+        { opt: 'B', pt: ptB, isFilled: detectedBooklet === 'B' }
+      ].forEach(b => {
+        if (b.pt.x >= 0 && b.pt.x < width && b.pt.y >= 0 && b.pt.y < height) {
+          ctx.lineWidth = Math.max(2, pixelsPerMm * 0.4);
+          ctx.strokeStyle = b.isFilled ? '#10b981' : 'rgba(239, 68, 68, 0.7)';
+          ctx.fillStyle = b.isFilled ? 'rgba(16, 185, 129, 0.5)' : 'rgba(239, 68, 68, 0.05)';
+          ctx.beginPath();
+          ctx.arc(b.pt.x, b.pt.y, Math.max(5, pixelsPerMm * 2.5), 0, 2 * Math.PI);
+          ctx.fill();
+          ctx.stroke();
+        }
+      });
+    }
+
     exam.subjects.forEach((subject, subIdx) => {
       let subCorrect = 0;
       let subWrong = 0;
@@ -311,7 +384,7 @@ export const omrEngine = {
         for (let q = col.startQ; q <= col.endQ; q++) {
           const qNum = q;
           const qY_mm = rowY_mm + 11.5 + (q - col.startQ) * 6.5;
-          const isBookletB = qrData?.bookletType === 'B';
+          const isBookletB = detectedBooklet === 'B';
           const correctAnswer = (isBookletB && subject.correctAnswersB?.[q - 1])
             ? subject.correctAnswersB[q - 1]
             : (subject.correctAnswers[q - 1] || 'A');
@@ -493,7 +566,7 @@ export const omrEngine = {
       className: student.className,
       institutionId: finalResultInstId,
       scannedAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
-      bookletType: (qrData?.bookletType as 'A' | 'B') || 'A',
+      bookletType: detectedBooklet,
       totalCorrect,
       totalWrong,
       totalEmpty,

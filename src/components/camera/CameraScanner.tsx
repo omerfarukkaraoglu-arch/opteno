@@ -564,6 +564,82 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({ onScanComplete }) 
     });
   };
 
+  // Switch Booklet Type (A or B) in Verification Modal and re-evaluate answers live
+  const handleSwitchBookletType = (newBooklet: 'A' | 'B') => {
+    if (!pendingResult || !detectedExam || pendingResult.bookletType === newBooklet) return;
+    const penaltyRatio = detectedExam.netPenaltyRatio !== undefined ? detectedExam.netPenaltyRatio : 4;
+    let totalCorrect = 0;
+    let totalWrong = 0;
+    let totalEmpty = 0;
+
+    const isB = newBooklet === 'B';
+
+    const updatedAnswers = pendingResult.answers.map(ans => {
+      const subject = detectedExam.subjects.find(s => s.name === ans.subjectName);
+      if (!subject) return ans;
+      const correctAns = (isB && subject.correctAnswersB?.[ans.questionNumber - 1])
+        ? subject.correctAnswersB[ans.questionNumber - 1]
+        : (subject.correctAnswers[ans.questionNumber - 1] || 'A');
+
+      const isBlank = !ans.selectedOption || ans.selectedOption.trim() === '';
+      const isCorrect = !isBlank && ans.selectedOption !== 'MULTIPLE' && ans.selectedOption === correctAns;
+
+      return {
+        ...ans,
+        correctAnswer: correctAns,
+        isCorrect,
+        isBlank
+      };
+    });
+
+    const updatedSubjectResults: SubjectResult[] = detectedExam.subjects.map(subject => {
+      let subCorrect = 0;
+      let subWrong = 0;
+      let subEmpty = 0;
+
+      const subAnswers = updatedAnswers.filter(a => a.subjectName === subject.name);
+      subAnswers.forEach(a => {
+        if (a.isBlank) subEmpty++;
+        else if (a.isCorrect) subCorrect++;
+        else subWrong++;
+      });
+
+      totalCorrect += subCorrect;
+      totalWrong += subWrong;
+      totalEmpty += subEmpty;
+
+      const subNet = penaltyRatio > 0
+        ? Math.max(0, parseFloat((subCorrect - subWrong / penaltyRatio).toFixed(2)))
+        : subCorrect;
+
+      return {
+        subjectName: subject.name,
+        correctCount: subCorrect,
+        wrongCount: subWrong,
+        emptyCount: subEmpty,
+        netCount: subNet
+      };
+    });
+
+    const totalNet = penaltyRatio > 0
+      ? Math.max(0, parseFloat((totalCorrect - totalWrong / penaltyRatio).toFixed(2)))
+      : totalCorrect;
+
+    const totalScore = calculateTotalExamScore(detectedExam, updatedSubjectResults, totalNet);
+
+    setPendingResult({
+      ...pendingResult,
+      bookletType: newBooklet,
+      answers: updatedAnswers,
+      subjectResults: updatedSubjectResults,
+      totalCorrect,
+      totalWrong,
+      totalEmpty,
+      totalNet,
+      totalScore
+    });
+  };
+
   // Finalize & Save Scan Result to System Storage
   const handleConfirmAndSave = (redirectToExams: boolean = true) => {
     if (!pendingResult) return;
@@ -946,8 +1022,17 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({ onScanComplete }) 
                     <h2 className="font-display font-bold text-base sm:text-lg text-white flex items-center gap-2">
                       Sanal Optik Eşleşme Kontrolü
                     </h2>
-                    <p className="text-xs text-slate-400">
-                      Öğrenci: <strong className="text-white">{pendingResult.studentName}</strong> (No: {pendingResult.studentNo}) | Sınav: <strong className="text-emerald-300">{pendingResult.examTitle}</strong>
+                    <p className="text-xs text-slate-400 flex items-center flex-wrap gap-2">
+                      <span>Öğrenci: <strong className="text-white">{pendingResult.studentName}</strong> (No: {pendingResult.studentNo}) | Sınav: <strong className="text-emerald-300">{pendingResult.examTitle}</strong></span>
+                      {(detectedExam?.hasBookletTypes || pendingResult.bookletType) && (
+                        <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${
+                          pendingResult.bookletType === 'B'
+                            ? 'bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/40'
+                            : 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40'
+                        }`}>
+                          {pendingResult.bookletType || 'A'} Kitapçığı
+                        </span>
+                      )}
                     </p>
                   </div>
                 </div>
@@ -988,6 +1073,37 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({ onScanComplete }) 
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2 text-xs font-bold">
+                    {(detectedExam?.hasBookletTypes || (detectedExam?.subjects && detectedExam.subjects.some(s => s.correctAnswersB && s.correctAnswersB.length > 0))) && (
+                      <div className="flex items-center gap-1.5 bg-slate-900/90 px-2.5 py-1 rounded-xl border border-slate-700 shadow-inner">
+                        <span className="text-[11px] text-slate-400 font-bold">Kitapçık:</span>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => handleSwitchBookletType('A')}
+                            className={`px-2.5 py-0.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                              pendingResult.bookletType === 'A'
+                                ? 'bg-indigo-600 text-white shadow-sm'
+                                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                            }`}
+                            title="A Kitapçığı olarak değerlendir"
+                          >
+                            A Kitapçığı
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleSwitchBookletType('B')}
+                            className={`px-2.5 py-0.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                              pendingResult.bookletType === 'B'
+                                ? 'bg-fuchsia-600 text-white shadow-sm'
+                                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                            }`}
+                            title="B Kitapçığı olarak değerlendir"
+                          >
+                            B Kitapçığı
+                          </button>
+                        </div>
+                      </div>
+                    )}
                     {pendingResult.answers.some(a => a.isUncertain) && (
                       <span className="px-3 py-1.5 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/50 text-xs font-bold flex items-center gap-1.5 animate-pulse">
                         <AlertTriangle className="h-4 w-4 text-amber-400" />
