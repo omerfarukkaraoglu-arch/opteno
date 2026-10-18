@@ -272,7 +272,7 @@ const normalizeStudentString = (s?: string): string => {
     .replace(/\s+/g, ' ');
 };
 
-const isGenericStudentName = (name?: string): boolean => {
+export const isGenericStudentName = (name?: string): boolean => {
   if (!name) return true;
   const n = normalizeStudentString(name);
   if (!n) return true;
@@ -283,7 +283,7 @@ const isGenericStudentName = (name?: string): boolean => {
   return false;
 };
 
-const isValidStudentNo = (no?: string): boolean => {
+export const isValidStudentNo = (no?: string): boolean => {
   if (!no) return false;
   const clean = no.trim();
   if (!clean) return false;
@@ -921,6 +921,18 @@ export const storageService = {
     pushToServer();
     window.dispatchEvent(new CustomEvent('opticok-data-updated'));
   },
+  updateStudent: (student: Student) => {
+    const list = getItem<Student[]>(KEYS.STUDENTS, initialStudents);
+    const index = list.findIndex(s => s.id === student.id);
+    if (index >= 0) {
+      list[index] = student;
+    } else {
+      list.unshift(student);
+    }
+    setItem(KEYS.STUDENTS, list);
+    pushToServer();
+    window.dispatchEvent(new CustomEvent('opticok-data-updated'));
+  },
   addStudentsBatch: (students: Student[]) => {
     const list = getItem<Student[]>(KEYS.STUDENTS, initialStudents);
     const newIds = new Set(students.map(s => s.id));
@@ -1312,16 +1324,61 @@ export const storageService = {
           return true;
         }
 
+        // 5. Misafir veya isimsiz taranan optik formlar (sınavın sonuçlarında daima görünür)
+        if (
+          isGenericStudentName(r.studentName) ||
+          (r.studentId && (r.studentId.startsWith('std-opt-') || r.studentId === 'GENERIC'))
+        ) {
+          return true;
+        }
+
         return false;
       });
     }
     return list;
   },
   saveScanResult: (result: ScanResult) => {
-    // 1. Kurum ID Güvencesi: Eğer sonuçta kurum yoksa veya 'ALL'/'SYSTEM'/'inst-1' ise okuyan personelin kurumunu ata
+    // 1. Kurum ID Güvencesi: Eğer okuyan personelin kurumu varsa ve Super Admin değilse personelin kurumunu ata
     const currentUser = storageService.getCurrentUser();
-    if (currentUser && currentUser.institutionId && (!result.institutionId || result.institutionId === 'ALL' || result.institutionId === 'SYSTEM' || result.institutionId === 'inst-1')) {
-      result.institutionId = currentUser.institutionId;
+    if (currentUser && currentUser.institutionId) {
+      if (currentUser.role !== 'SUPER_ADMIN' || !result.institutionId || result.institutionId === 'ALL' || result.institutionId === 'SYSTEM' || result.institutionId === 'inst-1') {
+        result.institutionId = currentUser.institutionId;
+      }
+    }
+
+    // 1.1 Öğrenci Kaydı Güvencesi: Eğer öğrenci sistemde yoksa veya misafir optik ise öğrenci listesine de kaydet
+    if (result.studentId && result.studentName) {
+      const students = storageService.getStudents();
+      const existingStudent = students.find(s => s.id === result.studentId);
+      const cleanName = result.studentName.trim();
+      const [fName, ...lNameParts] = cleanName.split(' ');
+      const cleanFirstName = fName || 'Öğrenci';
+      const cleanLastName = lNameParts.join(' ') || (result.studentNo ? `#${result.studentNo}` : '');
+      const finalInstId = result.institutionId || currentUser?.institutionId || 'inst-1';
+
+      if (!existingStudent) {
+        const newStudent: Student = {
+          id: result.studentId,
+          institutionId: finalInstId,
+          classId: 'cls-101',
+          className: result.className || 'Genel',
+          studentNo: result.studentNo || '',
+          firstName: cleanFirstName,
+          lastName: cleanLastName
+        };
+        storageService.addStudent(newStudent);
+      } else if (
+        cleanName &&
+        !isGenericStudentName(cleanName) &&
+        (existingStudent.firstName !== cleanFirstName || existingStudent.lastName !== cleanLastName || existingStudent.studentNo !== result.studentNo || existingStudent.className !== result.className)
+      ) {
+        existingStudent.firstName = cleanFirstName;
+        existingStudent.lastName = cleanLastName;
+        if (result.studentNo) existingStudent.studentNo = result.studentNo;
+        if (result.className) existingStudent.className = result.className;
+        if (finalInstId && finalInstId !== 'ALL' && finalInstId !== 'SYSTEM') existingStudent.institutionId = finalInstId;
+        storageService.updateStudent(existingStudent);
+      }
     }
 
     // 2. Fotoğraf Yükünü Temizle (LocalStorage kotasını koru, JSON boyutunu ~1.5 KB'a indir)
@@ -1385,6 +1442,72 @@ export const storageService = {
     pushSingleResultToServer(resultToSave);
 
     window.dispatchEvent(new CustomEvent('opticok-data-updated'));
+  },
+  updateScanResultStudentInfo: (
+    resultId: string,
+    info: {
+      studentName: string;
+      studentNo?: string;
+      className?: string;
+      classId?: string;
+      studentId?: string;
+      institutionId?: string;
+    }
+  ): boolean => {
+    let list = getItem<ScanResult[]>(KEYS.RESULTS, initialScanResults);
+    const targetIdx = list.findIndex(r => r.id === resultId);
+    if (targetIdx === -1) return false;
+
+    const currentResult = list[targetIdx];
+    const currentUser = storageService.getCurrentUser();
+    const finalInstId = info.institutionId || currentResult.institutionId || currentUser?.institutionId || 'inst-1';
+
+    const cleanName = info.studentName.trim();
+    const [fName, ...lNameParts] = cleanName.split(' ');
+    const firstName = fName || 'Öğrenci';
+    const lastName = lNameParts.join(' ') || '';
+
+    const finalStudentId = info.studentId || (currentResult.studentId && !currentResult.studentId.startsWith('std-opt-') && currentResult.studentId !== 'GENERIC' ? currentResult.studentId : `std-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`);
+
+    const updatedResult: ScanResult = {
+      ...currentResult,
+      studentId: finalStudentId,
+      studentName: cleanName,
+      studentNo: info.studentNo !== undefined ? info.studentNo.trim() : currentResult.studentNo,
+      className: info.className !== undefined ? info.className.trim() : currentResult.className,
+      institutionId: finalInstId
+    };
+
+    list[targetIdx] = updatedResult;
+    setItem(KEYS.RESULTS, list);
+
+    // Öğrenciyi veritabanında da güncelle veya ekle
+    const students = storageService.getStudents();
+    const existingStudent = students.find(s => s.id === finalStudentId || (info.studentNo && isValidStudentNo(info.studentNo) && s.studentNo === info.studentNo.trim()));
+    if (existingStudent) {
+      existingStudent.firstName = firstName;
+      existingStudent.lastName = lastName;
+      if (info.studentNo !== undefined) existingStudent.studentNo = info.studentNo.trim();
+      if (info.className !== undefined) existingStudent.className = info.className.trim();
+      if (info.classId) existingStudent.classId = info.classId;
+      existingStudent.institutionId = finalInstId;
+      storageService.updateStudent(existingStudent);
+    } else {
+      const newStudent: Student = {
+        id: finalStudentId,
+        institutionId: finalInstId,
+        classId: info.classId || 'cls-101',
+        className: info.className || currentResult.className || 'Genel',
+        studentNo: info.studentNo !== undefined ? info.studentNo.trim() : currentResult.studentNo,
+        firstName,
+        lastName
+      };
+      storageService.addStudent(newStudent);
+    }
+
+    pushSingleResultToServer(updatedResult);
+    window.dispatchEvent(new CustomEvent('opticok-data-updated'));
+    return true;
   },
   deleteScanResult: (resultId: string) => {
     // 1. Mark ID as deleted to prevent resurrection from cloud or other clients

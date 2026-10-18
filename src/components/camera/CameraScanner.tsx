@@ -18,11 +18,14 @@ import {
   HelpCircle,
   Plus,
   UploadCloud,
-  Flashlight
+  Flashlight,
+  UserPlus,
+  UserCheck,
+  Users
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { omrEngine } from '../../services/omrEngine';
-import { storageService, isSameStudentScanResult } from '../../services/storageService';
+import { storageService, isSameStudentScanResult, isGenericStudentName, isValidStudentNo } from '../../services/storageService';
 import { qrService } from '../../services/qrService';
 import { Exam, ScanResult, OMRQRData, Student, SubjectResult } from '../../types';
 import { getExamAnswerBottom } from '../../services/pdfService';
@@ -112,6 +115,94 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({ onScanComplete }) 
   const [isCornersAligned, setIsCornersAligned] = useState<boolean>(false);
   const [statusMessage, setStatusMessage] = useState<string>('Optik üzerindeki Karekodu (QR) kare kameraya doğrultun');
   const [scanPaperFormat, setScanPaperFormat] = useState<'A4' | 'A5'>('A4');
+
+  // Guest / Student Edit States in Verification Modal
+  const [editStudentName, setEditStudentName] = useState<string>('');
+  const [editStudentNo, setEditStudentNo] = useState<string>('');
+  const [editClassName, setEditClassName] = useState<string>('');
+  const [selectedExistingStudentId, setSelectedExistingStudentId] = useState<string>('');
+  const [isEditingStudentInfo, setIsEditingStudentInfo] = useState<boolean>(false);
+
+  const currentUser = storageService.getCurrentUser();
+  const instId = currentUser?.role === 'SUPER_ADMIN' ? undefined : currentUser?.institutionId;
+  const institutionStudents = React.useMemo(() => {
+    return storageService.getStudents(instId);
+  }, [instId, isVerifyModalOpen]);
+  const institutionClasses = React.useMemo(() => {
+    return storageService.getClasses(instId);
+  }, [instId, isVerifyModalOpen]);
+
+  // Is the current scanned form a guest/isimsiz sheet?
+  const isGuestResult = React.useMemo(() => {
+    if (!pendingResult) return false;
+    return Boolean(
+      pendingResult.studentId.startsWith('std-opt-') ||
+      pendingResult.studentId === 'GENERIC' ||
+      detectedQR?.studentId === 'GENERIC' ||
+      isGenericStudentName(pendingResult.studentName)
+    );
+  }, [pendingResult, detectedQR]);
+
+  // Populate edit fields when verification modal opens
+  useEffect(() => {
+    if (isVerifyModalOpen && pendingResult) {
+      const isGuest = Boolean(
+        pendingResult.studentId.startsWith('std-opt-') ||
+        pendingResult.studentId === 'GENERIC' ||
+        detectedQR?.studentId === 'GENERIC' ||
+        isGenericStudentName(pendingResult.studentName)
+      );
+
+      setEditStudentName(isGuest ? '' : pendingResult.studentName);
+      setEditStudentNo(isValidStudentNo(pendingResult.studentNo) ? pendingResult.studentNo : '');
+      setEditClassName(pendingResult.className === 'Genel' ? '' : pendingResult.className);
+      setSelectedExistingStudentId('');
+      setIsEditingStudentInfo(isGuest);
+    }
+  }, [isVerifyModalOpen]);
+
+  const handleSelectExistingStudent = (studentId: string) => {
+    setSelectedExistingStudentId(studentId);
+    if (!studentId) return;
+    const st = institutionStudents.find(s => s.id === studentId);
+    if (st && pendingResult) {
+      const fullName = `${st.firstName} ${st.lastName}`.trim();
+      setEditStudentName(fullName);
+      setEditStudentNo(st.studentNo);
+      setEditClassName(st.className);
+      setPendingResult({
+        ...pendingResult,
+        studentId: st.id,
+        studentName: fullName,
+        studentNo: st.studentNo,
+        className: st.className,
+        institutionId: st.institutionId || currentUser?.institutionId || pendingResult.institutionId
+      });
+    }
+  };
+
+  const handleUpdateStudentField = (field: 'name' | 'no' | 'class', value: string) => {
+    if (!pendingResult) return;
+    if (field === 'name') {
+      setEditStudentName(value);
+      setPendingResult({
+        ...pendingResult,
+        studentName: value
+      });
+    } else if (field === 'no') {
+      setEditStudentNo(value);
+      setPendingResult({
+        ...pendingResult,
+        studentNo: value
+      });
+    } else if (field === 'class') {
+      setEditClassName(value);
+      setPendingResult({
+        ...pendingResult,
+        className: value
+      });
+    }
+  };
   const [isTorchSupported, setIsTorchSupported] = useState<boolean>(false);
   const [isTorchOn, setIsTorchOn] = useState<boolean>(false);
   const [sessionScannedCount, setSessionScannedCount] = useState<number>(0);
@@ -644,11 +735,24 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({ onScanComplete }) 
   const handleConfirmAndSave = (redirectToExams: boolean = true) => {
     if (!pendingResult) return;
 
-    storageService.saveScanResult(pendingResult);
+    let resultToSave = { ...pendingResult };
+    const rawName = editStudentName.trim() || resultToSave.studentName.trim();
+    const finalName = rawName || (isGuestResult ? 'Misafir Öğrenci' : 'Öğrenci');
+    const finalNo = editStudentNo.trim() || (isValidStudentNo(resultToSave.studentNo) ? resultToSave.studentNo : '');
+    const finalClass = editClassName.trim() || (resultToSave.className && resultToSave.className !== 'Genel' ? resultToSave.className : 'Genel');
+
+    resultToSave.studentName = finalName;
+    resultToSave.studentNo = finalNo;
+    resultToSave.className = finalClass;
+
+    const finalInst = currentUser?.institutionId || resultToSave.institutionId || 'inst-1';
+    resultToSave.institutionId = finalInst;
+
+    storageService.saveScanResult(resultToSave);
     setLastResult(null);
     setSessionScannedCount(prev => prev + 1);
     setIsVerifyModalOpen(false);
-    const savedResult = pendingResult;
+    const savedResult = resultToSave;
     setPendingResult(null);
 
     confetti({
@@ -1023,7 +1127,17 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({ onScanComplete }) 
                       Sanal Optik Eşleşme Kontrolü
                     </h2>
                     <p className="text-xs text-slate-400 flex items-center flex-wrap gap-2">
-                      <span>Öğrenci: <strong className="text-white">{pendingResult.studentName}</strong> (No: {pendingResult.studentNo}) | Sınav: <strong className="text-emerald-300">{pendingResult.examTitle}</strong></span>
+                      <span>
+                        Öğrenci: <strong className="text-white">{editStudentName || pendingResult.studentName}</strong>
+                        {(editStudentNo || pendingResult.studentNo) ? ` (No: ${editStudentNo || pendingResult.studentNo})` : ''}
+                        {(editClassName || (pendingResult.className && pendingResult.className !== 'Genel')) ? ` - Sınıf: ${editClassName || pendingResult.className}` : ''}
+                        {' '}| Sınav: <strong className="text-emerald-300">{pendingResult.examTitle}</strong>
+                      </span>
+                      {isGuestResult && (
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-amber-500/25 text-amber-300 border border-amber-500/40">
+                          Misafir Form
+                        </span>
+                      )}
                       {(detectedExam?.hasBookletTypes || pendingResult.bookletType) && (
                         <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${
                           pendingResult.bookletType === 'B'
@@ -1033,6 +1147,14 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({ onScanComplete }) 
                           {pendingResult.bookletType || 'A'} Kitapçığı
                         </span>
                       )}
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingStudentInfo(!isEditingStudentInfo)}
+                        className="text-[11px] text-indigo-400 hover:text-indigo-300 underline font-semibold flex items-center gap-1 cursor-pointer ml-1"
+                      >
+                        <Edit3 className="h-3 w-3" />
+                        {isEditingStudentInfo ? 'Düzenlemeyi Gizle' : 'Öğrenciyi Düzenle'}
+                      </button>
                     </p>
                   </div>
                 </div>
@@ -1048,6 +1170,120 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({ onScanComplete }) 
 
               {/* Modal Main Content (Split View: Left Photo, Right Virtual OMR Grid) */}
               <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+
+                {/* Guest / Student Identification Card */}
+                {isEditingStudentInfo && (
+                  <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-slate-800/90 to-indigo-950/40 border-2 border-amber-500/50 shadow-xl space-y-3 animate-fade-in">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-amber-500/20 pb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="h-7 w-7 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold">
+                          <UserPlus className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-xs sm:text-sm text-amber-300">
+                            {isGuestResult ? 'İsimsiz / Misafir Optik - Öğrenci Tanımlama' : 'Öğrenci Bilgilerini Düzenle'}
+                          </h3>
+                          <p className="text-[11px] text-slate-300">
+                            {isGuestResult
+                              ? 'Bu optik form genel/isimsiz basılmıştır. Sonuç listesinde ve karnede yer alması için öğrenciyi belirleyin:'
+                              : 'Öğrenci adı, numarası veya sınıfını güncelleyin ya da listeden kayıtlı öğrenci seçin:'}
+                          </p>
+                        </div>
+                      </div>
+                      {isGuestResult && (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/30 text-amber-200 border border-amber-400/40">
+                          Misafir Form
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 pt-1">
+                      {/* Option 1: Fast select from existing school students */}
+                      {institutionStudents.length > 0 && (
+                        <div className="sm:col-span-12">
+                          <label className="text-[11px] font-semibold text-amber-200 block mb-1">
+                            📌 Kurumdaki Kayıtlı Öğrencilerden Seç (Hızlı Eşleştirme):
+                          </label>
+                          <select
+                            value={selectedExistingStudentId}
+                            onChange={(e) => handleSelectExistingStudent(e.target.value)}
+                            className="w-full bg-slate-900 border border-amber-500/40 focus:border-amber-400 rounded-xl px-3 py-2 text-xs text-white focus:outline-none cursor-pointer"
+                          >
+                            <option value="">-- Kayıtlı Öğrenci Listesinden Seçin (İsteğe Bağlı) --</option>
+                            {institutionStudents.map(st => (
+                              <option key={st.id} value={st.id}>
+                                {st.firstName} {st.lastName} (No: {st.studentNo} - Sınıf: {st.className})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+
+                      {/* Option 2: Enter student name, no, class manually */}
+                      <div className="sm:col-span-5">
+                        <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                          Öğrenci Adı Soyadı <span className="text-amber-400">*</span>:
+                        </label>
+                        <input
+                          type="text"
+                          value={editStudentName}
+                          onChange={(e) => handleUpdateStudentField('name', e.target.value)}
+                          placeholder="Örn: Ahmet Yılmaz"
+                          className="w-full bg-slate-900 border border-slate-700 focus:border-amber-400 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none"
+                          autoFocus={isGuestResult}
+                        />
+                      </div>
+
+                      <div className="sm:col-span-3">
+                        <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                          Öğrenci No:
+                        </label>
+                        <input
+                          type="text"
+                          value={editStudentNo}
+                          onChange={(e) => handleUpdateStudentField('no', e.target.value)}
+                          placeholder="Örn: 245"
+                          className="w-full bg-slate-900 border border-slate-700 focus:border-amber-400 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none"
+                        />
+                      </div>
+
+                      <div className="sm:col-span-4">
+                        <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                          Sınıf / Şube:
+                        </label>
+                        <div className="flex gap-1.5">
+                          {institutionClasses.length > 0 && !editClassName.includes(' ') && institutionClasses.some(c => c.name === editClassName) ? (
+                            <select
+                              value={editClassName}
+                              onChange={(e) => {
+                                if (e.target.value === '__custom__') {
+                                  handleUpdateStudentField('class', '');
+                                } else {
+                                  handleUpdateStudentField('class', e.target.value);
+                                }
+                              }}
+                              className="w-full bg-slate-900 border border-slate-700 focus:border-amber-400 rounded-xl px-2.5 py-2 text-xs text-white focus:outline-none cursor-pointer"
+                            >
+                              <option value="">Sınıf Seçin</option>
+                              {institutionClasses.map(c => (
+                                <option key={c.id} value={c.name}>{c.name}</option>
+                              ))}
+                              <option value="__custom__">✏️ Diğer (Elle Yaz)...</option>
+                            </select>
+                          ) : (
+                            <input
+                              type="text"
+                              value={editClassName}
+                              onChange={(e) => handleUpdateStudentField('class', e.target.value)}
+                              placeholder="Örn: 8/A"
+                              className="w-full bg-slate-900 border border-slate-700 focus:border-amber-400 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none"
+                            />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 
                 {/* Notice if this is a rescan / update of an existing student result */}
                 {isExistingResult && (

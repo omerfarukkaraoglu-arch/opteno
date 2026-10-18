@@ -24,9 +24,12 @@ import {
   Copy,
   Percent,
   BookOpen,
-  Trash2
+  Trash2,
+  UserCheck,
+  UserPlus,
+  Edit3
 } from 'lucide-react';
-import { storageService, syncWithServer } from '../../services/storageService';
+import { storageService, syncWithServer, isGenericStudentName, isValidStudentNo } from '../../services/storageService';
 import { Exam, ScanResult } from '../../types';
 import { examExportService, ExportType, ExportFormat } from '../../services/examExportService';
 import { computeOutcomeAnalyses } from '../../services/omrEngine';
@@ -86,7 +89,73 @@ export const ExamResultsList: React.FC<ExamResultsListProps> = ({ initialExamId 
   const [selectedStudentFilter, setSelectedStudentFilter] = useState<string>('ALL');
   const [isExporting, setIsExporting] = useState(false);
 
+  // Student Edit Modal State for results
+  const [editingResult, setEditingResult] = useState<ScanResult | null>(null);
+  const [editModalStudentName, setEditModalStudentName] = useState('');
+  const [editModalStudentNo, setEditModalStudentNo] = useState('');
+  const [editModalClassName, setEditModalClassName] = useState('');
+  const [editModalSelectedStudentId, setEditModalSelectedStudentId] = useState('');
+
   const [syncTick, setSyncTick] = useState(0);
+
+  const institutionStudents = useMemo(() => {
+    return storageService.getStudents(instId);
+  }, [instId, syncTick]);
+
+  const institutionClasses = useMemo(() => {
+    return storageService.getClasses(instId);
+  }, [instId, syncTick]);
+
+  const handleOpenEditStudentModal = (res: ScanResult) => {
+    setEditingResult(res);
+    const isGuest = isGenericStudentName(res.studentName) || res.studentId.startsWith('std-opt-') || res.studentId === 'GENERIC';
+    setEditModalStudentName(isGuest ? '' : res.studentName);
+    setEditModalStudentNo(isValidStudentNo(res.studentNo) ? res.studentNo : '');
+    setEditModalClassName(res.className === 'Genel' ? '' : res.className);
+    setEditModalSelectedStudentId('');
+  };
+
+  const handleModalSelectExistingStudent = (stId: string) => {
+    setEditModalSelectedStudentId(stId);
+    if (!stId) return;
+    const st = institutionStudents.find(s => s.id === stId);
+    if (st) {
+      setEditModalStudentName(`${st.firstName} ${st.lastName}`.trim());
+      setEditModalStudentNo(st.studentNo);
+      setEditModalClassName(st.className);
+    }
+  };
+
+  const handleSaveStudentEdit = () => {
+    if (!editingResult) return;
+    const cleanName = editModalStudentName.trim();
+    if (!cleanName) {
+      alert('Lütfen öğrenci adını giriniz.');
+      return;
+    }
+
+    const cleanNo = editModalStudentNo.trim();
+    const cleanClass = editModalClassName.trim() || 'Genel';
+
+    storageService.updateScanResultStudentInfo(editingResult.id, {
+      studentName: cleanName,
+      studentNo: cleanNo,
+      className: cleanClass,
+      studentId: editModalSelectedStudentId || undefined
+    });
+
+    // If detail modal was open for this student, update it in state too
+    if (selectedStudentResult && selectedStudentResult.id === editingResult.id) {
+      setSelectedStudentResult({
+        ...selectedStudentResult,
+        studentName: cleanName,
+        studentNo: cleanNo,
+        className: cleanClass
+      });
+    }
+
+    setEditingResult(null);
+  };
 
   useEffect(() => {
     if (initialExamId && exams.some(e => e.id === initialExamId)) {
@@ -421,8 +490,13 @@ export const ExamResultsList: React.FC<ExamResultsListProps> = ({ initialExamId 
                                instRank === 3 ? <span className="text-amber-700">🥉 3</span> : instRank}
                             </td>
                             <td className="px-4 py-3">
-                              <div className="flex items-center gap-1.5">
+                              <div className="flex items-center gap-1.5 flex-wrap">
                                 <p className="font-bold text-slate-900 dark:text-white text-sm">{res.studentName}</p>
+                                {(isGenericStudentName(res.studentName) || res.studentId.startsWith('std-opt-') || res.studentId === 'GENERIC') && (
+                                  <span className="px-1.5 py-0.5 rounded text-[9.5px] font-extrabold bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/40">
+                                    Misafir
+                                  </span>
+                                )}
                                 {res.bookletType && (
                                   <span className={`px-1.5 py-0.2 rounded text-[9.5px] font-bold ${
                                     res.bookletType === 'A' ? 'bg-indigo-500/20 text-indigo-600 dark:text-indigo-300' : 'bg-fuchsia-500/20 text-fuchsia-600 dark:text-fuchsia-300'
@@ -431,7 +505,9 @@ export const ExamResultsList: React.FC<ExamResultsListProps> = ({ initialExamId 
                                   </span>
                                 )}
                               </div>
-                              <p className="text-[10px] text-slate-500 dark:text-slate-400">No: {res.studentNo}</p>
+                              <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                                {isValidStudentNo(res.studentNo) ? `No: ${res.studentNo}` : (res.studentNo ? `No: ${res.studentNo}` : 'No: Belirtilmedi')}
+                              </p>
                             </td>
                             <td className="px-3 py-3 text-center">
                               <span className="badge badge-primary">{res.className}</span>
@@ -475,6 +551,14 @@ export const ExamResultsList: React.FC<ExamResultsListProps> = ({ initialExamId 
                                   title="Karneyi İncele"
                                 >
                                   <Eye className="h-3.5 w-3.5" /> İncele
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenEditStudentModal(res)}
+                                  className="p-1.5 rounded-lg bg-indigo-500/10 dark:bg-indigo-500/20 hover:bg-indigo-500/20 dark:hover:bg-indigo-500/30 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30 transition-colors"
+                                  title="Öğrenci Bilgilerini Düzenle / İsim Gir"
+                                >
+                                  <UserCheck className="h-3.5 w-3.5" />
                                 </button>
                                 <button
                                   type="button"
@@ -825,12 +909,22 @@ export const ExamResultsList: React.FC<ExamResultsListProps> = ({ initialExamId 
                 </p>
               </div>
 
-              <button
-                onClick={() => setSelectedStudentResult(null)}
-                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
-              >
-                <X className="h-5 w-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleOpenEditStudentModal(selectedStudentResult)}
+                  className="btn btn-secondary text-xs py-1.5 px-2.5 flex items-center gap-1.5 text-indigo-400 hover:text-indigo-300 border-indigo-500/30 cursor-pointer"
+                  title="Öğrenci Bilgilerini Düzenle / İsim Gir"
+                >
+                  <UserCheck className="h-4 w-4" /> Bilgileri Düzenle
+                </button>
+                <button
+                  onClick={() => setSelectedStudentResult(null)}
+                  className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 cursor-pointer"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
             </div>
 
             {/* Total Stats */}
@@ -1365,6 +1459,138 @@ export const ExamResultsList: React.FC<ExamResultsListProps> = ({ initialExamId 
               >
                 <Download className="h-4 w-4" />
                 {isExporting ? 'Hazırlanıyor...' : 'Seçilen Raporu İndir'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Student Edit Modal for Results */}
+      {editingResult && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="glass-panel max-w-lg w-full p-6 rounded-2xl border-indigo-500/40 space-y-5 shadow-2xl bg-slate-900">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="h-9 w-9 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold">
+                  <UserPlus className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-display text-base sm:text-lg font-bold text-white">
+                    Öğrenci Bilgilerini Güncelle
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Sınav: <strong className="text-indigo-300">{editingResult.examTitle}</strong>
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setEditingResult(null)}
+                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 cursor-pointer"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Option 1: Fast select from registered school students */}
+              {institutionStudents.length > 0 && (
+                <div>
+                  <label className="text-xs font-semibold text-amber-200 block mb-1">
+                    📌 Kurumdaki Kayıtlı Öğrencilerden Seç (Hızlı Eşleştirme):
+                  </label>
+                  <select
+                    value={editModalSelectedStudentId}
+                    onChange={(e) => handleModalSelectExistingStudent(e.target.value)}
+                    className="w-full bg-slate-950 border border-amber-500/40 focus:border-amber-400 rounded-xl px-3 py-2 text-xs text-white focus:outline-none cursor-pointer"
+                  >
+                    <option value="">-- Kayıtlı Öğrenci Listesinden Seçin (İsteğe Bağlı) --</option>
+                    {institutionStudents.map(st => (
+                      <option key={st.id} value={st.id}>
+                        {st.firstName} {st.lastName} (No: {st.studentNo} - Sınıf: {st.className})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Option 2: Enter manually */}
+              <div>
+                <label className="text-xs font-semibold text-slate-300 block mb-1">
+                  Öğrenci Adı Soyadı <span className="text-rose-400">*</span>:
+                </label>
+                <input
+                  type="text"
+                  value={editModalStudentName}
+                  onChange={(e) => setEditModalStudentName(e.target.value)}
+                  placeholder="Örn: Ahmet Yılmaz"
+                  className="w-full bg-slate-950 border border-slate-700 focus:border-indigo-400 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none"
+                  autoFocus
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-slate-300 block mb-1">
+                    Öğrenci Numarası:
+                  </label>
+                  <input
+                    type="text"
+                    value={editModalStudentNo}
+                    onChange={(e) => setEditModalStudentNo(e.target.value)}
+                    placeholder="Örn: 245"
+                    className="w-full bg-slate-950 border border-slate-700 focus:border-indigo-400 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-slate-300 block mb-1">
+                    Sınıf / Şube:
+                  </label>
+                  {institutionClasses.length > 0 && !editModalClassName.includes(' ') && institutionClasses.some(c => c.name === editModalClassName) ? (
+                    <select
+                      value={editModalClassName}
+                      onChange={(e) => {
+                        if (e.target.value === '__custom__') {
+                          setEditModalClassName('');
+                        } else {
+                          setEditModalClassName(e.target.value);
+                        }
+                      }}
+                      className="w-full bg-slate-950 border border-slate-700 focus:border-indigo-400 rounded-xl px-2.5 py-2.5 text-xs text-white focus:outline-none cursor-pointer"
+                    >
+                      <option value="">Sınıf Seçin</option>
+                      {institutionClasses.map(c => (
+                        <option key={c.id} value={c.name}>{c.name}</option>
+                      ))}
+                      <option value="__custom__">✏️ Diğer (Elle Yaz)...</option>
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      value={editModalClassName}
+                      onChange={(e) => setEditModalClassName(e.target.value)}
+                      placeholder="Örn: 8/A"
+                      className="w-full bg-slate-950 border border-slate-700 focus:border-indigo-400 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none"
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 border-t border-slate-800 pt-4">
+              <button
+                type="button"
+                onClick={() => setEditingResult(null)}
+                className="btn btn-secondary text-xs py-2 px-4 cursor-pointer"
+              >
+                İptal
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveStudentEdit}
+                className="btn btn-primary text-xs py-2 px-5 font-bold bg-indigo-600 hover:bg-indigo-500 text-white flex items-center gap-1.5 cursor-pointer shadow-lg shadow-indigo-600/30"
+              >
+                <Check className="h-4 w-4" /> Bilgileri Kaydet
               </button>
             </div>
           </div>
