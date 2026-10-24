@@ -474,8 +474,19 @@ export const omrEngine = {
           let selectedOption: string | null = null;
           let isCorrect = false;
           let isBlank = false;
+          const isCancelled = correctAnswer === '*' || correctAnswer === 'X' || correctAnswer === 'IPTAL';
 
-          if (filledOptions.length === 0) {
+          if (isCancelled) {
+            isCorrect = true;
+            subCorrect++;
+            if (filledOptions.length === 1) {
+              selectedOption = filledOptions[0];
+            } else if (filledOptions.length > 1) {
+              selectedOption = 'MULTIPLE';
+            } else {
+              selectedOption = null;
+            }
+          } else if (filledOptions.length === 0) {
             isBlank = true;
             subEmpty++;
           } else if (filledOptions.length === 1) {

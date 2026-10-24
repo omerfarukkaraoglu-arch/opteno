@@ -27,10 +27,12 @@ import {
   Trash2,
   UserCheck,
   UserPlus,
-  Edit3
+  Edit3,
+  KeyRound
 } from 'lucide-react';
 import { storageService, syncWithServer, isGenericStudentName, isValidStudentNo } from '../../services/storageService';
 import { Exam, ScanResult } from '../../types';
+import { EditAnswerKeyModal } from '../exam/EditAnswerKeyModal';
 import { examExportService, ExportType, ExportFormat } from '../../services/examExportService';
 import { computeOutcomeAnalyses } from '../../services/omrEngine';
 import { getDefaultSubjectCoefficient } from '../../services/scoreCalculationService';
@@ -95,6 +97,10 @@ export const ExamResultsList: React.FC<ExamResultsListProps> = ({ initialExamId 
   const [editModalStudentNo, setEditModalStudentNo] = useState('');
   const [editModalClassName, setEditModalClassName] = useState('');
   const [editModalSelectedStudentId, setEditModalSelectedStudentId] = useState('');
+
+  // Edit Answer Key Modal State
+  const [isEditAnswerKeyOpen, setIsEditAnswerKeyOpen] = useState(false);
+  const [recalculatedBanner, setRecalculatedBanner] = useState<string | null>(null);
 
   const [syncTick, setSyncTick] = useState(0);
 
@@ -296,6 +302,18 @@ export const ExamResultsList: React.FC<ExamResultsListProps> = ({ initialExamId 
               ))}
             </select>
 
+            {selectedExam && (
+              <button
+                type="button"
+                onClick={() => setIsEditAnswerKeyOpen(true)}
+                className="btn btn-secondary text-xs py-2 px-3.5 font-bold flex items-center gap-2 cursor-pointer border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 rounded-xl transition-all shadow-sm"
+                title="Cevap anahtarını düzenleyin; tüm öğrenci sonuçları ve sıralamaları otomatik yeniden hesaplansın"
+              >
+                <KeyRound className="h-4 w-4 text-amber-500" />
+                <span>Cevap Anahtarını Düzenle</span>
+              </button>
+            )}
+
             {selectedExam && rawResults.length > 0 && (
               <button
                 type="button"
@@ -307,6 +325,18 @@ export const ExamResultsList: React.FC<ExamResultsListProps> = ({ initialExamId 
             )}
           </div>
         </div>
+
+        {recalculatedBanner && (
+          <div className="mb-4 p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 text-xs font-semibold text-emerald-800 dark:text-emerald-200 flex items-center justify-between animate-fade-in shadow-sm">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <span>{recalculatedBanner}</span>
+            </div>
+            <button onClick={() => setRecalculatedBanner(null)} className="text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
 
         {!selectedExam ? (
           <p className="text-slate-500 dark:text-slate-400 italic text-center py-8 text-xs">Lütfen sonuçlarını incelemek istediğiniz sınavı seçin.</p>
@@ -1595,6 +1625,21 @@ export const ExamResultsList: React.FC<ExamResultsListProps> = ({ initialExamId 
             </div>
           </div>
         </div>
+      )}
+
+      {/* Edit Answer Key Modal */}
+      {selectedExam && (
+        <EditAnswerKeyModal
+          isOpen={isEditAnswerKeyOpen}
+          examId={selectedExam.id}
+          currentUser={currentUser}
+          onClose={() => setIsEditAnswerKeyOpen(false)}
+          onSuccess={(recalculatedCount) => {
+            setSyncTick(t => t + 1);
+            setRecalculatedBanner(`Cevap anahtarı başarıyla güncellendi! Okunmuş ${recalculatedCount} öğrencinin karne sonuçları ve sıralamaları yeni cevap anahtarına göre yeniden hesaplandı.`);
+            setTimeout(() => setRecalculatedBanner(null), 6000);
+          }}
+        />
       )}
     </div>
   );

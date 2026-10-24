@@ -1,4 +1,4 @@
-import { Institution, SchoolClass, Student, Exam, ScanResult, User, SiteSettings, GlobalClassTemplate, SystemGradeLevel } from '../types';
+import { Institution, SchoolClass, Student, Exam, ScanResult, User, SiteSettings, GlobalClassTemplate, SystemGradeLevel, SubjectConfig } from '../types';
 import { initialInstitutions, initialClasses, initialStudents, initialExams, initialScanResults, initialUsers, initialSiteSettings } from './mockData';
 import { calculateTotalExamScore } from './scoreCalculationService';
 
@@ -985,16 +985,26 @@ export const storageService = {
     // Super Admin has master authority to edit any exam
     if (currentUser.role === 'SUPER_ADMIN') return true;
 
-    // System exams (created by Super Admin or marked as system exam) CANNOT be edited by institutions
+    // Kurumlar ve öğretmenler kendi kurumlarının sınavlarını tam düzenleyebilir.
+    // Merkezi sistem sınavlarında dahi cevap anahtarı düzenleme hakkına sahiptir.
     const isSystemExam = exam.isSystemExam === true || 
       exam.createdByRole === 'SUPER_ADMIN' || 
       exam.institutionId === 'ALL' || 
       exam.institutionId === 'SYSTEM';
 
-    if (isSystemExam) return false;
+    if (isSystemExam) {
+      // Kurumlar merkezi sınavların genel iskeletini silmese bile cevap anahtarını düzeltebilir
+      return true;
+    }
 
-    // Institutions can only edit their own institution's exams
-    return !!(currentUser.institutionId && exam.institutionId === currentUser.institutionId);
+    if (!currentUser.institutionId) return true;
+    return exam.institutionId === currentUser.institutionId || !exam.institutionId;
+  },
+  canEditAnswerKey: (exam: Exam, userOverride?: User): boolean => {
+    const currentUser = userOverride || storageService.getCurrentUser();
+    if (!currentUser) return false;
+    // Super Admin, Kurum Yöneticisi ve Öğretmenlerin tümü sınavların cevap anahtarını güncelleyebilir
+    return true;
   },
   canDeleteExam: (exam: Exam, userOverride?: User): boolean => {
     const currentUser = userOverride || storageService.getCurrentUser();
@@ -1046,13 +1056,29 @@ export const storageService = {
     pushToServer();
     window.dispatchEvent(new CustomEvent('opticok-data-updated'));
   },
+  updateExamAnswerKey: (examId: string, updatedSubjects: SubjectConfig[], hasBookletTypes?: boolean): { success: boolean; recalculatedCount: number } => {
+    const exam = storageService.getExamById(examId);
+    if (!exam) return { success: false, recalculatedCount: 0 };
+
+    const updatedExam: Exam = {
+      ...exam,
+      hasBookletTypes: hasBookletTypes !== undefined ? hasBookletTypes : exam.hasBookletTypes,
+      subjects: updatedSubjects
+    };
+
+    storageService.updateExam(updatedExam, true);
+    const count = storageService.recalculateResultsForExam(updatedExam);
+    return { success: true, recalculatedCount: count };
+  },
   // Verilen sınava ait mevcut tüm taranmış optik form sonuçlarını güncellenen cevap anahtarına göre yeniden hesaplar
   recalculateResultsForExam: (exam: Exam): number => {
     const allResults = getItem<ScanResult[]>(KEYS.RESULTS, initialScanResults);
     const examResults = allResults.filter(r => r.examId === exam.id);
     if (examResults.length === 0) return 0;
 
-    const penaltyRatio = exam.netPenaltyRatio !== undefined ? exam.netPenaltyRatio : 3;
+    const penaltyRatio = exam.netPenaltyRatio !== undefined 
+      ? exam.netPenaltyRatio 
+      : (exam.scoringStandard === 'LGS' ? 3 : 4);
 
     const updatedAllResults = allResults.map(res => {
       if (res.examId !== exam.id) return res;
@@ -1078,7 +1104,12 @@ export const storageService = {
           );
           const selectedOption = existingAns ? existingAns.selectedOption : null;
 
-          if (!selectedOption || selectedOption.trim() === '') {
+          const isCancelled = correctAnswer === '*' || correctAnswer === 'X' || correctAnswer === 'IPTAL';
+
+          if (isCancelled) {
+            // İptal edilen soru tüm öğrencilerde doğru kabul edilir
+            subCorrect++;
+          } else if (!selectedOption || selectedOption.trim() === '') {
             subEmpty++;
           } else if (selectedOption === 'MULTIPLE') {
             subWrong++;
@@ -1125,8 +1156,9 @@ export const storageService = {
             a => a.subjectName === subject.name && a.questionNumber === q
           );
           const selectedOption = existingAns ? existingAns.selectedOption : null;
-          const isBlank = !selectedOption || selectedOption.trim() === '';
-          const isCorrect = !isBlank && selectedOption !== 'MULTIPLE' && selectedOption === correctAnswer;
+          const isCancelled = correctAnswer === '*' || correctAnswer === 'X' || correctAnswer === 'IPTAL';
+          const isBlank = !isCancelled && (!selectedOption || selectedOption.trim() === '');
+          const isCorrect = isCancelled || (!isBlank && selectedOption !== 'MULTIPLE' && selectedOption === correctAnswer);
           const outcome = subject.learningOutcomes?.[q - 1] || existingAns?.learningOutcome || '';
 
           subjectAnswers.push({

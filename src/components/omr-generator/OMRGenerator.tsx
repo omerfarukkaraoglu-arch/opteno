@@ -2,12 +2,13 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Printer, Download, Sparkles, Layers, Sliders, CheckCircle2, ChevronRight, 
   PlusCircle, ArrowLeft, Eye, HelpCircle, Scissors, Users, Search, X, 
-  Building2, AlertTriangle, CheckSquare, Square 
+  Building2, AlertTriangle, CheckSquare, Square, KeyRound 
 } from 'lucide-react';
 import { Exam, Student } from '../../types';
 import { storageService } from '../../services/storageService';
 import { pdfService, OMRPageFormat } from '../../services/pdfService';
 import { qrService } from '../../services/qrService';
+import { EditAnswerKeyModal } from '../exam/EditAnswerKeyModal';
 
 interface OMRGeneratorProps {
   initialExamId?: string;
@@ -71,6 +72,8 @@ export const OMRGenerator: React.FC<OMRGeneratorProps> = ({
   const [pageFormat, setPageFormat] = useState<OMRPageFormat>('A4');
   const [previewQRUrl, setPreviewQRUrl] = useState<string>('');
   const [isExporting, setIsExporting] = useState<boolean>(false);
+  const [isEditAnswerKeyOpen, setIsEditAnswerKeyOpen] = useState<boolean>(false);
+  const [updatedBanner, setUpdatedBanner] = useState<string | null>(null);
 
   // Candidate students based on class selection
   const candidateStudents = useMemo(() => {
@@ -292,17 +295,59 @@ export const OMRGenerator: React.FC<OMRGeneratorProps> = ({
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                   Sınavı Seçiniz *
                 </label>
-                <select
-                  value={selectedExamId}
-                  onChange={(e) => handleExamChange(e.target.value)}
-                  className="input-field text-xs bg-white dark:bg-slate-900 font-medium py-2.5"
-                >
-                  {exams.map(exam => (
-                    <option key={exam.id} value={exam.id}>
-                      {exam.title} ({exam.examCode}) - {exam.gradeLevel || 'Genel'}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                  <select
+                    value={selectedExamId}
+                    onChange={(e) => handleExamChange(e.target.value)}
+                    className="input-field text-xs bg-white dark:bg-slate-900 font-medium py-2.5 flex-1"
+                  >
+                    {exams.map(exam => (
+                      <option key={exam.id} value={exam.id}>
+                        {exam.title} ({exam.examCode}) - {exam.gradeLevel || 'Genel'}
+                      </option>
+                    ))}
+                  </select>
+
+                  {selectedExam && (
+                    <button
+                      type="button"
+                      onClick={() => setIsEditAnswerKeyOpen(true)}
+                      className="btn btn-secondary text-xs py-2 px-3 flex items-center justify-center gap-1.5 rounded-xl border border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 shrink-0 cursor-pointer"
+                      title="Optik basmadan önce veya bastıktan sonra cevap anahtarını inceleyin ya da düzenleyin"
+                    >
+                      <KeyRound className="h-4 w-4 text-amber-500" />
+                      <span>Cevap Anahtarı</span>
+                    </button>
+                  )}
+                </div>
+
+                {selectedExam && (
+                  <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+                    <span className="badge badge-info text-[10px]">
+                      {selectedExam.subjects.length} Ders • {selectedExam.totalQuestions} Soru
+                    </span>
+                    {selectedExam.hasBookletTypes && (
+                      <span className="badge badge-warning text-[10px] font-bold">
+                        A/B Kitapçıklı
+                      </span>
+                    )}
+                    <span className="text-[10px] text-slate-400">
+                      (Optik form basıldıktan sonra da cevap anahtarı dilediğiniz zaman güncellenebilir)
+                    </span>
+                  </div>
+                )}
+
+                {updatedBanner && (
+                  <div className="mt-2 p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 text-xs font-semibold text-emerald-800 dark:text-emerald-200 flex items-center justify-between animate-fade-in shadow-sm">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                      <span>{updatedBanner}</span>
+                    </div>
+                    <button onClick={() => setUpdatedBanner(null)} className="text-emerald-600 dark:text-emerald-400">
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Class & Printing Options */}
@@ -858,6 +903,24 @@ export const OMRGenerator: React.FC<OMRGeneratorProps> = ({
             )}
           </div>
         </div>
+      )}
+
+      {/* Edit Answer Key Modal */}
+      {selectedExam && (
+        <EditAnswerKeyModal
+          isOpen={isEditAnswerKeyOpen}
+          examId={selectedExam.id}
+          currentUser={currentUser}
+          onClose={() => setIsEditAnswerKeyOpen(false)}
+          onSuccess={(recalculatedCount) => {
+            setUpdatedBanner(
+              recalculatedCount > 0 
+                ? `Cevap anahtarı başarıyla güncellendi! Okunmuş ${recalculatedCount} öğrencinin sınav sonuçları ve sıralamaları güncellendi.`
+                : 'Cevap anahtarı başarıyla güncellendi! Yeni optik formlar ve okumalar güncel anahtara göre değerlendirilecektir.'
+            );
+            setTimeout(() => setUpdatedBanner(null), 5000);
+          }}
+        />
       )}
     </div>
   );

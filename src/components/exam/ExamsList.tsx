@@ -3,10 +3,11 @@ import {
   FileText, Plus, Calendar, Printer, Camera, Trash2, Layers, Search, 
   Sparkles, CheckCircle2, ChevronRight, ChevronDown, ChevronUp, 
   User as UserIcon, Shield, Building2, Lock, FolderKanban, Filter, X,
-  GraduationCap, RotateCcw, AlertTriangle, Edit3, MoreVertical
+  GraduationCap, RotateCcw, AlertTriangle, Edit3, MoreVertical, KeyRound
 } from 'lucide-react';
 import { Exam, User, Institution, SystemGradeLevel } from '../../types';
 import { storageService } from '../../services/storageService';
+import { EditAnswerKeyModal } from './EditAnswerKeyModal';
 import { Pagination } from '../common/Pagination';
 import { ViewModeToggle } from '../common/ViewModeToggle';
 
@@ -61,6 +62,10 @@ export const ExamsList: React.FC<ExamsListProps> = ({
   // Confirmation Modal States
   const [examToDelete, setExamToDelete] = useState<{ exam: Exam; scanCount: number; isPermanent: boolean } | null>(null);
   const [deleteConfirmationText, setDeleteConfirmationText] = useState<string>('');
+
+  // Quick Answer Key Edit Modal State
+  const [answerKeyModalExamId, setAnswerKeyModalExamId] = useState<string | null>(null);
+  const [actionSuccessBanner, setActionSuccessBanner] = useState<string | null>(null);
   
   // View Mode & Pagination States
   const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
@@ -389,17 +394,32 @@ export const ExamsList: React.FC<ExamsListProps> = ({
           )}
         </div>
 
-        {/* Action Buttons: Sonuçlar + ⋯ Menü */}
-        <div className="pt-3 border-t border-slate-200 dark:border-slate-800/80 flex items-center justify-between gap-2">
-          {onNavigateToResults ? (
-            <button
-              onClick={() => onNavigateToResults(exam.id)}
-              className="btn btn-secondary text-xs py-1.5 px-3 flex items-center justify-center gap-1.5 text-amber-500 dark:text-amber-400 border-amber-500/30 rounded-xl"
-            >
-              <Sparkles className="h-3.5 w-3.5 shrink-0" /> 
-              <span>Sonuçlar ({examResults.length})</span>
-            </button>
-          ) : <div />}
+        {/* Action Buttons: Sonuçlar + Cevap Anahtarı + ⋯ Menü */}
+        <div className="pt-3 border-t border-slate-200 dark:border-slate-800/80 flex items-center justify-between gap-1.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {onNavigateToResults && (
+              <button
+                onClick={() => onNavigateToResults(exam.id)}
+                className="btn btn-secondary text-xs py-1.5 px-2.5 flex items-center justify-center gap-1.5 text-indigo-600 dark:text-indigo-400 border-indigo-500/30 hover:bg-indigo-500/10 rounded-xl"
+                title="Sınav Sonuçları ve Derece Sıralaması"
+              >
+                <Sparkles className="h-3.5 w-3.5 shrink-0" /> 
+                <span>Sonuçlar ({examResults.length})</span>
+              </button>
+            )}
+
+            {scopeFilter !== 'TRASH' && (
+              <button
+                type="button"
+                onClick={() => setAnswerKeyModalExamId(exam.id)}
+                className="btn btn-secondary text-xs py-1.5 px-2.5 flex items-center justify-center gap-1.5 text-amber-600 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/10 rounded-xl cursor-pointer"
+                title="Cevap anahtarını görüntüle / düzenle; sonuçları anında yeniden hesapla"
+              >
+                <KeyRound className="h-3.5 w-3.5 shrink-0 text-amber-500" />
+                <span>Cevap Anahtarı</span>
+              </button>
+            )}
+          </div>
 
           {scopeFilter === 'TRASH' ? (
             <div className="flex items-center gap-1.5">
@@ -474,17 +494,29 @@ export const ExamsList: React.FC<ExamsListProps> = ({
                       </button>
                     )}
 
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveMenuExamId(null);
+                        setAnswerKeyModalExamId(exam.id);
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-amber-50 dark:hover:bg-amber-500/10 hover:text-amber-600 dark:hover:text-amber-400 rounded-xl transition-colors cursor-pointer"
+                    >
+                      <KeyRound className="h-4 w-4 text-amber-500 shrink-0" />
+                      <span>Cevap Anahtarını Düzenle</span>
+                    </button>
+
                     {canEdit && onNavigateToEditExam && (
                       <button
                         type="button"
                         onClick={() => {
                           setActiveMenuExamId(null);
-                          onNavigateToEditExam(exam.id, 3);
+                          onNavigateToEditExam(exam.id, 1);
                         }}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-amber-50 dark:hover:bg-amber-500/10 hover:text-amber-600 dark:hover:text-amber-400 rounded-xl transition-colors cursor-pointer"
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
                       >
-                        <Edit3 className="h-4 w-4 text-amber-500 shrink-0" />
-                        <span>Cevap Anahtarını Düzenle</span>
+                        <Edit3 className="h-4 w-4 text-slate-400 shrink-0" />
+                        <span>Tüm Sınav Ayarlarını Düzenle</span>
                       </button>
                     )}
                   </div>
@@ -573,6 +605,18 @@ export const ExamsList: React.FC<ExamsListProps> = ({
           )}
         </div>
       </div>
+
+      {actionSuccessBanner && (
+        <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 text-xs font-semibold text-emerald-800 dark:text-emerald-200 flex items-center justify-between animate-fade-in shadow-sm">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <span>{actionSuccessBanner}</span>
+          </div>
+          <button onClick={() => setActionSuccessBanner(null)} className="text-emerald-600 dark:text-emerald-400 cursor-pointer">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       {/* Control Panel: Scope Tabs + Filters */}
       <div className="glass-panel p-4 space-y-4">
@@ -871,17 +915,29 @@ export const ExamsList: React.FC<ExamsListProps> = ({
                         </span>
                       </td>
 
-                      {/* İşlemler: Sonuçlar + ⋯ Menü */}
+                      {/* İşlemler: Sonuçlar + Cevap Anahtarı + ⋯ Menü */}
                       <td className="px-3.5 py-3 text-right">
-                        <div className="flex items-center justify-end gap-2">
+                        <div className="flex items-center justify-end gap-1.5 flex-wrap">
                           {onNavigateToResults && (
                             <button
                               onClick={() => onNavigateToResults(exam.id)}
-                              className="btn btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5 text-amber-600 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/10 rounded-xl cursor-pointer whitespace-nowrap shrink-0 shadow-xs"
+                              className="btn btn-secondary text-xs py-1.5 px-2.5 flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400 border-indigo-500/30 hover:bg-indigo-500/10 rounded-xl cursor-pointer whitespace-nowrap shrink-0 shadow-xs"
                               title="Sonuçlar ve Derece Sıralaması"
                             >
                               <Sparkles className="h-3.5 w-3.5 shrink-0" />
                               <span>Sonuçlar ({examResults.length})</span>
+                            </button>
+                          )}
+
+                          {scopeFilter !== 'TRASH' && (
+                            <button
+                              type="button"
+                              onClick={() => setAnswerKeyModalExamId(exam.id)}
+                              className="btn btn-secondary text-xs py-1.5 px-2.5 flex items-center gap-1.5 text-amber-600 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/10 rounded-xl cursor-pointer whitespace-nowrap shrink-0 shadow-xs"
+                              title="Cevap anahtarını görüntüle / düzenle; sonuçları anında yeniden hesapla"
+                            >
+                              <KeyRound className="h-3.5 w-3.5 shrink-0 text-amber-500" />
+                              <span>Cevap Anahtarı</span>
                             </button>
                           )}
 
@@ -958,17 +1014,29 @@ export const ExamsList: React.FC<ExamsListProps> = ({
                                       </button>
                                     )}
 
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setActiveMenuExamId(null);
+                                        setAnswerKeyModalExamId(exam.id);
+                                      }}
+                                      className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-amber-50 dark:hover:bg-amber-500/10 hover:text-amber-600 dark:hover:text-amber-400 rounded-xl transition-colors cursor-pointer"
+                                    >
+                                      <KeyRound className="h-4 w-4 text-amber-500 shrink-0" />
+                                      <span>Cevap Anahtarını Düzenle</span>
+                                    </button>
+
                                     {canEdit && onNavigateToEditExam && (
                                       <button
                                         type="button"
                                         onClick={() => {
                                           setActiveMenuExamId(null);
-                                          onNavigateToEditExam(exam.id, 3);
+                                          onNavigateToEditExam(exam.id, 1);
                                         }}
-                                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-amber-50 dark:hover:bg-amber-500/10 hover:text-amber-600 dark:hover:text-amber-400 rounded-xl transition-colors cursor-pointer"
+                                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
                                       >
-                                        <Edit3 className="h-4 w-4 text-amber-500 shrink-0" />
-                                        <span>Cevap Anahtarını Düzenle</span>
+                                        <Edit3 className="h-4 w-4 text-slate-400 shrink-0" />
+                                        <span>Tüm Sınav Ayarlarını Düzenle</span>
                                       </button>
                                     )}
                                   </div>
@@ -1116,6 +1184,25 @@ export const ExamsList: React.FC<ExamsListProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Quick Answer Key Edit Modal */}
+      {answerKeyModalExamId && (
+        <EditAnswerKeyModal
+          isOpen={Boolean(answerKeyModalExamId)}
+          examId={answerKeyModalExamId}
+          currentUser={currentUser}
+          onClose={() => setAnswerKeyModalExamId(null)}
+          onSuccess={(recalculatedCount) => {
+            reloadExams();
+            setActionSuccessBanner(
+              recalculatedCount > 0 
+                ? `Cevap anahtarı güncellendi! Okunmuş ${recalculatedCount} öğrencinin sınav sonuçları ve sıralamaları başarıyla yeniden hesaplandı.`
+                : 'Cevap anahtarı başarıyla güncellendi!'
+            );
+            setTimeout(() => setActionSuccessBanner(null), 5000);
+          }}
+        />
       )}
     </div>
   );
