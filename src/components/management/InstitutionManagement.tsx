@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Users, BookOpen, Plus, Trash2, Edit2, Search, Shield, UserPlus, FileSpreadsheet, Upload, Download, CheckCircle2, Building2, Image as ImageIcon, MapPin, Phone, Mail, Save, GraduationCap } from 'lucide-react';
-import { storageService } from '../../services/storageService';
+import { storageService, pushStudentsToServer, pushClassesToServer, pushToServer } from '../../services/storageService';
 import { studentExcelService } from '../../services/studentExcelService';
 import { SchoolClass, Student, User, Institution, GlobalClassTemplate, SystemGradeLevel } from '../../types';
 import { PersonnelManagement } from './PersonnelManagement';
@@ -52,6 +52,27 @@ export const InstitutionManagement: React.FC = () => {
   const [newStudent, setNewStudent] = useState({ firstName: '', lastName: '', studentNo: '', classId: '' });
   const [showAddStudent, setShowAddStudent] = useState(false);
   const [importSuccessMsg, setImportSuccessMsg] = useState<string | null>(null);
+  const [isSavingStudents, setIsSavingStudents] = useState(false);
+  const [studentsSavedMsg, setStudentsSavedMsg] = useState<string | null>(null);
+
+  const handleForceSaveStudents = async () => {
+    setIsSavingStudents(true);
+    try {
+      const currentStudents = storageService.getStudents();
+      const currentClasses = storageService.getClasses();
+      await pushStudentsToServer(currentStudents);
+      await pushClassesToServer(currentClasses);
+      await pushToServer();
+      reloadData();
+      setStudentsSavedMsg(`✓ ${students.length} adet öğrenci kalıcı olarak sisteme ve buluta kaydedildi! Optik basımında eksiksiz görüntülenecektir.`);
+      setTimeout(() => setStudentsSavedMsg(null), 5000);
+    } catch (err) {
+      console.error('Save failed:', err);
+      alert('Kaydedilirken bir hata oluştu, yerel hafızaya kaydedildi.');
+    } finally {
+      setIsSavingStudents(false);
+    }
+  };
 
   // Sync with background updates
   React.useEffect(() => {
@@ -379,12 +400,39 @@ export const InstitutionManagement: React.FC = () => {
 
                 <button
                   onClick={() => setShowAddStudent(true)}
-                  className="btn btn-primary text-xs py-2 px-3 flex items-center justify-center gap-1 flex-1 sm:flex-initial"
+                  className="btn btn-secondary text-xs py-2 px-3 flex items-center justify-center gap-1 flex-1 sm:flex-initial"
                 >
                   <Plus className="h-4 w-4" /> Yeni Öğrenci
                 </button>
+
+                <button
+                  type="button"
+                  onClick={handleForceSaveStudents}
+                  disabled={isSavingStudents}
+                  className="btn btn-primary text-xs py-2 px-3.5 flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-md shadow-emerald-600/30 flex-1 sm:flex-initial rounded-xl cursor-pointer disabled:opacity-50"
+                  title="Tüm öğrencileri kesin ve kalıcı olarak kaydet"
+                >
+                  {isSavingStudents ? (
+                    <>
+                      <div className="h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Kaydediliyor...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4" />
+                      <span>Öğrencileri Kesin Kaydet</span>
+                    </>
+                  )}
+                </button>
               </div>
             </div>
+
+            {studentsSavedMsg && (
+              <div className="p-3 bg-emerald-500/15 border border-emerald-500/40 rounded-xl flex items-center gap-2 text-emerald-700 dark:text-emerald-300 text-xs font-semibold animate-fade-in shadow-sm mb-3">
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                <span>{studentsSavedMsg}</span>
+              </div>
+            )}
 
             {importSuccessMsg && (
               <p className="text-xs font-semibold text-emerald-400 flex items-center gap-1.5 p-2.5 rounded-lg bg-emerald-950/40 border border-emerald-500/40 animate-fade-in mb-3">

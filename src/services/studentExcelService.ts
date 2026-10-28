@@ -77,6 +77,7 @@ export const studentExcelService = {
 
             const existingClasses = storageService.getClasses(targetInstitutionId);
             const existingStudents = storageService.getStudents(targetInstitutionId);
+            const studentsToImport: Student[] = [];
             let importedCount = 0;
             let createdClassesCount = 0;
 
@@ -131,7 +132,7 @@ export const studentExcelService = {
                 id:
                   existingStudentIndex >= 0
                     ? existingStudents[existingStudentIndex].id
-                    : `std-${Date.now()}-${i}`,
+                    : `std-${Date.now()}-${i}-${Math.floor(Math.random() * 1000)}`,
                 institutionId: targetInstitutionId,
                 classId: targetClass.id,
                 className: targetClass.name,
@@ -140,8 +141,17 @@ export const studentExcelService = {
                 lastName
               };
 
-              storageService.addStudent(newStudent);
+              studentsToImport.push(newStudent);
+              if (existingStudentIndex >= 0) {
+                existingStudents[existingStudentIndex] = newStudent;
+              } else {
+                existingStudents.push(newStudent);
+              }
               importedCount++;
+            }
+
+            if (studentsToImport.length > 0) {
+              storageService.addStudentsBatch(studentsToImport);
             }
 
             resolve({ importedCount, createdClassesCount });
@@ -178,6 +188,7 @@ export const studentExcelService = {
 
     const existingClasses = storageService.getClasses(targetInstitutionId);
     const existingStudents = storageService.getStudents(targetInstitutionId);
+    const studentsToImport: Student[] = [];
 
     const lines = fileText.split(/\r?\n/);
     let importedCount = 0;
@@ -238,7 +249,7 @@ export const studentExcelService = {
       );
 
       const newStudent: Student = {
-        id: existingStudentIndex >= 0 ? existingStudents[existingStudentIndex].id : `std-${Date.now()}-${i}`,
+        id: existingStudentIndex >= 0 ? existingStudents[existingStudentIndex].id : `std-${Date.now()}-${i}-${Math.floor(Math.random() * 1000)}`,
         institutionId: targetInstitutionId,
         classId: targetClass.id,
         className: targetClass.name,
@@ -247,8 +258,17 @@ export const studentExcelService = {
         lastName
       };
 
-      storageService.addStudent(newStudent);
+      studentsToImport.push(newStudent);
+      if (existingStudentIndex >= 0) {
+        existingStudents[existingStudentIndex] = newStudent;
+      } else {
+        existingStudents.push(newStudent);
+      }
       importedCount++;
+    }
+
+    if (studentsToImport.length > 0) {
+      storageService.addStudentsBatch(studentsToImport);
     }
 
     return { importedCount, createdClassesCount };

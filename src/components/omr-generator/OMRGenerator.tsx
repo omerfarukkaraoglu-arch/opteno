@@ -56,19 +56,40 @@ export const OMRGenerator: React.FC<OMRGeneratorProps> = ({
     }
   };
 
+  // Listen for storage data updates (Excel import, background sync, etc.)
+  const [dataVersion, setDataVersion] = useState<number>(0);
+  useEffect(() => {
+    const handleUpdate = () => setDataVersion(v => v + 1);
+    window.addEventListener('opticok-data-updated', handleUpdate);
+    return () => window.removeEventListener('opticok-data-updated', handleUpdate);
+  }, []);
+
   // Available classes and students based on user role and selected institution
   const availableClasses = useMemo(() => {
-    const instId = isSuperAdmin ? (selectedInstId === 'ALL' ? undefined : selectedInstId) : currentUser.institutionId;
+    const instId = isSuperAdmin ? (selectedInstId === 'ALL' ? undefined : selectedInstId) : (currentUser.institutionId || undefined);
     return storageService.getClasses(instId);
-  }, [isSuperAdmin, selectedInstId, currentUser.institutionId]);
+  }, [isSuperAdmin, selectedInstId, currentUser.institutionId, dataVersion]);
 
   const availableStudents = useMemo(() => {
-    const instId = isSuperAdmin ? (selectedInstId === 'ALL' ? undefined : selectedInstId) : currentUser.institutionId;
+    const instId = isSuperAdmin ? (selectedInstId === 'ALL' ? undefined : selectedInstId) : (currentUser.institutionId || undefined);
     return storageService.getStudents(instId);
-  }, [isSuperAdmin, selectedInstId, currentUser.institutionId]);
+  }, [isSuperAdmin, selectedInstId, currentUser.institutionId, dataVersion]);
 
-  // Selected Class Filter State
-  const [selectedClassId, setSelectedClassId] = useState<string>('GENERIC');
+  // Selected Class Filter State: default to 'ALL' if registered students exist, otherwise 'GENERIC'
+  const [selectedClassId, setSelectedClassId] = useState<string>(() => {
+    const instId = isSuperAdmin ? (selectedInstId === 'ALL' ? undefined : selectedInstId) : (currentUser.institutionId || undefined);
+    const initialStds = storageService.getStudents(instId);
+    return initialStds.length > 0 ? 'ALL' : 'GENERIC';
+  });
+
+  // Automatically switch from GENERIC to ALL when students become available
+  const prevStudentCountRef = React.useRef(availableStudents.length);
+  useEffect(() => {
+    if (prevStudentCountRef.current === 0 && availableStudents.length > 0 && selectedClassId === 'GENERIC') {
+      setSelectedClassId('ALL');
+    }
+    prevStudentCountRef.current = availableStudents.length;
+  }, [availableStudents.length, selectedClassId]);
   const [pageFormat, setPageFormat] = useState<OMRPageFormat>('A4');
   const [previewQRUrl, setPreviewQRUrl] = useState<string>('');
   const [isExporting, setIsExporting] = useState<boolean>(false);
@@ -644,14 +665,30 @@ export const OMRGenerator: React.FC<OMRGeneratorProps> = ({
 
           {/* Live Optical Sheet Preview Column (Right) */}
           <div className="lg:col-span-7 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                <Eye className="h-4 w-4 text-indigo-400" /> Canlı Optik Form Önizlemesi
-              </h2>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <h2 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <Eye className="h-4 w-4 text-indigo-400" /> Canlı Optik Form Önizlemesi
+                </h2>
+                {selectedClassId !== 'GENERIC' && selectedStudentIds.size > 0 && (
+                  <span className="badge badge-primary text-[10px] font-bold">
+                    Seçili {selectedStudentIds.size} Öğrenci Yazdırılacak
+                  </span>
+                )}
+              </div>
               <span className={`badge text-[10px] font-bold ${pageFormat === 'A5' ? 'badge-success' : 'badge-indigo'}`}>
                 {pageFormat === 'A5' ? 'A5 Tasarruf Modu (1 Sayfada 2 Optik)' : 'A4 Standart (1 Sayfada 1 Optik)'}
               </span>
             </div>
+
+            {selectedClassId !== 'GENERIC' && selectedStudentIds.size > 1 && (
+              <div className="px-3 py-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-[11px] flex items-center gap-2">
+                <span className="shrink-0 text-sm">💡</span>
+                <span>
+                  <strong>Örnek Önizleme:</strong> Aşağıda ilk öğrencinin ({firstSelectedStudent ? `${firstSelectedStudent.firstName} ${firstSelectedStudent.lastName}` : '1. Öğrenci'}) formu gösterilmektedir. <strong>Optik Form İndir</strong> butonuna tıkladığınızda seçili <strong>{selectedStudentIds.size} öğrencinin tamamı</strong> adlarına özel ve QR kodlu olarak PDF'e basılacaktır.
+                </span>
+              </div>
+            )}
 
             {selectedExam ? (
               pageFormat === 'A5' ? (

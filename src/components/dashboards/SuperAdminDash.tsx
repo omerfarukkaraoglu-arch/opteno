@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Building2, Users, FileText, CheckCircle, Plus, Search, MapPin, Phone, Mail, ChevronRight, Settings, UserPlus, Shield, Trash2, Eye, Calendar, Sparkles, Download, Upload, FileSpreadsheet, CheckCircle2, GraduationCap, RotateCcw, BookOpen, Layers, X, Copy, Key, Check } from 'lucide-react';
-import { storageService } from '../../services/storageService';
+import { Building2, Users, FileText, CheckCircle, Plus, Search, MapPin, Phone, Mail, ChevronRight, Settings, UserPlus, Shield, Trash2, Eye, Calendar, Sparkles, Download, Upload, FileSpreadsheet, CheckCircle2, GraduationCap, RotateCcw, BookOpen, Layers, X, Copy, Key, Check, Save } from 'lucide-react';
+import { storageService, pushStudentsToServer, pushClassesToServer, pushToServer } from '../../services/storageService';
 import { studentExcelService } from '../../services/studentExcelService';
 import { pdfService } from '../../services/pdfService';
 import { Institution, Student, Exam, User, GlobalClassTemplate, SystemGradeLevel } from '../../types';
@@ -172,6 +172,27 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
       alert('Dosya okunurken bir hata oluştu.');
     }
     e.target.value = '';
+  };
+
+  const [isSavingSuperStudents, setIsSavingSuperStudents] = useState(false);
+
+  const handleSuperAdminForceSaveStudents = async () => {
+    setIsSavingSuperStudents(true);
+    try {
+      const currentStudents = storageService.getStudents();
+      const currentClasses = storageService.getClasses();
+      await pushStudentsToServer(currentStudents);
+      await pushClassesToServer(currentClasses);
+      await pushToServer();
+      reloadData();
+      setStudentImportSuccessMsg(`✓ Toplam ${currentStudents.length} öğrenci kalıcı olarak kaydedildi ve bulutla eşitlendi.`);
+      setTimeout(() => setStudentImportSuccessMsg(null), 5000);
+    } catch (err) {
+      console.error('Save failed:', err);
+      alert('Kaydedilirken bir hata oluştu.');
+    } finally {
+      setIsSavingSuperStudents(false);
+    }
   };
 
   // Modals
@@ -1009,6 +1030,27 @@ export const SuperAdminDash: React.FC<SuperAdminDashProps> = ({ currentUser, onN
                   className="hidden"
                 />
               </label>
+
+              {/* Force Save Students Button */}
+              <button
+                type="button"
+                onClick={handleSuperAdminForceSaveStudents}
+                disabled={isSavingSuperStudents}
+                className="btn btn-primary text-xs py-2 px-3.5 flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-lg shadow-emerald-600/30 cursor-pointer disabled:opacity-50"
+                title="Tüm öğrencileri kesin ve kalıcı olarak kaydet"
+              >
+                {isSavingSuperStudents ? (
+                  <>
+                    <div className="h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Kaydediliyor...</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4" />
+                    <span>Öğrencileri Kesin Kaydet</span>
+                  </>
+                )}
+              </button>
 
               {/* Institution Filter Dropdown */}
               <div className="flex items-center gap-2">

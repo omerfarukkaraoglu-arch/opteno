@@ -1,20 +1,15 @@
 import { jsPDF } from 'jspdf';
 import { Exam, Student } from '../types';
 import { qrService } from './qrService';
+import { applyTurkishFonts } from './turkishFontService';
 
 /**
- * Sanitizes Turkish characters for standard PDF fonts (Helvetica)
- * to prevent corrupted character substitutions like "1", "0", "_", or abnormal spacing.
+ * Ensures text is non-null and safely trimmed for PDF output
+ * Preserves all Turkish characters (ç, Ç, ğ, Ğ, ı, I, i, İ, ö, Ö, ş, Ş, ü, Ü).
  */
 function cleanPDFText(str: any): string {
   if (str === null || str === undefined) return '';
-  return String(str)
-    .replace(/Ğ/g, 'G').replace(/ğ/g, 'g')
-    .replace(/Ü/g, 'U').replace(/ü/g, 'u')
-    .replace(/Ş/g, 'S').replace(/ş/g, 's')
-    .replace(/İ/g, 'I').replace(/ı/g, 'i')
-    .replace(/Ö/g, 'O').replace(/ö/g, 'o')
-    .replace(/Ç/g, 'C').replace(/ç/g, 'c');
+  return String(str).trim();
 }
 
 export type OMRPageFormat = 'A4' | 'A5';
@@ -37,6 +32,9 @@ export const pdfService = {
       unit: 'mm',
       format: 'a4'
     });
+
+    // Apply embedded Turkish TrueType fonts (Roboto Regular & Bold)
+    applyTurkishFonts(doc);
 
     if (pageFormat === 'A4') {
       const studentList = students.length > 0 ? students : [null];
@@ -91,7 +89,7 @@ function drawCuttingGuide(doc: jsPDF) {
   doc.line(6, 148.5, 204, 148.5);
   doc.setLineDashPattern([], 0); // reset line dash
 
-  doc.setFont('helvetica', 'normal');
+  doc.setFont('Roboto', 'normal');
   doc.setFontSize(6.5);
   doc.setTextColor(130, 140, 155);
   doc.text('✂ - - - - - - - - - - - - - - - - - - - - - - - KESİM ÇİZGİSİ (A5 KESİM) - - - - - - - - - - - - - - - - - - - - - - - ✂', 105, 148.5 - 1.2, { align: 'center' });
@@ -111,7 +109,7 @@ async function drawOMRSheet(
   const dim = (v: number) => v * scale;
   const fnt = (fs: number) => fs * scale;
 
-  // 1. Top Left Header Box (OGRENCI BILGILERI)
+  // 1. Top Left Header Box (ÖĞRENCİ BİLGİLERİ)
   const headerX = 12;
   const headerY = 10;
   const headerWidth = 142;
@@ -121,20 +119,20 @@ async function drawOMRSheet(
   doc.setDrawColor(0, 0, 0);
   doc.rect(sx(headerX), sy(headerY), dim(headerWidth), dim(headerHeight));
 
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('Roboto', 'bold');
   doc.setFontSize(fnt(10));
-  doc.text(cleanPDFText('OGRENCI BILGILERI'), sx(headerX + 4), sy(headerY + 6));
+  doc.text('ÖĞRENCİ BİLGİLERİ', sx(headerX + 4), sy(headerY + 6));
 
-  doc.setFont('helvetica', 'normal');
+  doc.setFont('Roboto', 'normal');
   doc.setFontSize(fnt(8.5));
   if (student) {
-    doc.text(`Adi Soyadi: ${cleanPDFText(student.firstName)} ${cleanPDFText(student.lastName)}`, sx(headerX + 4), sy(headerY + 14));
-    doc.text(`Ogrenci No: ${cleanPDFText(student.studentNo)}`, sx(headerX + 4), sy(headerY + 22));
-    doc.text(`Sinifi: ${cleanPDFText(student.className)}`, sx(headerX + 65), sy(headerY + 22));
+    doc.text(`Adı Soyadı: ${cleanPDFText(student.firstName)} ${cleanPDFText(student.lastName)}`, sx(headerX + 4), sy(headerY + 14));
+    doc.text(`Öğrenci No: ${cleanPDFText(student.studentNo)}`, sx(headerX + 4), sy(headerY + 22));
+    doc.text(`Sınıfı: ${cleanPDFText(student.className)}`, sx(headerX + 65), sy(headerY + 22));
   } else {
-    doc.text('Adi Soyadi: _________________________________', sx(headerX + 4), sy(headerY + 14));
-    doc.text('Ogrenci No: [   ][   ][   ][   ]', sx(headerX + 4), sy(headerY + 22));
-    doc.text('Sinifi: _________', sx(headerX + 65), sy(headerY + 22));
+    doc.text('Adı Soyadı: _________________________________', sx(headerX + 4), sy(headerY + 14));
+    doc.text('Öğrenci No: [   ][   ][   ][   ]', sx(headerX + 4), sy(headerY + 22));
+    doc.text('Sınıfı: _________', sx(headerX + 65), sy(headerY + 22));
   }
 
   // Draw Optional Booklet Type (Kitapçık Türü A / B) if configured for this exam
@@ -145,14 +143,14 @@ async function drawOMRSheet(
     doc.setDrawColor(80, 80, 80);
     doc.roundedRect(sx(bkBoxX), sy(bkBoxY), dim(33), dim(22), dim(2), dim(2));
 
-    doc.setFont('helvetica', 'bold');
+    doc.setFont('Roboto', 'bold');
     doc.setFontSize(fnt(7.5));
     doc.setTextColor(50, 50, 50);
-    doc.text(cleanPDFText('KITAPCIK TURU'), sx(bkBoxX + 16.5), sy(bkBoxY + 5.5), { align: 'center' });
+    doc.text('KİTAPÇIK TÜRÜ', sx(bkBoxX + 16.5), sy(bkBoxY + 5.5), { align: 'center' });
 
     // Bubble A
     doc.circle(sx(bkBoxX + 9), sy(bkBoxY + 14), dim(2.8));
-    doc.setFont('helvetica', 'bold');
+    doc.setFont('Roboto', 'bold');
     doc.setFontSize(fnt(7.5));
     doc.setTextColor(0, 0, 0);
     doc.text('A', sx(bkBoxX + 9), sy(bkBoxY + 15.2), { align: 'center' });
@@ -186,10 +184,11 @@ async function drawOMRSheet(
   const answerTop = 52;
 
   // 4. Instructions Text (Centered between Top L-Brackets)
+  doc.setFont('Roboto', 'normal');
   doc.setFontSize(fnt(7.5));
   doc.setTextColor(100, 100, 100);
   doc.text(
-    cleanPDFText('DIKKAT: Cevaplarinizi yumusak kursun kalemle, baloncuklarin disina tasirmadan doldurunuz. Formu katlamayiniz.'),
+    'DİKKAT: Cevaplarınızı yumuşak kurşun kalemle, baloncukların dışına taşırmadan doldurunuz. Formu katlamayınız.',
     sx(105),
     sy(answerTop + 3.5),
     { align: 'center' }
@@ -271,7 +270,7 @@ async function drawOMRSheet(
       // Draw Subject Header Bar
       doc.setFillColor(238, 242, 248);
       doc.rect(sx(colX + 1), sy(currentY), dim(colWidth - 2), dim(6.5), 'F');
-      doc.setFont('helvetica', 'bold');
+      doc.setFont('Roboto', 'bold');
       doc.setFontSize(fnt(8.5));
 
       const headerTitle = col.isSubCol
@@ -285,7 +284,7 @@ async function drawOMRSheet(
       const optionLabels = col.optionCount === 5 ? ['A', 'B', 'C', 'D', 'E'] : ['A', 'B', 'C', 'D'];
 
       for (let q = col.startQ; q <= col.endQ; q++) {
-        doc.setFont('helvetica', 'bold');
+        doc.setFont('Roboto', 'bold');
         doc.setFontSize(fnt(8));
         doc.text(`${q.toString().padStart(2, '0')}.`, sx(colX + 2), sy(qY + 1));
 
@@ -299,7 +298,7 @@ async function drawOMRSheet(
           doc.setDrawColor(50, 50, 50);
           doc.circle(sx(bubbleX), sy(qY), dim(2.1), 'S');
 
-          doc.setFont('helvetica', 'normal');
+          doc.setFont('Roboto', 'normal');
           doc.setFontSize(fnt(6.5));
           doc.setTextColor(60, 60, 60);
           doc.text(opt, sx(bubbleX), sy(qY + 0.8), { align: 'center' });

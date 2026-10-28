@@ -15,6 +15,8 @@ const KEYS = {
   EXAMS: 'opticok_exams',
   RESULTS: 'opticok_results',
   DELETED_RESULT_IDS: 'opticok_deleted_result_ids',
+  DELETED_STUDENT_IDS: 'opticok_deleted_student_ids',
+  DELETED_CLASS_IDS: 'opticok_deleted_class_ids',
   SITE_SETTINGS: 'opticok_site_settings'
 };
 
@@ -134,9 +136,10 @@ export const resetAllStorage = () => {
   localStorage.removeItem(KEYS.EXAMS);
   localStorage.removeItem(KEYS.RESULTS);
   localStorage.removeItem(KEYS.USERS);
-  localStorage.removeItem(KEYS.CURRENT_USER);
   localStorage.removeItem(KEYS.SITE_SETTINGS);
   localStorage.removeItem(KEYS.DELETED_RESULT_IDS);
+  localStorage.removeItem(KEYS.DELETED_STUDENT_IDS);
+  localStorage.removeItem(KEYS.DELETED_CLASS_IDS);
 
   setItem(KEYS.USERS, initialUsers);
   setItem(KEYS.INSTITUTIONS, initialInstitutions);
@@ -152,14 +155,19 @@ export const resetAllStorage = () => {
 
 let isSyncing = false;
 let isPushing = false;
+let pendingPush = false;
 let syncStarted = false;
 let lastLocalWriteTime = 0;
 
 // Push system configuration, exams, students, and institutions to Firebase
 // IMPORTANT: Does NOT push results array, so scan results are NEVER overwritten or wiped out in bulk!
 export const pushToServer = async () => {
-  if (isPushing) return;
+  if (isPushing) {
+    pendingPush = true;
+    return;
+  }
   isPushing = true;
+  pendingPush = false;
   lastLocalWriteTime = Date.now();
   try {
     const exams = getItem<Exam[]>(KEYS.EXAMS, initialExams);
@@ -191,10 +199,41 @@ export const pushToServer = async () => {
   } catch (err) {
     console.error('Firebase push failed:', err);
   } finally {
-    // Keep lock active briefly so background GET requests cannot overwrite fresh local push
-    setTimeout(() => {
-      isPushing = false;
-    }, 1500);
+    isPushing = false;
+    if (pendingPush) {
+      pendingPush = false;
+      setTimeout(() => {
+        pushToServer();
+      }, 100);
+    }
+  }
+};
+
+// Directly push students array to Firebase students endpoint
+export const pushStudentsToServer = async (studentsToPush?: Student[]) => {
+  try {
+    const students = studentsToPush || getItem<Student[]>(KEYS.STUDENTS, initialStudents);
+    await fetch(`${FIREBASE_DB_URL}/students.json`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(students)
+    });
+  } catch (e) {
+    console.error('Direct push students to Firebase failed:', e);
+  }
+};
+
+// Directly push classes array to Firebase classes endpoint
+export const pushClassesToServer = async (classesToPush?: SchoolClass[]) => {
+  try {
+    const classes = classesToPush || getItem<SchoolClass[]>(KEYS.CLASSES, initialClasses);
+    await fetch(`${FIREBASE_DB_URL}/classes.json`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(classes)
+    });
+  } catch (e) {
+    console.error('Direct push classes to Firebase failed:', e);
   }
 };
 
@@ -469,6 +508,56 @@ export const syncWithServer = async (force: boolean = false) => {
       serverUsers.unshift(initialUsers[0]);
     }
 
+    // Bidirectional Safe Merge for Students:
+    const deletedStudentIds = new Set<string>(getItem<string[]>(KEYS.DELETED_STUDENT_IDS, []));
+    const localStudents = getItem<Student[]>(KEYS.STUDENTS, initialStudents);
+    const studentMap = new Map<string, Student>();
+
+    // 1. Add server students (ignoring locally deleted ones)
+    serverStudents.forEach(st => {
+      if (st && st.id && !deletedStudentIds.has(st.id)) {
+        studentMap.set(st.id, st);
+      }
+    });
+
+    // 2. Preserve any local students not yet in cloud, and queue them to sync up
+    let hasLocalStudentsMissingInCloud = false;
+    localStudents.forEach(ls => {
+      if (!ls || !ls.id || deletedStudentIds.has(ls.id)) return;
+      if (!studentMap.has(ls.id)) {
+        studentMap.set(ls.id, ls);
+        hasLocalStudentsMissingInCloud = true;
+      }
+    });
+
+    const mergedStudents = Array.from(studentMap.values());
+    const mergedStudentsStr = JSON.stringify(mergedStudents);
+
+    // Bidirectional Safe Merge for Classes:
+    const deletedClassIds = new Set<string>(getItem<string[]>(KEYS.DELETED_CLASS_IDS, []));
+    const localClasses = getItem<SchoolClass[]>(KEYS.CLASSES, initialClasses);
+    const classMap = new Map<string, SchoolClass>();
+
+    // 1. Add server classes (ignoring locally deleted ones)
+    serverClasses.forEach(cls => {
+      if (cls && cls.id && !deletedClassIds.has(cls.id)) {
+        classMap.set(cls.id, cls);
+      }
+    });
+
+    // 2. Preserve any local classes not yet in cloud
+    let hasLocalClassesMissingInCloud = false;
+    localClasses.forEach(lc => {
+      if (!lc || !lc.id || deletedClassIds.has(lc.id)) return;
+      if (!classMap.has(lc.id)) {
+        classMap.set(lc.id, lc);
+        hasLocalClassesMissingInCloud = true;
+      }
+    });
+
+    const mergedClasses = Array.from(classMap.values());
+    const mergedClassesStr = JSON.stringify(mergedClasses);
+
     // Check if anything has changed compared to current localStorage
     const localExamsRaw = localStorage.getItem(KEYS.EXAMS) || '[]';
     const localResultsRaw = localStorage.getItem(KEYS.RESULTS) || '[]';
@@ -481,8 +570,6 @@ export const syncWithServer = async (force: boolean = false) => {
 
     const serverExamsStr = JSON.stringify(serverExams);
     const mergedResultsStr = JSON.stringify(mergedResults);
-    const serverStudentsStr = JSON.stringify(serverStudents);
-    const serverClassesStr = JSON.stringify(serverClasses);
     const serverGradeLevelsStr = JSON.stringify(serverGradeLevels);
     const serverGlobalClassesStr = JSON.stringify(serverGlobalClasses);
     const serverInstStr = JSON.stringify(serverInstitutions);
@@ -498,13 +585,19 @@ export const syncWithServer = async (force: boolean = false) => {
       setItem(KEYS.RESULTS, mergedResults);
       hasChanged = true;
     }
-    if (localStudentsRaw !== serverStudentsStr) {
-      setItem(KEYS.STUDENTS, serverStudents);
+    if (localStudentsRaw !== mergedStudentsStr) {
+      setItem(KEYS.STUDENTS, mergedStudents);
       hasChanged = true;
     }
-    if (localClassesRaw !== serverClassesStr) {
-      setItem(KEYS.CLASSES, serverClasses);
+    if (hasLocalStudentsMissingInCloud) {
+      pushStudentsToServer(mergedStudents);
+    }
+    if (localClassesRaw !== mergedClassesStr) {
+      setItem(KEYS.CLASSES, mergedClasses);
       hasChanged = true;
+    }
+    if (hasLocalClassesMissingInCloud) {
+      pushClassesToServer(mergedClasses);
     }
     if (serverGradeLevels.length > 0 && localGradeLevelsRaw !== serverGradeLevelsStr) {
       setItem(KEYS.GRADE_LEVELS, serverGradeLevels);
@@ -830,17 +923,27 @@ export const storageService = {
     return institutionId ? list.filter(c => c.institutionId === institutionId) : list;
   },
   addClass: (newClass: SchoolClass) => {
+    const deletedClassIds = getItem<string[]>(KEYS.DELETED_CLASS_IDS, []);
+    if (deletedClassIds.includes(newClass.id)) {
+      setItem(KEYS.DELETED_CLASS_IDS, deletedClassIds.filter(id => id !== newClass.id));
+    }
     const list = getItem<SchoolClass[]>(KEYS.CLASSES, initialClasses);
     const filtered = list.filter(c => c.id !== newClass.id);
     filtered.unshift(newClass);
     setItem(KEYS.CLASSES, filtered);
     pushToServer();
+    pushClassesToServer(filtered);
     window.dispatchEvent(new CustomEvent('opticok-data-updated'));
   },
   deleteClass: (classId: string) => {
+    const deletedClassIds = getItem<string[]>(KEYS.DELETED_CLASS_IDS, []);
+    if (!deletedClassIds.includes(classId)) {
+      setItem(KEYS.DELETED_CLASS_IDS, [...deletedClassIds, classId]);
+    }
     const list = getItem<SchoolClass[]>(KEYS.CLASSES, initialClasses).filter(c => c.id !== classId);
     setItem(KEYS.CLASSES, list);
     pushToServer();
+    pushClassesToServer(list);
     window.dispatchEvent(new CustomEvent('opticok-data-updated'));
   },
 
@@ -914,11 +1017,16 @@ export const storageService = {
     return list;
   },
   addStudent: (student: Student) => {
+    const deletedStudentIds = getItem<string[]>(KEYS.DELETED_STUDENT_IDS, []);
+    if (deletedStudentIds.includes(student.id)) {
+      setItem(KEYS.DELETED_STUDENT_IDS, deletedStudentIds.filter(id => id !== student.id));
+    }
     const list = getItem<Student[]>(KEYS.STUDENTS, initialStudents);
     const filtered = list.filter(s => s.id !== student.id);
     filtered.unshift(student);
     setItem(KEYS.STUDENTS, filtered);
     pushToServer();
+    pushStudentsToServer(filtered);
     window.dispatchEvent(new CustomEvent('opticok-data-updated'));
   },
   updateStudent: (student: Student) => {
@@ -931,21 +1039,32 @@ export const storageService = {
     }
     setItem(KEYS.STUDENTS, list);
     pushToServer();
+    pushStudentsToServer(list);
     window.dispatchEvent(new CustomEvent('opticok-data-updated'));
   },
   addStudentsBatch: (students: Student[]) => {
-    const list = getItem<Student[]>(KEYS.STUDENTS, initialStudents);
     const newIds = new Set(students.map(s => s.id));
+    const deletedStudentIds = getItem<string[]>(KEYS.DELETED_STUDENT_IDS, []);
+    if (deletedStudentIds.some(id => newIds.has(id))) {
+      setItem(KEYS.DELETED_STUDENT_IDS, deletedStudentIds.filter(id => !newIds.has(id)));
+    }
+    const list = getItem<Student[]>(KEYS.STUDENTS, initialStudents);
     const kept = list.filter(s => !newIds.has(s.id));
     const combined = [...students, ...kept];
     setItem(KEYS.STUDENTS, combined);
     pushToServer();
+    pushStudentsToServer(combined);
     window.dispatchEvent(new CustomEvent('opticok-data-updated'));
   },
   deleteStudent: (studentId: string) => {
+    const deletedStudentIds = getItem<string[]>(KEYS.DELETED_STUDENT_IDS, []);
+    if (!deletedStudentIds.includes(studentId)) {
+      setItem(KEYS.DELETED_STUDENT_IDS, [...deletedStudentIds, studentId]);
+    }
     const list = getItem<Student[]>(KEYS.STUDENTS, initialStudents).filter(s => s.id !== studentId);
     setItem(KEYS.STUDENTS, list);
     pushToServer();
+    pushStudentsToServer(list);
     window.dispatchEvent(new CustomEvent('opticok-data-updated'));
   },
 
